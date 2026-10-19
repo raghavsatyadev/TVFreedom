@@ -101,14 +101,18 @@ class Offline(unittest.TestCase):
         enable, reinstall = restore.diff_to_backup(HOST, bdir)
         self.assertEqual(set(enable), {l.split()[-1] for l in w})
         self.assertEqual(reinstall, [])
-        restore.restore_all(HOST, bdir)
-        self.assertEqual(adbio.packages(HOST, "-d"), set())
-
         # a later run reuses what was applied as this model's known list
         self.assertIn(applied, known.learned_files(os.path.dirname(pdir)))
         self.assertIn("com.miui.tv.analytics", known.for_model("MiTV-MOOR0"))
         self.assertIn(applied, restore.phase_lists("MiTV-MOOR0"))
-        # undoing the run stops it being learned
+
+        # restoring the backup undoes the run, so it stops being learned
+        restore.restore_all(HOST, bdir, "MiTV-MOOR0")
+        self.assertEqual(adbio.packages(HOST, "-d"), set())
+        self.assertNotIn(applied, known.learned_files(os.path.dirname(pdir)))
+
+        # so does restoring the run's own list
+        known.mark_verified(pdir)
         restore.restore_list(HOST, applied)
         self.assertNotIn(applied, known.learned_files(os.path.dirname(pdir)))
 

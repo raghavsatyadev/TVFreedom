@@ -146,7 +146,7 @@ def cmd_restore(args):
     if ask("Type RESTORE to apply: ") != "RESTORE":
         print("Cancelled. Nothing was changed.")
         return
-    restore.restore_all(host, path) if kind == "backup" else restore.restore_list(host, path)
+    restore.restore_all(host, path, info["model"]) if kind == "backup" else restore.restore_list(host, path)
     if ask("Reboot and check the home screen? (y/N) ").lower() == "y":
         verify.reboot_and_check(host, info["serial"])
 

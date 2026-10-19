@@ -41,7 +41,18 @@ def diff_to_backup(host, bdir):
     return enable, reinstall
 
 
-def restore_all(host, bdir):
+def unlearn_since(model, bdir):
+    """Runs verified after this backup are undone by restoring it: stop learning them."""
+    since = os.path.getmtime(bdir)
+    for run_dir in glob.glob(os.path.join(known.model_dir(model), "ai-*", "")):
+        marker = os.path.join(run_dir, known.VERIFIED)
+        if os.path.exists(marker) and os.path.getmtime(marker) >= since:
+            known.mark_verified(run_dir, ok=False)
+
+
+def restore_all(host, bdir, model=None):
+    if model:
+        unlearn_since(model, bdir)
     enable, reinstall = diff_to_backup(host, bdir)
     adbio.use(host)
     for pkg in reinstall:
