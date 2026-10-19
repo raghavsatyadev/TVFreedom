@@ -1,0 +1,142 @@
+android	core
+android.auto_generated_rro_product__	core
+android.auto_generated_rro_vendor__	core
+android.autoinstalls.config.xiaomi.amelie	core
+com.amazon.amazonvideo.livingroom	your keep list
+com.android.backupconfirm	
+com.android.bluetooth	input/remote
+com.android.bluetooth.auto_generated_rro_product__	core
+com.android.bluetooth.auto_generated_rro_vendor__	core
+com.android.captiveportallogin	network
+com.android.certinstaller	core
+com.android.companiondevicemanager	
+com.android.cts.ctsshim	vendor HAL
+com.android.cts.priv.ctsshim	vendor HAL
+com.android.dreams.basic	
+com.android.dynsystem	core
+com.android.externalstorage	core
+com.android.hotspot2.osulogin	core
+com.android.htmlviewer	
+com.android.inputdevices	input/remote
+com.android.keychain	core
+com.android.localtransport	
+com.android.location.fused	core
+com.android.networkstack.inprocess	network
+com.android.networkstack.permissionconfig	network
+com.android.networkstack.tethering.inprocess	core
+com.android.networkstack.tethering.inprocess.rro	network
+com.android.networkstack.tethering.rro	network
+com.android.pacprocessor	
+com.android.printspooler	
+com.android.providers.calendar	core
+com.android.providers.contacts	core
+com.android.providers.contacts.auto_generated_rro_product__	core
+com.android.providers.downloads	core
+com.android.providers.media	core
+com.android.providers.media.module	core
+com.android.providers.settings	core
+com.android.providers.settings.auto_generated_rro_product__	core
+com.android.providers.settings.auto_generated_rro_vendor__	core
+com.android.providers.tv	core
+com.android.providers.userdictionary	core
+com.android.proxyhandler	
+com.android.se	core
+com.android.settings.intelligence	core
+com.android.sharedstoragebackup	
+com.android.shell	core
+com.android.soundpicker	
+com.android.statementservice	core
+com.android.systemui	core
+com.android.tv.settings	tv inputs
+com.android.tv.settings.google.resoverlay	core
+com.android.tv.settings.mediatek.resoverlay	core
+com.android.tv.settings.vendor.resoverlay	core
+com.android.vending	your keep list
+com.android.vpndialogs	network
+com.android.wallpaperbackup	
+com.android.wifi.resources	core
+com.apple.atve.androidtv.appletv	
+com.dolby.android.audio.service	
+com.epicchannel.epicon	
+com.google.android.apps.mediashell	cast
+com.google.android.apps.tv.dreamx	
+com.google.android.apps.tv.launcherx	launcher/setup
+com.google.android.ext.services	core
+com.google.android.ext.shared	
+com.google.android.feedback	
+com.google.android.gms	core
+com.google.android.gsf	core
+com.google.android.inputmethod.latin	input/remote (current keyboard)
+com.google.android.katniss	voice
+com.google.android.marvin.talkback	
+com.google.android.modulemetadata	core
+com.google.android.onetimeinitializer	
+com.google.android.overlay.modules.ext.services	core
+com.google.android.overlay.modules.modulemetadata.forframework	core
+com.google.android.overlay.modules.permissioncontroller	core
+com.google.android.overlay.modules.permissioncontroller.forframework	core
+com.google.android.packageinstaller	core
+com.google.android.partnersetup	core
+com.google.android.permissioncontroller	core
+com.google.android.play.games	
+com.google.android.sss.authbridge	
+com.google.android.syncadapters.calendar	your keep list
+com.google.android.tts	voice
+com.google.android.tungsten.setupwraith	launcher/setup
+com.google.android.tv.assistant	voice
+com.google.android.tv.frameworkpackagestubs	core
+com.google.android.tv.remote.service	input/remote
+com.google.android.videos	
+com.google.android.webview	core
+com.google.android.youtube.tv	your keep list
+com.google.android.youtube.tvmusic	
+com.graymatrix.did	
+com.htlabs.ottplay	
+com.mediatek.android.boot.appsplashscreen	vendor HAL
+com.mediatek.android.leanbacklauncher.partnercustomizer	launcher/setup
+com.mediatek.network	network
+com.mediatek.tv.service	vendor HAL
+com.mediatek.tvinput	input/remote
+com.mediatek.wwtv.setupwizard	launcher/setup
+com.mediatek.wwtv.webview	core
+com.mi.bluetooth	input/remote
+com.mitv.ABUpdateStatus	
+com.mitv.gallery	
+com.mitv.livetv	tv inputs
+com.mitv.livetv.ci_mediatek	tv inputs
+com.mitv.milinkservice	
+com.mitv.overseaservice	
+com.mitv.toolhouse	
+com.mitv.tvhome.atv	
+com.mitv.tvhome.michannel	
+com.mitv.tvhome.mitvplus	your keep list
+com.mitv.tvhome.oemtab	
+com.mitv.upgrader	OTA
+com.mitv.videoplayer	
+com.miui.tv.analytics	
+com.mstar.android.tv.disclaimercustomization	vendor HAL
+com.mxtech.videoplayer.television	
+com.netflix.ninja	your keep list
+com.shemaroo.shemarootv	
+com.sonyliv	
+com.xiaomi.android.tvsetup.partnercustomizer	launcher/setup
+com.xiaomi.gtv.settings	tv inputs
+com.xiaomi.mimusic2	
+com.xiaomi.mitv.manualhelp	
+com.xiaomi.mitv.mediaexplorer	
+com.xiaomi.mitv.scenemode	
+com.xiaomi.mitv.smartshare	
+com.xiaomi.mitv.tvmanager	
+com.xiaomi.mitv.updateservice	OTA
+com.xiaomi.statistic	
+com.xiaomi.tvqs.overseas	
+com.xiaomi.wfdsinkhelperservice	
+com.xiaomo.tv.milegal	
+com.xm.webcontent	
+fusion.android.tv.demo	
+in.startv.hotstar	your keep list
+mediatek.factorymenu.ui	
+mitv.service	tv inputs
+org.jellyfin.androidtv	your keep list
+org.videolan.vlc	
+tv.airtel.xstream.tvapp	
