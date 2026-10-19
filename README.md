@@ -75,3 +75,25 @@ Uninstalled VLC (org.videolan.vlc) and MX Player (com.mxtech.videoplayer.televis
 - Fixes: all-day holidays that ended yesterday (UTC vs IST) are skipped; the clock block is pulled back on screen when weather/events make it taller.
 - Favourites: Play Store added as the 8th tile (two full rows).
 
+
+## Second device (2026-10-19): Xiaomi Mi Box 4
+
+- 192.168.1.21:5555 (mDNS `adb-<serial>`): Xiaomi Mi Box 4 `MIBOX4` (device `oneday`), Android TV 9
+  (SDK 28), 1080p, 2 GB RAM, stock Android TV home (`com.google.android.tvlauncher`). 90 packages (4 user),
+  far leaner than the Mi TV: no Xiaomi TV+, Live TV, HDMI inputs, VLC/MX, Mi Music or TV Manager.
+- Every command needs `TV_HOST=192.168.1.21:5555` (the default is the Mi TV). Backup in `backup/MIBOX4/`.
+- Lists in `lists/mibox4/` (phases 1–5, same meaning as above). Changes from the Mi TV: Alphonso ad-tracking
+  EULA and the bug report sender are off too; the silent app installer
+  `android.autoinstalls.config.xioami.mibox3` stays on (user's choice); Play Movies was disabled from the
+  factory; the screensaver replaced is `com.google.android.backdrop`.
+- The same launcher APK works: missing favourites are skipped, Inputs shows "no inputs" (no HDMI on a box).
+  Install: `adb install -r`, then `pm grant` ACCESS_FINE_LOCATION and READ_CALENDAR. Disabling `tvlauncher`
+  was enough here; setupwraith's HOME activity doesn't resolve on Android 9, so it stays enabled.
+- Start the screensaver on demand on Android 9: `am start -n com.android.systemui/.Somnambulator`
+  (`service call dreams 1` needs WRITE_DREAM_STATE, which the shell lacks there).
+- Verified after reboot: boots to the new home; Netflix, Prime Video, JioHotstar, YouTube, Jellyfin, Plex and
+  Play Store open and Home returns from each; voice key starts an Assistant session; Chromecast, Mi cast and
+  the remote service run; ClockDream shows clock, date and weather (no calendar events: the holidays
+  calendar isn't synced on this box). RAM available after boot: 899 MB before, ~1110 MB after.
+- `tv.py` now uninstalls with `pm uninstall --user 0` (APK kept) and `restore` tries `install-existing` first.
+  `logs/actions.log` lines now include the host.

@@ -3,9 +3,11 @@
 
 python tv.py backup <name>     snapshot packages, props, settings, home, IME, memory, screenshot
 python tv.py apply <list>      run a list (lines: "disable <pkg>" or "uninstall <pkg>", # comments)
-python tv.py restore <list>    undo a list: enable disabled packages, open Play Store for uninstalled
+python tv.py restore <list>    undo a list: enable disabled packages, reinstall-existing uninstalled ones
 python tv.py mem               free/available RAM in MB
 python tv.py shot <file.png>   screenshot from the TV
+
+TV_HOST picks the TV (default: the Mi TV at 192.168.1.20:5555; Mi Box 4: 192.168.1.21:5555).
 """
 import datetime
 import os
@@ -89,7 +91,7 @@ def backup(name):
 
 def apply(path):
     for action, pkg in read_list(path):
-        out = sh(f"pm disable-user --user 0 {pkg}") if action == "disable" else adb("uninstall", pkg)
+        out = sh(f"pm disable-user --user 0 {pkg}") if action == "disable" else sh(f"pm uninstall --user 0 {pkg}")  # keeps the APK, restorable
         log(f"{action} {pkg}: {out}")
     # Android saves enabled/disabled state lazily; a reboot within seconds loses all of it.
     print("waiting 30 s so the TV saves the new package state before any reboot")
@@ -101,7 +103,10 @@ def restore(path):
         if action == "disable":
             log(f"enable {pkg}: {sh(f'pm enable {pkg}')}")
         else:
-            log(f"reinstall {pkg} from Play Store: market://details?id={pkg}")
+            out = sh(f"cmd package install-existing {pkg}")
+            if "installed for user" not in out:  # fully removed (TV1 phase 2): reinstall from Play Store
+                out += f" -> reinstall from Play Store: market://details?id={pkg}"
+            log(f"reinstall {pkg}: {out}")
 
 
 def shot(path):

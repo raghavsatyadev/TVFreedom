@@ -1,0 +1,4 @@
+# Mi Box 4 phase 5: info screensaver. Set first:
+#   settings put secure screensaver_components com.gathin.tvhome/.ClockDream
+# Undo: restore this list, then settings put secure screensaver_components com.google.android.backdrop/.Backdrop
+disable com.google.android.backdrop                 # Google Backdrop screensaver, replaced by ClockDream

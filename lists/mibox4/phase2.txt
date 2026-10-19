@@ -1,0 +1,5 @@
+# Mi Box 4 phase 2: unused streaming apps. Kept: Netflix, Prime Video, JioHotstar, YouTube, Jellyfin, Plex.
+# Google Play Movies (com.google.android.videos) was already disabled from the factory.
+# Undo: TV_HOST=192.168.1.21:5555 python tv.py restore lists/mibox4/phase2.txt (install-existing brings SonyLIV back)
+uninstall com.sonyliv                               # SonyLIV (pm uninstall --user 0, APK kept)
+disable com.google.android.youtube.tvmusic          # YouTube Music

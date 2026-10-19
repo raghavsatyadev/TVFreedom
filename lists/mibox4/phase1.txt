@@ -1,0 +1,11 @@
+# Mi Box 4 (MIBOX4 "oneday", Android TV 9). Run with TV_HOST=192.168.1.21:5555.
+# Phase 1: Xiaomi telemetry, auto-installs, promos, ad tracking, firmware updates. Undo: python tv.py restore lists/mibox4/phase1.txt
+disable com.miui.tv.analytics                       # Xiaomi telemetry
+# kept at the user's request: android.autoinstalls.config.xioami.mibox3 (silent app installs)
+disable com.xm.webcontent                           # Mi web content/promos
+disable com.mitv.tvhome.michannel                   # Mi Channel promo row
+disable tv.alphonso.alphonso_eula                   # Alphonso ad tracking (ACR) EULA
+disable com.google.android.feedback
+disable com.google.android.play.games
+disable com.google.android.tv.bugreportsender
+disable com.xiaomi.mitv.updateservice               # firmware updates (re-enable to update; com.mitv.download.service kept)

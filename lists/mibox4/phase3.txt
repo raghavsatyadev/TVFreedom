@@ -1,0 +1,4 @@
+# Mi Box 4 phase 3: PatchWall and the Xiaomi video player (the box's only USB player, off at the user's request).
+# Undo: TV_HOST=192.168.1.21:5555 python tv.py restore lists/mibox4/phase3.txt
+disable com.mitv.tvhome.atv                         # PatchWall
+disable com.mitv.videoplayer                        # Xiaomi video player (USB media)
