@@ -8,7 +8,7 @@ import re
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
-from . import adbio
+from . import adbio, mdns as mdns_py
 
 
 def local_ip():
@@ -23,8 +23,13 @@ def local_ip():
 
 
 def mdns():
-    """[(kind, ip:port, name)] from `adb mdns services`; kind is connect, tls or pairing."""
+    """[(kind, ip:port, name)] from `adb mdns services`; kind is connect, tls or pairing.
+
+    Termux's adb has no mDNS ("not supported"): then tvgo asks the network itself (tvgo_core/mdns.py).
+    """
     out = adbio.adb("mdns", "services", timeout=15)
+    if "not supported" in out or "unknown command" in out:
+        return mdns_py.browse()
     found = []
     for name, svc, addr in re.findall(r"^(\S+)\s+(_adb[\w-]*\._tcp)\.?\s+(\d+\.\d+\.\d+\.\d+:\d+)",
                                       out, re.M):

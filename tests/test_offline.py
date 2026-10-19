@@ -13,7 +13,7 @@ os.environ["ADB"] = f'"{PY}" "{HERE.replace(chr(92), "/")}/fake_adb.py"'
 sys.path.insert(0, REPO)
 
 import tv  # noqa: E402  (reads $ADB at import)
-from tvgo_core import adbio, agent, discover, guard, known, onboard, plan, restore, verify  # noqa: E402
+from tvgo_core import adbio, agent, discover, guard, known, mdns, onboard, plan, restore, verify  # noqa: E402
 
 HOST = "192.168.1.20:5555"
 
@@ -174,6 +174,24 @@ class Offline(unittest.TestCase):
                 tvgo.make_plan(args)  # setup offered again, nothing planned
         setup.assert_called_once()
         self.assertEqual(self.writes(), [])
+
+    def test_mdns_parser_reads_ptr_srv_a(self):
+        import socket
+        import struct
+
+        def name(n):
+            return b"".join(bytes([len(x)]) + x.encode() for x in n.split(".")) + b"\0"
+
+        def rr(n, rtype, rdata):
+            return name(n) + struct.pack(">HHIH", rtype, 1, 120, len(rdata)) + rdata
+        svc, inst, host = "_adb._tcp.local", "adb-TV1._adb._tcp.local", "tv1.local"
+        pkt = (struct.pack(">HHHHHH", 0, 0x8400, 0, 3, 0, 0) + rr(svc, mdns.PTR, name(inst))
+               + rr(inst, mdns.SRV, struct.pack(">HHH", 0, 0, 5555) + name(host))
+               + rr(host, mdns.A, socket.inet_aton("192.168.1.20")))
+        recs = mdns.parse(pkt)
+        self.assertIn((mdns.SRV, inst, (5555, host)), recs)
+        self.assertIn((mdns.A, host, "192.168.1.20"), recs)
+        self.assertEqual(mdns.parse(b"junk"), [])
 
     def test_new_brand_has_no_known_list(self):
         self.assertEqual(known.for_model("BRAVIA 4K VH2"), {})

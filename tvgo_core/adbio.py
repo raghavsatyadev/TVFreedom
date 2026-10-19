@@ -39,7 +39,8 @@ def connect(host, wait_s=90, wake=True):
             return True
         if "unauthorized" in st:
             if not told:
-                print(f"{host}: accept the 'Allow debugging?' prompt on the TV (tick 'Always allow').")
+                print(f"{host}: turn the TV on and accept 'Allow debugging?' on its screen"
+                      " (tick 'Always allow'). The prompt only shows while the screen is on.")
                 told = True
         else:  # offline or stale after a reboot: adb won't reconnect until the old transport is dropped
             adb("disconnect", host, timeout=10)
