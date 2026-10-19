@@ -6,7 +6,11 @@ plugins {
 def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
 if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
-def local = { String key -> (localProps.getProperty(key, '') ?: '').replace('"', '\\"') }
+// resValue strings go through aapt, so escape what it treats specially (backslash, quotes, a leading @ or ?).
+def local = { String key ->
+    def v = (localProps.getProperty(key, '') ?: '').replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'")
+    v.startsWith('@') || v.startsWith('?') ? '\\' + v : v
+}
 
 android {
     namespace 'com.gathin.tvhome'
