@@ -105,7 +105,7 @@ def check_agent(spec, test=True):
     out = agent.run(cmd, 'Reply with only the JSON array ["ok"] and nothing else.', timeout=300)
     return _line("ok" in out.lower(), "agent answers" if "ok" in out.lower() else
                  f"agent gave no answer: {out.strip()[:120] or 'empty'}",
-                 "log in to it (run it once by hand) or pick another agent")
+                 "run it once by hand to see why (not logged in, usage limit, no model), or pick another agent")
 
 
 def connect_tv(ask, subnet=None):

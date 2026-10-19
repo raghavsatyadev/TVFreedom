@@ -125,16 +125,45 @@ tvgo existed, so their first tvgo backup is already debloated. To undo those ear
 
 ## Phone setup (Termux)
 
+Install Termux from F-Droid (the Play Store build is outdated). Then, once:
+
 ```bash
-pkg install python android-tools git nodejs
-git clone https://github.com/<owner>/TV_Debloater && cd TV_Debloater
+pkg install python android-tools git gh nodejs
+gh auth login                        # the repo is private
+gh repo clone <owner>/TV_Debloater && cd TV_Debloater
 npm i -g @anthropic-ai/claude-code   # or codex / gemini, or: pkg install ollama && ollama pull qwen3:4b
-python tvgo.py go
+python tvgo.py setup
 ```
+
+`python tvgo.py setup` is the onboarding. It also runs by itself the first time you run `go` or `plan`.
+
+1. **Phone:** checks Python, adb and the Wi-Fi address. For each missing piece it prints the install
+   command for Termux, LinXR, macOS or other hosts.
+2. **Agent:** asks which agent to use, checks it's on PATH and sends it one test question. A missing
+   login or a usage limit shows up here, not halfway through a plan.
+3. **TV:** prints the settings to turn on, per brand family (Google TV, older Android TV, Sony, Shield,
+   Philips, Xiaomi/TCL, Fire TV), then looks for the TV. If none is found, it asks for the ip:port and
+   the pairing code shown on the TV and pairs.
+
+It saves the agent and the TV (address and serial) to `~/.tvgo.json`. `go`, `plan` and `restore` then
+use that TV directly when it still answers with the same serial. Otherwise they run discovery.
 
 ## Tests
 
-`python -m unittest tests.test_offline` runs everything offline against a fake adb (the Mi TV's
+`python -m unittest tests.test_offline` runs everything offline. It uses a fake adb (the Mi TV's
 pre-debloat snapshot in `data/`) and a careless fake agent that says "remove" to everything. It covers:
-discover, guard and strict parsing, plan, apply, reboot and verify, restore-all and restore-list. No TV
-needed.
+discover, the guard and strict parsing, plan, apply, reboot and verify, restore-all and restore-list,
+learning only verified runs, and the review fixes. No TV needed.
+
+**Emulator run (2026-10-19), real adb and Claude:** used a Google TV Android 14 image
+(`system-images;android-34;google-tv;x86`, AVD `tvgo_GoogleTV_34`).
+
+1. `setup` passed all checks.
+2. `go` planned 5 disables: Play Games, YouTube Music, print spooler, the two Google screensavers.
+   The guard kept launcherx and tvlauncher even though earlier lists had disabled them.
+3. It applied the 5, rebooted, and the home screen came back OK.
+4. Restoring phase 2 alone brought YouTube Music back.
+5. Restoring everything back to the backup re-enabled the other 4. After a reboot the home screen was OK
+   and the emulator matched its starting state.
+
+Not tested on the emulator: discovery (the emulator sits on localhost) and the pairing screen.
