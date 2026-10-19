@@ -1,0 +1,474 @@
+{
+ "already_off": [],
+ "conflicts": [
+  "android.autoinstalls.config.xiaomi.amelie",
+  "com.google.android.apps.tv.launcherx",
+  "com.google.android.tungsten.setupwraith",
+  "com.mitv.upgrader",
+  "com.xiaomi.mitv.updateservice"
+ ],
+ "kept": {
+  "android": "core",
+  "android.auto_generated_rro_product__": "core",
+  "android.auto_generated_rro_vendor__": "core",
+  "android.autoinstalls.config.xiaomi.amelie": "core",
+  "com.amazon.amazonvideo.livingroom": "your keep list",
+  "com.android.bluetooth": "input/remote",
+  "com.android.bluetooth.auto_generated_rro_product__": "core",
+  "com.android.bluetooth.auto_generated_rro_vendor__": "core",
+  "com.android.captiveportallogin": "network",
+  "com.android.certinstaller": "core",
+  "com.android.cts.ctsshim": "vendor HAL",
+  "com.android.cts.priv.ctsshim": "vendor HAL",
+  "com.android.dynsystem": "core",
+  "com.android.externalstorage": "core",
+  "com.android.hotspot2.osulogin": "core",
+  "com.android.inputdevices": "input/remote",
+  "com.android.keychain": "core",
+  "com.android.location.fused": "core",
+  "com.android.networkstack.inprocess": "network",
+  "com.android.networkstack.permissionconfig": "network",
+  "com.android.networkstack.tethering.inprocess": "core",
+  "com.android.networkstack.tethering.inprocess.rro": "network",
+  "com.android.networkstack.tethering.rro": "network",
+  "com.android.providers.calendar": "core",
+  "com.android.providers.contacts": "core",
+  "com.android.providers.contacts.auto_generated_rro_product__": "core",
+  "com.android.providers.downloads": "core",
+  "com.android.providers.media": "core",
+  "com.android.providers.media.module": "core",
+  "com.android.providers.settings": "core",
+  "com.android.providers.settings.auto_generated_rro_product__": "core",
+  "com.android.providers.settings.auto_generated_rro_vendor__": "core",
+  "com.android.providers.tv": "core",
+  "com.android.providers.userdictionary": "core",
+  "com.android.se": "core",
+  "com.android.settings.intelligence": "core",
+  "com.android.shell": "core",
+  "com.android.statementservice": "core",
+  "com.android.systemui": "core",
+  "com.android.tv.settings": "tv inputs",
+  "com.android.tv.settings.google.resoverlay": "core",
+  "com.android.tv.settings.mediatek.resoverlay": "core",
+  "com.android.tv.settings.vendor.resoverlay": "core",
+  "com.android.vending": "your keep list",
+  "com.android.vpndialogs": "network",
+  "com.android.wifi.resources": "core",
+  "com.google.android.apps.mediashell": "cast",
+  "com.google.android.apps.tv.launcherx": "launcher/setup",
+  "com.google.android.ext.services": "core",
+  "com.google.android.gms": "core",
+  "com.google.android.gsf": "core",
+  "com.google.android.inputmethod.latin": "input/remote (current keyboard)",
+  "com.google.android.katniss": "voice",
+  "com.google.android.modulemetadata": "core",
+  "com.google.android.overlay.modules.ext.services": "core",
+  "com.google.android.overlay.modules.modulemetadata.forframework": "core",
+  "com.google.android.overlay.modules.permissioncontroller": "core",
+  "com.google.android.overlay.modules.permissioncontroller.forframework": "core",
+  "com.google.android.packageinstaller": "core",
+  "com.google.android.partnersetup": "core",
+  "com.google.android.permissioncontroller": "core",
+  "com.google.android.syncadapters.calendar": "your keep list",
+  "com.google.android.tts": "voice",
+  "com.google.android.tungsten.setupwraith": "launcher/setup",
+  "com.google.android.tv.assistant": "voice",
+  "com.google.android.tv.frameworkpackagestubs": "core",
+  "com.google.android.tv.remote.service": "input/remote",
+  "com.google.android.webview": "core",
+  "com.google.android.youtube.tv": "your keep list",
+  "com.mediatek.android.boot.appsplashscreen": "vendor HAL",
+  "com.mediatek.android.leanbacklauncher.partnercustomizer": "launcher/setup",
+  "com.mediatek.network": "network",
+  "com.mediatek.tv.service": "vendor HAL",
+  "com.mediatek.tvinput": "input/remote",
+  "com.mediatek.wwtv.setupwizard": "launcher/setup",
+  "com.mediatek.wwtv.webview": "core",
+  "com.mi.bluetooth": "input/remote",
+  "com.mitv.livetv": "tv inputs",
+  "com.mitv.livetv.ci_mediatek": "tv inputs",
+  "com.mitv.tvhome.mitvplus": "your keep list",
+  "com.mitv.upgrader": "OTA",
+  "com.mstar.android.tv.disclaimercustomization": "vendor HAL",
+  "com.netflix.ninja": "your keep list",
+  "com.xiaomi.android.tvsetup.partnercustomizer": "launcher/setup",
+  "com.xiaomi.gtv.settings": "tv inputs",
+  "com.xiaomi.mitv.updateservice": "OTA",
+  "in.startv.hotstar": "your keep list",
+  "mitv.service": "tv inputs",
+  "org.jellyfin.androidtv": "your keep list"
+ },
+ "remove": [
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.backupconfirm",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.companiondevicemanager",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.dreams.basic",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.htmlviewer",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.localtransport",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.pacprocessor",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.printspooler",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.proxyhandler",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.sharedstoragebackup",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.soundpicker",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.android.wallpaperbackup",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.apple.atve.androidtv.appletv",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.dolby.android.audio.service",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.epicchannel.epicon",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.apps.tv.dreamx",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.ext.shared",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.feedback",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.marvin.talkback",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.onetimeinitializer",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.play.games",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.sss.authbridge",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.videos",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.google.android.youtube.tvmusic",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.graymatrix.did",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.htlabs.ottplay",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.ABUpdateStatus",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.gallery",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.milinkservice",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.overseaservice",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.toolhouse",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.tvhome.atv",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.tvhome.michannel",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.tvhome.oemtab",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mitv.videoplayer",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.miui.tv.analytics",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.mxtech.videoplayer.television",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.shemaroo.shemarootv",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.sonyliv",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mimusic2",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mitv.manualhelp",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mitv.mediaexplorer",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mitv.scenemode",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mitv.smartshare",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.mitv.tvmanager",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.statistic",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.tvqs.overseas",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomi.wfdsinkhelperservice",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xiaomo.tv.milegal",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "com.xm.webcontent",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "fusion.android.tv.demo",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "mediatek.factorymenu.ui",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "org.videolan.vlc",
+   "reason": "fake agent",
+   "source": "agent"
+  },
+  {
+   "action": "disable",
+   "phase": 2,
+   "pkg": "tv.airtel.xstream.tvapp",
+   "reason": "fake agent",
+   "source": "agent"
+  }
+ ]
+}

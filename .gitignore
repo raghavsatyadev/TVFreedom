@@ -5,3 +5,7 @@ launcher/app/build/
 vendor/
 backup/
 logs/
+tvgo-android/.gradle/
+tvgo-android/.kotlin/
+tvgo-android/build/
+tvgo-android/app/build/
