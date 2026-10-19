@@ -85,8 +85,8 @@ def _pick_tv(args):
 
 
 def make_plan(args):
-    if not os.path.exists(onboard.CONFIG):
-        print("First run: setting up.\n")
+    if not onboard.load().get("ready"):
+        print("Setup isn't finished yet: running it now.\n")
         if not onboard.run(ask, args.agent, args.subnet, args.host):
             sys.exit("Setup isn't finished. Nothing was changed.")
     info = pick_tv(args)

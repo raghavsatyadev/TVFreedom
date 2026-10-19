@@ -162,6 +162,19 @@ class Offline(unittest.TestCase):
             self.assertTrue(adbio.connect(HOST, wake=False))
         self.assertIn(("disconnect", HOST), calls)
 
+    def test_unfinished_setup_runs_again(self):
+        import argparse
+        import tvgo
+        args = argparse.Namespace(host=HOST, subnet=None, agent=self.fake_agent, uninstall_user_apps=False)
+        with mock.patch.object(onboard, "check_host", return_value=True),                 mock.patch.object(onboard, "check_agent", return_value=False):
+            self.assertFalse(onboard.run(tvgo.ask, self.fake_agent, host=HOST))
+        self.assertIs(onboard.load()["ready"], False)
+        with mock.patch.object(onboard, "run", return_value=False) as setup:
+            with self.assertRaises(SystemExit):
+                tvgo.make_plan(args)  # setup offered again, nothing planned
+        setup.assert_called_once()
+        self.assertEqual(self.writes(), [])
+
     def test_new_brand_has_no_known_list(self):
         self.assertEqual(known.for_model("BRAVIA 4K VH2"), {})
         self.assertTrue(known.model_dir("BRAVIA 4K VH2").endswith(os.path.join("lists", "bravia-4k-vh2")))

@@ -166,7 +166,7 @@ def run(ask, spec=None, subnet=None, host=None):
         print(f"TV: {info['brand']} {info['model']}, Android {info['android']} at {info['host']}")
         cfg.update(tv=info["host"], serial=info["serial"])
     ready &= bool(info)
-    cfg["agent"] = spec
+    cfg.update(agent=spec, ready=bool(ready))  # go/plan rerun setup until this is true
     save(cfg)
     print(f"\nSaved to {CONFIG}." + (" Ready: python tvgo.py go" if ready else
                                      " Not ready yet: fix the [!!] lines and run python tvgo.py setup again."))
