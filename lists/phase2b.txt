@@ -1,0 +1,4 @@
+# Phase 2b (2026-10-19): local video players, removed at the user's request.
+# Undo: python tv.py restore lists/phase2b.txt (prints Play Store links to reinstall)
+uninstall org.videolan.vlc                          # VLC
+uninstall com.mxtech.videoplayer.television         # MX Player (TV)

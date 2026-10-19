@@ -1,0 +1,14 @@
+# Phase 1: Xiaomi telemetry, auto-installs, promo services, firmware updates. Undo: python tv.py restore lists/phase1.txt
+disable com.miui.tv.analytics                       # Xiaomi telemetry
+disable com.xiaomi.statistic                        # Xiaomi telemetry
+disable android.autoinstalls.config.xiaomi.amelie   # silent app installs
+disable com.xm.webcontent                           # Mi web content/promos
+disable com.mitv.tvhome.michannel                   # Mi Channel promo row
+disable com.google.android.feedback
+disable com.google.android.play.games
+disable fusion.android.tv.demo                      # store demo mode
+disable com.xiaomi.mimusic2
+disable com.xiaomi.mitv.tvmanager                   # "TV Manager" cleaner
+disable com.xiaomi.mitv.manualhelp
+disable com.xiaomi.mitv.updateservice               # firmware updates (re-enable to update)
+disable com.mitv.upgrader                           # firmware updates (re-enable to update)

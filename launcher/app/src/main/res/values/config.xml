@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher configuration (TV_Debloater, Xiaomi Mi TV MiTV-MOOR0). Based on Gathin23/tv-vibehack (MIT).
+  Package names: python tv.py is the helper; on the TV `pm list packages`.
+-->
+<resources>
+
+    <!-- Favourites, shown first as a grid of large tiles in this order. Missing apps are skipped. -->
+    <string-array name="dock_apps">
+        <item>com.netflix.ninja</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>in.startv.hotstar</item>
+        <item>com.mitv.tvhome.mitvplus</item>
+        <item>com.google.android.youtube.tv</item>
+        <item>org.jellyfin.androidtv</item>
+        <item>com.plexapp.android</item>
+        <item>com.android.vending</item>
+    </string-array>
+
+    <!-- Apps never shown as tiles (Live TV is in the Inputs menu). -->
+    <string-array name="hidden_apps">
+        <item>com.mitv.livetv</item>
+    </string-array>
+
+    <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
+    <string name="live_tv_package" translatable="false">com.mitv.livetv</string>
+
+    <!-- Tiles per row. The favourites (dock_apps) fill as many full rows as they need; other apps start on the next row. -->
+    <integer name="columns">4</integer>
+
+    <!-- Screensaver weather (Open-Meteo, no key). Leave latitude empty to hide the weather line. -->
+    <string name="weather_place" translatable="false"></string>
+    <string name="weather_latitude" translatable="false"></string>
+    <string name="weather_longitude" translatable="false"></string>
+
+    <!-- Screensaver: calendars (by display name, as synced on the TV) whose next events are shown. -->
+    <string-array name="dream_calendars">
+    </string-array>
+</resources>

@@ -1,0 +1,11 @@
+# Phase 2: streaming apps you don't use. Kept: Netflix, Prime Video, JioHotstar, Xiaomi TV+, YouTube, Jellyfin (+ Plex to install), VLC, MX Player.
+# Undo: python tv.py restore lists/phase2.txt (re-enables YouTube Music; uninstalled apps come back from Play Store)
+uninstall com.apple.atve.androidtv.appletv          # Apple TV
+uninstall com.epicchannel.epicon                    # Epic ON
+uninstall com.graymatrix.did                        # ZEE5
+uninstall com.htlabs.ottplay                        # OTTplay
+uninstall com.shemaroo.shemarootv                   # ShemarooMe
+uninstall com.sonyliv                               # SonyLIV
+uninstall tv.airtel.xstream.tvapp                   # Airtel Xstream
+uninstall com.google.android.videos                 # Google TV / Play Movies
+disable com.google.android.youtube.tvmusic          # YouTube Music

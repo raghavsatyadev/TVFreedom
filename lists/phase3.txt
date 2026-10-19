@@ -1,0 +1,8 @@
+# Phase 3: PatchWall and Xiaomi extras. Undo: python tv.py restore lists/phase3.txt
+# If Xiaomi TV+ breaks, re-enable the first two (TV+ may depend on PatchWall).
+disable com.mitv.tvhome.atv                         # PatchWall (~81 MB)
+disable com.mitv.tvhome.oemtab                      # "Mi Home" tab on the Google TV home
+disable com.xiaomi.mitv.scenemode                   # scene modes
+disable com.mitv.gallery                            # USB photos (VLC/MX cover USB media)
+disable com.xiaomi.mitv.mediaexplorer               # USB file browser
+disable com.mitv.videoplayer                        # Xiaomi video player

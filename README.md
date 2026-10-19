@@ -1,0 +1,77 @@
+# TV_Debloater
+
+Debloat the living-room Android TV over adb (inspired by the "hacked my TV with Claude Code" bookmark).
+
+## Devices (2026-10-18 LAN scan)
+
+- 192.168.1.20:5555 (mDNS `adb-<serial>`, MAC <mac>): **the TV**. Xiaomi Mi TV
+  `MiTV-MOOR0` (device `venom`), Android TV 11 (SDK 30), 1080p, ~1.8 GB RAM (54 MB free at idle), 11 GB /data.
+  Authorized for this PC on 2026-10-18.
+- 192.168.1.22 (mDNS `adb-<serial>`): Wireless debugging (TLS, port changes); needs pairing.
+
+```bash
+adb connect 192.168.1.20:5555
+```
+
+## Package snapshot (2026-10-18)
+
+`data/packages-*.txt`: 142 packages total, 130 system, 12 user, none disabled. Take a new snapshot
+before any change so it can be undone (`pm install-existing <pkg>` restores a `pm uninstall --user 0`).
+
+## Done (2026-10-18)
+
+Tool: `python tv.py backup|apply|restore|mem|shot` (see its docstring). Backups in `backup/`,
+action log in `logs/actions.log`.
+
+- **Phase 1** (`lists/phase1.txt`): 13 packages disabled (Xiaomi telemetry, auto-installs, promo
+  services, firmware updates). Gotcha: Android saves the disabled state lazily; rebooting within
+  seconds of `pm disable-user` silently undid all of it. `tv.py apply` now waits 30 s.
+- **Phase 2** (`lists/phase2.txt`): 8 unused streaming apps uninstalled, YouTube Music disabled,
+  Plex installed from Play Store.
+- Verified after reboot: home loads; Netflix, Prime Video, JioHotstar, Xiaomi TV+ (plays live),
+  YouTube, Jellyfin and Plex open; Chromecast (`mediashell`), Mi cast and voice (`katniss`) running.
+- RAM available after a fresh boot: ~883 MB before, ~900–960 MB after (varies run to run).
+
+Undo a phase: `python tv.py restore lists/phase1.txt` (uninstalled apps: reinstall from Play Store).
+Firmware update: `pm enable com.xiaomi.mitv.updateservice` and `pm enable com.mitv.upgrader`.
+Other gotchas: the TV drops adb in standby (wake with `input keyevent KEYCODE_WAKEUP`); the vendor
+`screencap` prints debug text before the PNG (`tv.py shot` strips it).
+- **Phase 3** (`lists/phase3.txt`): PatchWall (`com.mitv.tvhome.atv`), Mi Home tab provider, scene
+  modes, Xiaomi gallery, media explorer and video player disabled (20 disabled in total). Verified
+  after reboot: Xiaomi TV+ still plays live without PatchWall; all kept apps and Live TV open;
+  Chromecast, Mi cast and voice running. The "Mi Home" tab and Google TV's sponsored banner
+  ("Presented by ...") still show: both come from the Google TV launcher, replaced in phase 4.
+- RAM available after a fresh boot after phase 3: ~880–900 MB (baseline ~883 MB). Readings swing
+  ±60 MB between boots, so phases 1–3 gave no clear RAM gain yet; the launcher swap is the big one.
+- `tv.py` now reconnects and wakes the TV before every command (it drops adb in standby).
+- **Phase 4** (`lists/phase4.txt`, `launcher/`): new home screen `com.gathin.tvhome`, based on
+  Gathin23/tv-vibehack's launcher (MIT, original kept in `vendor/`). Changes: favourites grid with
+  full-size tiles (Netflix, Prime Video, JioHotstar, Xiaomi TV+ / YouTube, Jellyfin, Plex in a 4 + 3
+  grid, padded with empty slots so other apps start on a new row; Down from TV+ goes to Plex), Live TV
+  `com.mitv.livetv` in the Inputs menu. Build: `cd launcher && gradlew.bat assembleDebug` (JDK 21 works,
+  `local.properties` = `sdk.dir=<path to Android SDK>`), then `adb install -r
+  app/build/outputs/apk/debug/app-debug.apk` and
+  `adb shell pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION` (Wi-Fi name).
+  Disabled: Google TV launcher `launcherx` and the Google TV setup app `setupwraith`.
+  Gotcha: with `launcherx` off, Home went to setupwraith's invisible `RecoveryActivity` (HOME
+  priority 1 beats third-party launchers at 0; `set-home-activity` and the HOME role didn't help, and
+  the shell may not disable a single component of it), so the whole setup app is disabled. Re-enable
+  `setupwraith` (and `launcherx`) before any re-setup; a factory reset re-enables everything anyway.
+  Verified after reboot: boots to the new home; all 7 favourites open and Home returns to the new
+  home from each; Inputs lists HDMI 1–3, AV, Live TV; Chromecast, Mi cast and the Assistant service
+  run, and an injected voice key starts an Assistant session (no audio from a fake key, so the real
+  remote mic still needs a manual check). RAM available after boot ~940–960 MB (baseline ~883 MB).
+
+## Done (2026-10-19): phase 2b
+
+Uninstalled VLC (org.videolan.vlc) and MX Player (com.mxtech.videoplayer.television) with `lists/phase2b.txt`. Home screen checked afterwards (`logs/home-2026-10-19.png`). No app now plays USB media files; undo with `python tv.py restore lists/phase2b.txt` or re-enable com.mitv.videoplayer.
+
+
+## Done (2026-10-19): phase 5
+
+- Info screensaver `com.gathin.tvhome/.ClockDream`: clock, date, Your City weather (Open-Meteo), next 3 events from "Holidays in Your Country". Selected with `settings put secure screensaver_components com.gathin.tvhome/.ClockDream`.
+- Google screensaver `com.google.android.apps.tv.dreamx` disabled (`lists/phase5.txt`); verified after reboot (`logs/p5-after-reboot.png`). Available RAM after boot: 914 MB.
+- Start the screensaver on demand: `adb shell service call dreams 1` (IDreamManager.dream). `tv.py shot` sends WAKEUP first, which ends the dream; capture with `adb exec-out screencap -p` instead.
+- Fixes: all-day holidays that ended yesterday (UTC vs IST) are skipped; the clock block is pulled back on screen when weather/events make it taller.
+- Favourites: Play Store added as the 8th tile (two full rows).
+

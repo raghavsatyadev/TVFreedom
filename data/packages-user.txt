@@ -1,0 +1,12 @@
+com.apple.atve.androidtv.appletv
+com.epicchannel.epicon
+com.google.android.videos
+com.graymatrix.did
+com.htlabs.ottplay
+com.mxtech.videoplayer.television
+com.shemaroo.shemarootv
+com.sonyliv
+in.startv.hotstar
+org.jellyfin.androidtv
+org.videolan.vlc
+tv.airtel.xstream.tvapp

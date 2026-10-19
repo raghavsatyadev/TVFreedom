@@ -1,0 +1,5 @@
+# Phase 5: info screensaver. com.gathin.tvhome/.ClockDream is set with
+#   settings put secure screensaver_components com.gathin.tvhome/.ClockDream
+# Undo: python tv.py restore lists/phase5.txt, then
+#   settings put secure screensaver_components com.google.android.apps.tv.dreamx/.service.Backdrop
+disable com.google.android.apps.tv.dreamx           # Google ambient screensaver (~88 MB), replaced by ClockDream

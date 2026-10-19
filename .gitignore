@@ -1,0 +1,7 @@
+local.properties
+launcher/.gradle/
+launcher/build/
+launcher/app/build/
+vendor/
+backup/
+logs/
