@@ -1,9 +1,9 @@
 package com.gathin.tvhome;
 
-import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -12,8 +12,6 @@ import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,14 +27,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * App tiles. The favourites (fixed order) come first and fill whole rows, padded with empty spacer slots
  * (null entries) so the other apps, alphabetical, start on a new row. Those favourite rows are the "dock".
+ * TV apps come from the Leanback launcher list; installed apps that only have a phone launcher entry are
+ * listed too (icon tiles), so sideloaded apps can be opened.
  */
 public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
@@ -45,6 +47,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for D-pad Up/Down on a tile. Return true when handled. */
         boolean onTileVerticalKey(int position, int keyCode);
+
+        /** Long press OK (or Menu) on a tile: show its menu. */
+        void onTileMenu(int position, View card);
     }
 
     static final class Entry {
@@ -53,14 +58,17 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
+        /** Opened with the Leanback launcher category; false for phone-only apps. */
+        final boolean leanback;
         int ambient;
 
-        Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
+        Entry(String label, ComponentName component, Drawable banner, Drawable icon, boolean leanback) {
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
+            this.leanback = leanback;
         }
     }
 
@@ -71,17 +79,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private final int columns;
     /** Favourite slots including spacers: a multiple of columns. Set by reload(). */
     private int dockSize;
-    /** Dock order (res/values/config.xml, dock_apps). */
-    private final List<String> favourites;
+    /** Dock order, changed from the tile menu (starts from res/values/config.xml, dock_apps). */
+    private final Favourites favourites;
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final List<Entry> items = new ArrayList<>();
+    private final List<String> installedFavourites = new ArrayList<>();
 
     AppAdapter(Context ctx, TileListener listener, int columns) {
         this.ctx = ctx;
         this.listener = listener;
         this.columns = columns;
-        this.favourites = Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps));
+        this.favourites = new Favourites(ctx);
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
@@ -90,19 +99,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     void reload() {
         PackageManager pm = ctx.getPackageManager();
-        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
-        List<Entry> fresh = new ArrayList<>();
-        for (ResolveInfo ri : found) {
-            if (ri.activityInfo == null) continue;
-            String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
-            Drawable banner = ri.activityInfo.loadBanner(pm);
-            if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
-            Drawable icon = ri.loadIcon(pm);
-            String label = String.valueOf(ri.loadLabel(pm));
-            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon));
-        }
+        Map<String, Entry> byPkg = new LinkedHashMap<>();
+        collect(pm, Intent.CATEGORY_LEANBACK_LAUNCHER, byPkg);
+        collect(pm, Intent.CATEGORY_LAUNCHER, byPkg);
+        List<Entry> fresh = new ArrayList<>(byPkg.values());
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
             if (fa >= 0 || fb >= 0) {
@@ -114,12 +114,47 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         });
         int favCount = 0;
         while (favCount < fresh.size() && favourites.contains(fresh.get(favCount).pkg)) favCount++;
+        installedFavourites.clear();
+        for (Entry e : fresh.subList(0, favCount)) installedFavourites.add(e.pkg);
         dockSize = (favCount + columns - 1) / columns * columns;
         items.clear();
         items.addAll(fresh.subList(0, favCount));
         while (items.size() < dockSize) items.add(null);
         items.addAll(fresh.subList(favCount, fresh.size()));
         notifyDataSetChanged();
+    }
+
+    /**
+     * One tile per app. Leanback entries come first and win; phone launcher entries are added only for
+     * installed apps (not system apps, whose phone screens are usually useless on a TV).
+     */
+    private void collect(PackageManager pm, String category, Map<String, Entry> byPkg) {
+        boolean leanback = Intent.CATEGORY_LEANBACK_LAUNCHER.equals(category);
+        for (ResolveInfo ri : pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
+            if (ri.activityInfo == null) continue;
+            String pkg = ri.activityInfo.packageName;
+            if (byPkg.containsKey(pkg) || pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
+            if (!leanback && (ri.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) continue;
+            Drawable banner = ri.activityInfo.loadBanner(pm);
+            if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
+            Drawable icon = ri.loadIcon(pm);
+            String label = String.valueOf(ri.loadLabel(pm));
+            byPkg.put(pkg, new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon, leanback));
+        }
+    }
+
+    Favourites favourites() {
+        return favourites;
+    }
+
+    /** Installed favourites in dock order. */
+    List<String> installedFavourites() {
+        return installedFavourites;
+    }
+
+    /** The app at a position, or null for a spacer. */
+    Entry entryAt(int position) {
+        return position >= 0 && position < items.size() ? items.get(position) : null;
     }
 
     /** Favourite slots including spacers (a multiple of the column count). */
@@ -180,19 +215,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
-            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try {
-                ctx.startActivity(i);
-            } catch (ActivityNotFoundException ignored) {
-            }
+            int pos = h.getBindingAdapterPosition();
+            if (listener != null && pos != RecyclerView.NO_POSITION) listener.onTileMenu(pos, v);
             return true;
         });
     }
 
     private void launch(Entry e) {
         Intent i = new Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                .addCategory(e.leanback ? Intent.CATEGORY_LEANBACK_LAUNCHER : Intent.CATEGORY_LAUNCHER)
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         try {
@@ -217,6 +248,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     String keyAt(int position) {
         return position >= 0 && position < items.size() && items.get(position) != null
                 ? items.get(position).component.flattenToShortString() : null;
+    }
+
+    /** Key of the tile for a package, or null when it has none. */
+    String keyOfPackage(String pkg) {
+        for (Entry e : items) if (e != null && e.pkg.equals(pkg)) return e.component.flattenToShortString();
+        return null;
     }
 
     /** Position of the app with this key, or -1 when it is gone. */
@@ -309,6 +346,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_MENU) return view.performLongClick();
                 if (keyCode != KeyEvent.KEYCODE_DPAD_UP && keyCode != KeyEvent.KEYCODE_DPAD_DOWN) return false;
                 int pos = getBindingAdapterPosition();
                 return listener != null && pos != RecyclerView.NO_POSITION && listener.onTileVerticalKey(pos, keyCode);

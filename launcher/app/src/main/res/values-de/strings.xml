@@ -19,4 +19,9 @@
     <string name="not_available">Auf diesem TV nicht verfügbar</string>
     <string name="cant_open">%1$s lässt sich nicht öffnen</string>
     <string name="date_format">EEEE, d. MMMM</string>
+    <string name="add_favourite">Zu Favoriten hinzufügen</string>
+    <string name="remove_favourite">Aus Favoriten entfernen</string>
+    <string name="move_left">Nach links</string>
+    <string name="move_right">Nach rechts</string>
+    <string name="app_info">App-Info</string>
 </resources>

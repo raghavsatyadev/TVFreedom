@@ -97,3 +97,14 @@ Uninstalled VLC (org.videolan.vlc) and MX Player (com.mxtech.videoplayer.televis
   calendar isn't synced on this box). RAM available after boot: 899 MB before, ~1110 MB after.
 - `tv.py` now uninstalls with `pm uninstall --user 0` (APK kept) and `restore` tries `install-existing` first.
   `logs/actions.log` lines now include the host.
+
+## Done (2026-10-19): favourites from the remote, phone apps listed (both TVs)
+
+- Long press OK (or the Menu key) on a tile: Move left / Move right (favourites), Remove from favourites or
+  Add to favourites, App info. Saved on the TV (`shared_prefs/home.xml`); `config.xml` `dock_apps` is only
+  the starting order. Verified on the Mi Box (move, remove, re-add, focus follows the app).
+- Apps you install that have only a phone launcher entry (sideloaded APKs) now get an icon tile and open
+  normally. System apps' phone screens stay hidden. Neither TV has such an app yet, so this path is untested
+  on a device.
+- Code: `Favourites.java` (saved list), `TileMenu.java`, `GlassMenu.java` (shared glass dropdown), Inputs
+  menu moved to `InputsPopup.java` (MainActivity was over 500 lines).
