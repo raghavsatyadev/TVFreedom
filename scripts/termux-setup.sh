@@ -33,9 +33,11 @@ DIR="$HOME/.local/share/claude-code"
 mkdir -p "$DIR" && cd "$DIR"
 npm pack -s "@anthropic-ai/claude-code-linux-arm64@$VER" > /dev/null
 tar xzf "anthropic-ai-claude-code-linux-arm64-$VER.tgz" && rm -f ./*.tgz
+# Call glibc's loader directly: grun passes $@ unquoted, which drops empty args like --tools "".
 cat > "$PREFIX/bin/claude" <<EOF
 #!$PREFIX/bin/sh
-exec grun "$DIR/package/claude" "\$@"
+unset LD_PRELOAD
+exec "$PREFIX/glibc/lib/ld-linux-aarch64.so.1" "$DIR/package/claude" "\$@"
 EOF
 chmod 755 "$PREFIX/bin/claude"
 claude --version

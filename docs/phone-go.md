@@ -142,8 +142,9 @@ python tvgo.py setup
    base libraries that ship with the app.
 3. Installs python, android-tools, git and nodejs.
 4. Installs Claude Code. Termux's Node reports the platform as `android`, so `npm i -g` gets no native
-   binary. The script fetches the `linux-arm64` build instead and runs it through `glibc-runner`
-   (`grun`), with a `claude` wrapper in `$PREFIX/bin`.
+   binary. The script fetches the `linux-arm64` build instead. A `claude` wrapper in `$PREFIX/bin` runs it
+   with glibc-runner's loader. The wrapper calls the loader directly rather than `grun`, because `grun`
+   passes `$@` unquoted, which drops the empty argument in `--tools ""`.
 
 Tested on the Samsung phone (Android 17) on 2026-10-19:
 - Termux 0.118.3, Python 3.14, adb 1.0.41, Node 26.
