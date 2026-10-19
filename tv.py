@@ -18,7 +18,17 @@ import sys
 import time
 
 HOST = os.environ.get("TV_HOST", "192.168.1.20:5555")
-ADB = shlex.split(os.environ.get("ADB", "adb"))  # override for tests (fake adb)
+
+
+def split_cmd(s, windows=os.name == "nt"):
+    """shlex.split that keeps Windows backslash paths (C:\\Program Files\\...) intact."""
+    if not windows:
+        return shlex.split(s)
+    words = shlex.split(s, posix=False)
+    return [w[1:-1] if len(w) > 1 and w[0] == w[-1] and w[0] in "\"'" else w for w in words]
+
+
+ADB = split_cmd(os.environ.get("ADB", "adb"))  # override for tests (fake adb)
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 

@@ -42,9 +42,21 @@ def phase_files(d):
     return sorted(glob.glob(os.path.join(d, "phase*.txt")))
 
 
+VERIFIED = "verified"  # marker in a run dir: applied, rebooted and the home screen came back
+
+
 def learned_files(d):
-    """What earlier tvgo runs actually applied to this model (and you confirmed): reused next time."""
-    return sorted(glob.glob(os.path.join(d, "ai-*", "applied.txt")))
+    """What earlier tvgo runs applied to this model and passed the home check (not undone): reused next time."""
+    return sorted(f for f in glob.glob(os.path.join(d, "ai-*", "applied.txt"))
+                  if os.path.exists(os.path.join(os.path.dirname(f), VERIFIED)))
+
+
+def mark_verified(run_dir, ok=True):
+    marker = os.path.join(run_dir, VERIFIED)
+    if ok:
+        open(marker, "w").close()
+    elif os.path.exists(marker):
+        os.remove(marker)
 
 
 def model_files(d):

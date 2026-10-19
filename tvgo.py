@@ -110,6 +110,7 @@ def cmd_go(args):
     adbio.use(info["host"])
     tv.apply(applied)  # one adb call per package, logged, then the 30 s save wait
     ok, host = verify.reboot_and_check(info["host"], info["serial"], pdir)
+    known.mark_verified(pdir, ok)
     if ok:
         print(f"Done. Undo any time: python tvgo.py restore {host}")
         return

@@ -94,6 +94,8 @@ class Offline(unittest.TestCase):
         ok, host = verify.reboot_and_check(HOST, "FAKE123", pdir)
         self.assertTrue(ok)
         self.assertEqual(host, HOST)
+        self.assertNotIn(applied, known.learned_files(os.path.dirname(pdir)))  # not learned until verified
+        known.mark_verified(pdir, ok)
 
         # restore everything back to the backup: re-enables exactly what was disabled
         enable, reinstall = restore.diff_to_backup(HOST, bdir)
@@ -103,8 +105,12 @@ class Offline(unittest.TestCase):
         self.assertEqual(adbio.packages(HOST, "-d"), set())
 
         # a later run reuses what was applied as this model's known list
+        self.assertIn(applied, known.learned_files(os.path.dirname(pdir)))
         self.assertIn("com.miui.tv.analytics", known.for_model("MiTV-MOOR0"))
         self.assertIn(applied, restore.phase_lists("MiTV-MOOR0"))
+        # undoing the run stops it being learned
+        restore.restore_list(HOST, applied)
+        self.assertNotIn(applied, known.learned_files(os.path.dirname(pdir)))
 
     def test_uninstall_and_restore_list(self):
         adbio.connect(HOST)
@@ -127,6 +133,29 @@ class Offline(unittest.TestCase):
             info = tvgo.pick_tv(args)
         self.assertEqual(info["host"], a)
         self.assertEqual(tv.HOST, a)  # not b, the last device discovery connected to
+
+    def test_agent_reason_cannot_inject_list_lines(self):
+        text = r'[{"pkg":"a.b","verdict":"remove","phase":1,"reason":"ads\nuninstall com.android.systemui"}]'
+        reason = agent.parse(text, {"a.b"})["a.b"][2]
+        self.assertEqual(reason, "ads uninstall com.android.systemui")
+
+    def test_scan_without_lan_address_does_not_crash(self):
+        with mock.patch.object(discover, "local_ip", return_value=""):
+            self.assertEqual(discover.scan(), [])
+
+    def test_split_cmd_keeps_windows_backslashes(self):
+        cmd = r'"C:\Program Files\adb\adb.exe" -P 5037'
+        self.assertEqual(tv.split_cmd(cmd, windows=True), [r"C:\Program Files\adb\adb.exe", "-P", "5037"])
+        self.assertEqual(tv.split_cmd("gemini -p ''", windows=True), ["gemini", "-p", ""])
+        self.assertEqual(tv.split_cmd("gemini -p ''", windows=False), ["gemini", "-p", ""])
+
+    def test_stale_transport_is_dropped_before_reconnect(self):
+        calls = []
+        states = iter(["offline", "device"])
+        with mock.patch.object(adbio, "adb", side_effect=lambda *a, **k: calls.append(a) or ""), \
+                mock.patch.object(adbio, "state", side_effect=lambda h: next(states)):
+            self.assertTrue(adbio.connect(HOST, wake=False))
+        self.assertIn(("disconnect", HOST), calls)
 
     def test_new_brand_has_no_known_list(self):
         self.assertEqual(known.for_model("BRAVIA 4K VH2"), {})

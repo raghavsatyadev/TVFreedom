@@ -45,6 +45,9 @@ def _open(ip, port, timeout=0.4):
 def scan(subnet=None, port=5555):
     """ip:port of every host on the /24 (or `subnet`) with `port` open."""
     me = local_ip()
+    if not subnet and not me:
+        print("No Wi-Fi address found: pass --subnet 192.168.1.0/24 or the TV's ip:port.")
+        return []
     net = ipaddress.ip_network(subnet or f"{me}/24", strict=False)
     hosts = [str(h) for h in net.hosts() if str(h) != me]
     with ThreadPoolExecutor(64) as pool:

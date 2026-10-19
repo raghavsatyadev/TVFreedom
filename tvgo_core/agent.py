@@ -6,8 +6,9 @@ confirmation sit between its answer and any adb write. Bad or missing answers me
 import json
 import os
 import re
-import shlex
 import subprocess
+
+import tv
 
 # Presets: a prompt goes to stdin. Each runs the agent with tools off / read-only where the CLI allows it.
 PRESETS = {
@@ -62,7 +63,7 @@ def build_prompt(info, items, examples, keep):
 
 def run(cmd, prompt, timeout=900):
     try:
-        r = subprocess.run(shlex.split(cmd), input=prompt.encode("utf-8"), capture_output=True,
+        r = subprocess.run(tv.split_cmd(cmd), input=prompt.encode("utf-8"), capture_output=True,
                            timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as e:
         print(f"agent failed: {e}")
@@ -98,7 +99,7 @@ def parse(text, asked):
             phase = int(d.get("phase", 3))
         except (TypeError, ValueError):
             phase = 3
-        out[d["pkg"]] = (verdict, phase if phase in PHASES else 3, str(d.get("reason", ""))[:80])
+        out[d["pkg"]] = (verdict, phase if phase in PHASES else 3, " ".join(str(d.get("reason", "")).split())[:80])
     return out
 
 
@@ -109,7 +110,7 @@ def classify(info, items, examples, keep, cmd=None, batch=None):
     answers = {}
     for i in range(0, len(items), batch):
         chunk = items[i:i + batch]
-        print(f"agent: {len(chunk)} packages ({i + len(chunk)}/{len(items)}) via {os.path.basename(shlex.split(cmd)[0])}")
+        print(f"agent: {len(chunk)} packages ({i + len(chunk)}/{len(items)}) via {os.path.basename(tv.split_cmd(cmd)[0])}")
         text = run(cmd, build_prompt(info, chunk, examples, keep))
         answers.update(parse(text, {it["pkg"] for it in chunk}))
     return answers

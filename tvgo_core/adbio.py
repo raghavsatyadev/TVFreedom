@@ -37,9 +37,12 @@ def connect(host, wait_s=90, wake=True):
             if wake:
                 sh(host, "input keyevent KEYCODE_WAKEUP")
             return True
-        if "unauthorized" in st and not told:
-            print(f"{host}: accept the 'Allow debugging?' prompt on the TV (tick 'Always allow').")
-            told = True
+        if "unauthorized" in st:
+            if not told:
+                print(f"{host}: accept the 'Allow debugging?' prompt on the TV (tick 'Always allow').")
+                told = True
+        else:  # offline or stale after a reboot: adb won't reconnect until the old transport is dropped
+            adb("disconnect", host, timeout=10)
         time.sleep(3)
     print(f"{host}: no adb connection ({st or 'no answer'}).")
     return False

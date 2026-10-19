@@ -77,7 +77,8 @@ Decisions are made in layers, and each layer can only keep more:
    `com.sony.dtv.*`, TCL, Hisense, Philips/TP Vision `org.droidtv.*`, Nvidia Shield. Packages in
    `lists/keep.txt` (your apps, the custom launcher, calendar sync for ClockDream) are kept too.
 2. **This model's known lists.** `lists/` for the Mi TV, `lists/<model-slug>/` for others (`lists/mibox4/`).
-   This includes `ai-*/applied.txt` from earlier confirmed runs, so a model gets smarter each time.
+   This includes `ai-*/applied.txt` from earlier runs that passed the home-screen check (a run you restore
+   is dropped again), so a model gets smarter each time.
 3. **The agent**, for whatever is left. It sees every other model's decisions as examples.
 
 Launchers are never touched in v1. That needs a working replacement home first, and has the

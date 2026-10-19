@@ -67,6 +67,9 @@ def phase_lists(model):
 
 
 def restore_list(host, path):
+    run_dir = os.path.dirname(os.path.abspath(path))
+    if os.path.basename(run_dir).startswith("ai-"):
+        known.mark_verified(run_dir, ok=False)  # undone: stop learning this run
     adbio.use(host)
     tv.restore(path)
     print("waiting 30 s so the TV saves the package state before any reboot")
