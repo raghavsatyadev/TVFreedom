@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+// Personal settings (screensaver place and calendars) live in local.properties, which is not in git.
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+def local = { String key -> (localProps.getProperty(key, '') ?: '').replace('"', '\\"') }
+
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
@@ -12,6 +18,10 @@ android {
         targetSdk 29
         versionCode 2
         versionName '2.0'
+        resValue 'string', 'weather_place', local('tvhome.weather.place')
+        resValue 'string', 'weather_latitude', local('tvhome.weather.latitude')
+        resValue 'string', 'weather_longitude', local('tvhome.weather.longitude')
+        resValue 'string', 'dream_calendars', local('tvhome.dream.calendars')
     }
 
     buildTypes {

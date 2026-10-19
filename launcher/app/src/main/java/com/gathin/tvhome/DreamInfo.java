@@ -68,10 +68,13 @@ final class DreamInfo {
         if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
             return out;
         }
-        String[] names = ctx.getResources().getStringArray(R.array.dream_calendars);
-        if (names.length == 0) return out;
+        List<String> names = new ArrayList<>();
+        for (String n : ctx.getString(R.string.dream_calendars).split("\\|")) {
+            if (!n.trim().isEmpty()) names.add(n.trim());
+        }
+        if (names.isEmpty()) return out;
         StringBuilder sel = new StringBuilder(CalendarContract.Instances.CALENDAR_DISPLAY_NAME + " IN (");
-        for (int i = 0; i < names.length; i++) sel.append(i == 0 ? "?" : ",?");
+        for (int i = 0; i < names.size(); i++) sel.append(i == 0 ? "?" : ",?");
         sel.append(")");
         long now = System.currentTimeMillis();
         android.net.Uri.Builder uri = CalendarContract.Instances.CONTENT_URI.buildUpon();
@@ -93,7 +96,7 @@ final class DreamInfo {
         try (Cursor cur = ctx.getContentResolver().query(uri.build(),
                 new String[]{CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN,
                         CalendarContract.Instances.ALL_DAY, CalendarContract.Instances.END},
-                sel.toString(), names, CalendarContract.Instances.BEGIN + " ASC")) {
+                sel.toString(), names.toArray(new String[0]), CalendarContract.Instances.BEGIN + " ASC")) {
             while (cur != null && cur.moveToNext() && seen.size() < MAX_EVENTS) {
                 if (cur.getInt(2) == 1 && cur.getLong(3) <= todayUtc) continue;
                 long begin = cur.getLong(1);

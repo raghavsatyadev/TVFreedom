@@ -7,7 +7,7 @@ python tv.py restore <list>    undo a list: enable disabled packages, reinstall-
 python tv.py mem               free/available RAM in MB
 python tv.py shot <file.png>   screenshot from the TV
 
-TV_HOST picks the TV (default: the Mi TV at 192.168.1.20:5555; Mi Box 4: 192.168.1.21:5555).
+TV_HOST picks the TV (ip:port). Without it, the first line of tv_host.txt next to this file (not in git).
 """
 import datetime
 import os
@@ -17,7 +17,17 @@ import subprocess
 import sys
 import time
 
-HOST = os.environ.get("TV_HOST", "192.168.1.20:5555")
+
+
+def _default_host():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tv_host.txt"), encoding="utf-8") as fh:
+            return fh.readline().strip()
+    except OSError:
+        return ""
+
+
+HOST = os.environ.get("TV_HOST") or _default_host()
 
 
 def split_cmd(s, windows=os.name == "nt"):
@@ -39,6 +49,8 @@ def adb(*args, binary=False):
 
 def ensure():
     """The TV drops adb in standby: reconnect, wake it, and stop if it is still unreachable."""
+    if not HOST:
+        sys.exit("Set TV_HOST=ip:port, or put the TV's ip:port in tv_host.txt next to tv.py.")
     for _ in range(3):
         subprocess.run([*ADB, "disconnect", HOST], capture_output=True)
         subprocess.run([*ADB, "connect", HOST], capture_output=True, timeout=30)

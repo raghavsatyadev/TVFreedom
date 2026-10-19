@@ -28,12 +28,10 @@
     <!-- Tiles per row. The favourites (dock_apps) fill as many full rows as they need; other apps start on the next row. -->
     <integer name="columns">4</integer>
 
-    <!-- Screensaver weather (Open-Meteo, no key). Leave latitude empty to hide the weather line. -->
-    <string name="weather_place" translatable="false"></string>
-    <string name="weather_latitude" translatable="false"></string>
-    <string name="weather_longitude" translatable="false"></string>
-
-    <!-- Screensaver: calendars (by display name, as synced on the TV) whose next events are shown. -->
-    <string-array name="dream_calendars">
-    </string-array>
+    <!-- Screensaver weather (Open-Meteo, no key) and calendars: set in launcher/local.properties (not in git), e.g.
+           tvhome.weather.place=Your City
+           tvhome.weather.latitude=12.34
+           tvhome.weather.longitude=56.78
+           tvhome.dream.calendars=Holidays in Your Country|Family
+         Calendars are display names as synced on the TV, separated by |. Leave latitude empty to hide the weather. -->
 </resources>
