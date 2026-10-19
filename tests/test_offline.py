@@ -13,7 +13,7 @@ os.environ["ADB"] = f'"{PY}" "{HERE.replace(chr(92), "/")}/fake_adb.py"'
 sys.path.insert(0, REPO)
 
 import tv  # noqa: E402  (reads $ADB at import)
-from tvgo_core import adbio, agent, discover, guard, known, plan, restore, verify  # noqa: E402
+from tvgo_core import adbio, agent, discover, guard, known, onboard, plan, restore, verify  # noqa: E402
 
 HOST = "192.168.1.20:5555"
 
@@ -26,6 +26,7 @@ class Offline(unittest.TestCase):
         shutil.copytree(os.path.join(REPO, "data"), os.path.join(self.tmp, "data"))
         self.patches = [mock.patch.object(tv, "ROOT", self.tmp),
                         mock.patch.object(known, "LISTS", os.path.join(self.tmp, "lists")),
+                        mock.patch.object(onboard, "CONFIG", os.path.join(self.tmp, "tvgo.json")),
                         mock.patch("time.sleep")]
         for p in self.patches:
             p.start()

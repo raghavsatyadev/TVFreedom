@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Press Go: debloat (or restore) an Android TV from the phone. An AI agent proposes, you confirm.
 
+python tvgo.py setup             first-time checklist: phone, agent, TV settings, pairing (runs by itself once)
 python tvgo.py go [ip:port]        discover -> backup -> plan -> confirm -> apply -> reboot -> verify
 python tvgo.py plan [ip:port]      same up to the plan; changes nothing on the TV
 python tvgo.py restore [ip:port]   undo: a tvgo run, a repo phase list, or everything back to a backup
@@ -17,7 +18,7 @@ import os
 import sys
 
 import tv
-from tvgo_core import adbio, discover, known, plan, restore, verify
+from tvgo_core import adbio, discover, known, onboard, plan, restore, verify
 
 
 def is_terminal():
@@ -47,7 +48,21 @@ def pick_tv(args):
     return info
 
 
+def _saved_tv():
+    """The TV from setup, if it still answers at the same address with the same serial."""
+    cfg = onboard.load()
+    host = cfg.get("tv")
+    if host and adbio.connect(host, wait_s=10, wake=False) and adbio.getprop(host, "ro.serialno") == cfg.get("serial"):
+        adbio.sh(host, "input keyevent KEYCODE_WAKEUP")
+        return adbio.identify(host)
+    return None
+
+
 def _pick_tv(args):
+    if not args.host and not args.subnet:
+        saved = _saved_tv()
+        if saved:
+            return saved
     if args.host:
         if not adbio.connect(args.host):
             sys.exit("Could not connect. For wireless debugging: python tvgo.py pair <ip:port> <code> first.")
@@ -70,6 +85,10 @@ def _pick_tv(args):
 
 
 def make_plan(args):
+    if not os.path.exists(onboard.CONFIG):
+        print("First run: setting up.\n")
+        if not onboard.run(ask, args.agent, args.subnet, args.host):
+            sys.exit("Setup isn't finished. Nothing was changed.")
     info = pick_tv(args)
     print(f"\n{info['brand']} {info['model']} ({info['device']}), Android {info['android']},"
           f" home {info['home'] or '?'}")
@@ -151,6 +170,11 @@ def cmd_restore(args):
         verify.reboot_and_check(host, info["serial"])
 
 
+def cmd_setup(args):
+    if not onboard.run(ask, args.agent, args.subnet, args.host):
+        sys.exit(1)
+
+
 def cmd_discover(args):
     cands, pairing = discover.find(args.subnet)
     for addr, why in cands:
@@ -175,7 +199,7 @@ def cmd_verify(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["go", "plan", "restore", "discover", "pair", "verify"])
+    ap.add_argument("command", choices=["setup", "go", "plan", "restore", "discover", "pair", "verify"])
     ap.add_argument("host", nargs="?", help="ip:port of the TV (skips discovery)")
     ap.add_argument("code", nargs="?", help="pairing code (pair only)")
     ap.add_argument("--agent", help="agent preset or command (default $TVGO_AGENT or claude)")
@@ -183,6 +207,7 @@ def main():
     ap.add_argument("--uninstall-user-apps", action="store_true",
                     help="uninstall --user 0 user apps the plan removes instead of disabling them")
     args = ap.parse_args()
+    args.agent = args.agent or os.environ.get("TVGO_AGENT") or onboard.load().get("agent")
     globals()[f"cmd_{args.command}"](args)
 
 
