@@ -108,3 +108,13 @@ Uninstalled VLC (org.videolan.vlc) and MX Player (com.mxtech.videoplayer.televis
   on a device.
 - Code: `Favourites.java` (saved list), `TileMenu.java`, `GlassMenu.java` (shared glass dropdown), Inputs
   menu moved to `InputsPopup.java` (MainActivity was over 500 lines).
+
+## Press Go from the phone (2026-10-19): any TV brand, AI-planned, confirmed by you
+
+`python tvgo.py go` finds TVs over Wi-Fi, backs up, and asks an AI agent of your choice (Claude Code,
+Codex, Gemini, or a local model through Ollama/llama.cpp) to classify packages. It shows the plan and
+applies it only after you type `GO`, then reboots and checks the home screen. `python tvgo.py restore`
+undoes a run, a phase, or everything back to a backup. A code guard always keeps boot, input, network,
+the remote, Cast, voice, OTA and launchers, whatever the agent says. Your own apps are in `lists/keep.txt`.
+Host: Termux on the phone (LinXR works with `--subnet`). Design, setup and why: `docs/phone-go.md`.
+Offline tests: `python -m unittest tests.test_offline`.

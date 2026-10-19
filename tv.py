@@ -12,24 +12,36 @@ TV_HOST picks the TV (default: the Mi TV at 192.168.1.20:5555; Mi Box 4: 192.168
 import datetime
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
 
 HOST = os.environ.get("TV_HOST", "192.168.1.20:5555")
+
+
+def split_cmd(s, windows=os.name == "nt"):
+    """shlex.split that keeps Windows backslash paths (C:\\Program Files\\...) intact."""
+    if not windows:
+        return shlex.split(s)
+    words = shlex.split(s, posix=False)
+    return [w[1:-1] if len(w) > 1 and w[0] == w[-1] and w[0] in "\"'" else w for w in words]
+
+
+ADB = split_cmd(os.environ.get("ADB", "adb"))  # override for tests (fake adb)
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def adb(*args, binary=False):
-    r = subprocess.run(["adb", "-s", HOST, *args], capture_output=True, timeout=120)
+    r = subprocess.run([*ADB, "-s", HOST, *args], capture_output=True, timeout=120)
     return r.stdout if binary else (r.stdout + r.stderr).decode("utf-8", "replace").strip()
 
 
 def ensure():
     """The TV drops adb in standby: reconnect, wake it, and stop if it is still unreachable."""
     for _ in range(3):
-        subprocess.run(["adb", "disconnect", HOST], capture_output=True)
-        subprocess.run(["adb", "connect", HOST], capture_output=True, timeout=30)
+        subprocess.run([*ADB, "disconnect", HOST], capture_output=True)
+        subprocess.run([*ADB, "connect", HOST], capture_output=True, timeout=30)
         if adb("get-state") == "device":
             sh("input keyevent KEYCODE_WAKEUP")
             time.sleep(3)
@@ -87,6 +99,7 @@ def backup(name):
     open(os.path.join(d, "mem.txt"), "w").write(mem() + "\n")
     shot(os.path.join(d, "screen.png"))
     print(f"backup -> {d}\n{mem()}")
+    return d
 
 
 def apply(path):

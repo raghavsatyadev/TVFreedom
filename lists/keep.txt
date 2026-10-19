@@ -1,0 +1,11 @@
+# Packages tvgo.py never removes, on any TV (the user's apps and the custom launcher). One per line.
+com.netflix.ninja                     # Netflix
+com.amazon.amazonvideo.livingroom     # Prime Video
+in.startv.hotstar                     # JioHotstar
+com.mitv.tvhome.mitvplus              # Xiaomi TV+
+com.google.android.youtube.tv         # YouTube
+org.jellyfin.androidtv                # Jellyfin
+com.plexapp.android                   # Plex
+com.android.vending                   # Play Store
+com.gathin.tvhome                     # custom launcher (launcher/)
+com.google.android.syncadapters.calendar # calendar sync: ClockDream shows the next events
