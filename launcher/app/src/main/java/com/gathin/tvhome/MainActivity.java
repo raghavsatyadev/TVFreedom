@@ -17,6 +17,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -190,6 +191,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        forceOpaque();
         glassShown = false;
         glass.setAlpha(0f);
         heroShown = false;
@@ -210,6 +212,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int pos = adapter.positionOf(returnKey);
             focusTile(pos >= 0 ? pos : returnSlot);
         });
+    }
+
+    /**
+     * On the Mi TV the system sometimes leaves this long-lived home activity marked translucent
+     * (occludesParent=false). Home then resumes it with focus but keeps the last app drawn on top, so the
+     * invisible launcher swallows Home/Back. Clearing the flag on every resume makes the system redraw it.
+     */
+    private void forceOpaque() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                setTranslucent(false);
+            } else {
+                Activity.class.getMethod("convertFromTranslucent").invoke(this);
+            }
+        } catch (Exception ignored) {
+            // Hidden API blocked on this build: nothing else to try.
+        }
     }
 
     @Override
