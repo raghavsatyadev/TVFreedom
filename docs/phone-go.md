@@ -17,7 +17,8 @@ a weak primary host:
 
 **Termux** (F-Droid) runs natively on the phone's Wi-Fi IP: `pkg install python android-tools git`. It also
 runs agent CLIs (`npm i -g @anthropic-ai/claude-code`, or Codex/Gemini) and local models (`pkg install ollama`
-or `llama-cpp`). It's the recommended host. LinXR works with `--subnet` plus a typed `ip:port`.
+or `llama-cpp`). It's the recommended host. None of this has been run on the Samsung yet,
+including Claude Code under Termux. LinXR works with `--subnet` plus a typed `ip:port`.
 
 A small Android app was skipped for v1. It would need its own adb client (pairing TLS and the adb protocol)
 and its own model runtime, and it would duplicate `tv.py`. It's worth doing later only if a one-tap home
@@ -103,7 +104,9 @@ OTA package, the plan shows it under "kept by the safety guard".
    and check the focused window belongs to the HOME package. A screenshot is saved in the run folder. If
    the check fails, it offers `RESTORE` of this run.
 
-`python tvgo.py plan` stops after step 4 and changes nothing on the TV, apart from waking it.
+`python tvgo.py plan` stops after step 4 and changes no packages. It wakes the chosen TV. During discovery
+it also `adb connect`s every candidate (which can show an approval prompt there) and disconnects any that
+turn out not to be TVs.
 
 ## Restore ("bloat")
 
@@ -122,7 +125,7 @@ tvgo existed, so their first tvgo backup is already debloated. To undo those ear
 ## Phone setup (Termux)
 
 ```bash
-pkg install python android-tools git
+pkg install python android-tools git nodejs
 git clone https://github.com/<owner>/TV_Debloater && cd TV_Debloater
 npm i -g @anthropic-ai/claude-code   # or codex / gemini, or: pkg install ollama && ollama pull qwen3:4b
 python tvgo.py go

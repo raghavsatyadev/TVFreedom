@@ -26,7 +26,7 @@ def state(host):
     return adb("get-state", host=host)
 
 
-def connect(host, wait_s=90):
+def connect(host, wait_s=90, wake=True):
     """Connect; if the TV asks to allow debugging, tell the user and wait for them to accept."""
     told = False
     deadline = time.time() + wait_s
@@ -34,8 +34,8 @@ def connect(host, wait_s=90):
         adb("connect", host, timeout=20)
         st = state(host)
         if st == "device":
-            sh(host, "input keyevent KEYCODE_WAKEUP")
-            tv.HOST = host  # tv.apply / tv.restore / tv.backup use this
+            if wake:
+                sh(host, "input keyevent KEYCODE_WAKEUP")
             return True
         if "unauthorized" in st and not told:
             print(f"{host}: accept the 'Allow debugging?' prompt on the TV (tick 'Always allow').")
@@ -43,6 +43,11 @@ def connect(host, wait_s=90):
         time.sleep(3)
     print(f"{host}: no adb connection ({st or 'no answer'}).")
     return False
+
+
+def use(host):
+    """Point tv.py (backup/apply/restore/shot) at this TV. Call right before using them."""
+    tv.HOST = host
 
 
 def pair(host_port, code):

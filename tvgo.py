@@ -42,6 +42,12 @@ def ask(prompt):
 
 
 def pick_tv(args):
+    info = _pick_tv(args)
+    adbio.use(info["host"])  # tv.py must act on the chosen TV, not the last one discovery touched
+    return info
+
+
+def _pick_tv(args):
     if args.host:
         if not adbio.connect(args.host):
             sys.exit("Could not connect. For wireless debugging: python tvgo.py pair <ip:port> <code> first.")
@@ -101,7 +107,7 @@ def cmd_go(args):
     with open(applied, "w", encoding="utf-8") as fh:
         fh.write(f"# Applied by tvgo.py to {info['model']} {info['serial']}: phases {chosen}\n")
         fh.writelines(f"{r['action']} {r['pkg']}  # {r['reason']}\n" for r in rows)
-    tv.HOST = info["host"]
+    adbio.use(info["host"])
     tv.apply(applied)  # one adb call per package, logged, then the 30 s save wait
     ok, host = verify.reboot_and_check(info["host"], info["serial"], pdir)
     if ok:

@@ -32,7 +32,7 @@ def home_ok(host, shot_dir=None):
     home = adbio.home_activity(host).split("/")[0]
     focus = adbio.focused_package(host)
     if shot_dir:
-        tv.HOST = host
+        adbio.use(host)
         tv.shot(os.path.join(shot_dir, "after-reboot.png"))
     print(f"home package {home or '?'}, focused {focus or '?'}")
     return bool(home) and focus == home

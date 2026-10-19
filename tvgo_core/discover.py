@@ -74,11 +74,13 @@ def identify_tvs(candidates):
     tvs = []
     for addr, why in candidates:
         print(f"trying {addr} ({why})")
-        if not adbio.connect(addr, wait_s=45):
+        if not adbio.connect(addr, wait_s=45, wake=False):
             continue
         if not adbio.is_tv(addr):
             print(f"  {addr} is not a TV, skipped")
+            adbio.adb("disconnect", addr)
             continue
+        adbio.sh(addr, "input keyevent KEYCODE_WAKEUP")
         info = adbio.identify(addr)
         print(f"  TV: {info['brand']} {info['model']} ({info['device']}), Android {info['android']}")
         tvs.append(info)
@@ -89,6 +91,6 @@ def relocate(serial, subnet=None):
     """After a reboot a wireless-debugging port can change: find the TV with this serial again."""
     cands, _ = find(subnet)
     for addr, _why in cands:
-        if adbio.connect(addr, wait_s=20) and adbio.getprop(addr, "ro.serialno") == serial:
+        if adbio.connect(addr, wait_s=20, wake=False) and adbio.getprop(addr, "ro.serialno") == serial:
             return addr
     return ""

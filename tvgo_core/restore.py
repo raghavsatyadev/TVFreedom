@@ -43,7 +43,7 @@ def diff_to_backup(host, bdir):
 
 def restore_all(host, bdir):
     enable, reinstall = diff_to_backup(host, bdir)
-    tv.HOST = host
+    adbio.use(host)
     for pkg in reinstall:
         out = adbio.sh(host, f"cmd package install-existing {pkg}")
         if "installed for user" not in out:
@@ -67,7 +67,7 @@ def phase_lists(model):
 
 
 def restore_list(host, path):
-    tv.HOST = host
+    adbio.use(host)
     tv.restore(path)
     print("waiting 30 s so the TV saves the package state before any reboot")
     time.sleep(30)

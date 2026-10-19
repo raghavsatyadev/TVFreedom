@@ -117,6 +117,17 @@ class Offline(unittest.TestCase):
         self.assertIn("com.sonyliv", adbio.packages(HOST))
         self.assertEqual(adbio.packages(HOST, "-d"), set())
 
+    def test_pick_tv_points_tv_py_at_the_chosen_tv(self):
+        import argparse
+        import tvgo
+        a, b = "192.168.1.20:5555", "192.168.1.21:5555"
+        args = argparse.Namespace(host=None, subnet=None)
+        with mock.patch.object(discover, "find", return_value=([(a, "x"), (b, "y")], [])), \
+                mock.patch.object(tvgo, "ask", return_value="1"):
+            info = tvgo.pick_tv(args)
+        self.assertEqual(info["host"], a)
+        self.assertEqual(tv.HOST, a)  # not b, the last device discovery connected to
+
     def test_new_brand_has_no_known_list(self):
         self.assertEqual(known.for_model("BRAVIA 4K VH2"), {})
         self.assertTrue(known.model_dir("BRAVIA 4K VH2").endswith(os.path.join("lists", "bravia-4k-vh2")))

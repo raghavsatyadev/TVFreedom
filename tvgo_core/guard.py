@@ -22,7 +22,7 @@ RULES = [
     ("network", r"wifi|network|ethernet|tethering|connectivity|captiveportal|\.dns|vpn"),
     ("input/remote", r"input|keyboard|\.ime\b|latin|remote|\.rcu|keyhandler|keymap|bluetooth|\.bt\.|pairing"
                      r"|controller|gamepad|\.tv\.remote"),
-    ("tv inputs", r"tvinput|tv\.input|hdmi|\.cec|livetv|tvservice|^mitv\.service$|tuner|tvsettings"
+    ("tv inputs", r"^com\.(google\.)?android\.tv$|tvinput|tv\.input|hdmi|\.cec|livetv|tvservice|^mitv\.service$|tuner|tvsettings"
                   r"|tv\.settings|tvprovider|\.tv\.framework"),
     ("cast", r"cast|mediashell|dial|miracast|airplay|\.dlna"),
     ("voice", r"katniss|voice|assistant|speech|\.tts|texttospeech|hotword|\.asr|mic\b"),
