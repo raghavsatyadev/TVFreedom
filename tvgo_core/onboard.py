@@ -156,7 +156,8 @@ def run(ask, spec=None, subnet=None, host=None):
               + ", or any command that reads a prompt on stdin.")
         spec = ask("Agent [claude]: ").strip() or "claude"
     print()
-    ready &= check_agent(spec)
+    agent_ok = check_agent(spec)
+    ready &= agent_ok
     print()
     info = None
     if host:
@@ -167,7 +168,11 @@ def run(ask, spec=None, subnet=None, host=None):
         print(f"TV: {info['brand']} {info['model']}, Android {info['android']} at {info['host']}")
         cfg.update(tv=info["host"], serial=info["serial"])
     ready &= bool(info)
-    cfg.update(agent=spec, ready=bool(ready))  # go/plan rerun setup until this is true
+    if agent_ok:
+        cfg["agent"] = spec
+    else:  # don't keep an agent that failed, so the next setup asks again
+        cfg.pop("agent", None)
+    cfg["ready"] = bool(ready)  # go/plan rerun setup until this is true
     save(cfg)
     print(f"\nSaved to {CONFIG}." + (" Ready: python tvgo.py go" if ready else
                                      " Not ready yet: fix the [!!] lines and run python tvgo.py setup again."))

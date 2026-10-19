@@ -169,6 +169,7 @@ class Offline(unittest.TestCase):
         with mock.patch.object(onboard, "check_host", return_value=True),                 mock.patch.object(onboard, "check_agent", return_value=False):
             self.assertFalse(onboard.run(tvgo.ask, self.fake_agent, host=HOST))
         self.assertIs(onboard.load()["ready"], False)
+        self.assertNotIn("agent", onboard.load())  # a failed agent is asked for again, not reused
         with mock.patch.object(onboard, "run", return_value=False) as setup:
             with self.assertRaises(SystemExit):
                 tvgo.make_plan(args)  # setup offered again, nothing planned
