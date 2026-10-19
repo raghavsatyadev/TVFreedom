@@ -1,0 +1,127 @@
+"""Offline end-to-end test: fake adb + fake agent, no TV touched.  python -m unittest tests.test_offline"""
+import os
+import shutil
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(HERE)
+PY = sys.executable.replace("\\", "/")
+os.environ["ADB"] = f'"{PY}" "{HERE.replace(chr(92), "/")}/fake_adb.py"'
+sys.path.insert(0, REPO)
+
+import tv  # noqa: E402  (reads $ADB at import)
+from tvgo_core import adbio, agent, discover, guard, known, plan, restore, verify  # noqa: E402
+
+HOST = "192.168.1.20:5555"
+
+
+class Offline(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        os.environ["FAKE_ADB_DIR"] = self.tmp
+        shutil.copytree(os.path.join(REPO, "lists"), os.path.join(self.tmp, "lists"))
+        shutil.copytree(os.path.join(REPO, "data"), os.path.join(self.tmp, "data"))
+        self.patches = [mock.patch.object(tv, "ROOT", self.tmp),
+                        mock.patch.object(known, "LISTS", os.path.join(self.tmp, "lists")),
+                        mock.patch("time.sleep")]
+        for p in self.patches:
+            p.start()
+        self.fake_agent = f'"{PY}" "{HERE.replace(chr(92), "/")}/fake_agent.py"'
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def writes(self):
+        path = os.path.join(self.tmp, "writes.log")
+        return open(path).read().splitlines() if os.path.exists(path) else []
+
+    def test_discover_and_identify(self):
+        cands = [("192.168.1.20:5555", "test")]
+        tvs = discover.identify_tvs(cands)
+        self.assertEqual(tvs[0]["model"], "MiTV-MOOR0")
+        self.assertIn("192.168.1.20:5555", [a for _k, a, _n in discover.mdns()][0])
+
+    def test_guard(self):
+        self.assertEqual(guard.keep_reason("com.google.android.apps.mediashell"), "cast")
+        self.assertEqual(guard.keep_reason("com.google.android.katniss"), "voice")
+        self.assertEqual(guard.keep_reason("com.xiaomi.mitv.updateservice"), "OTA")
+        self.assertEqual(guard.keep_reason("com.foo.bar", uid=1000), "core (system uid)")
+        self.assertEqual(guard.keep_reason("com.foo.home", home={"com.foo.home"}), "launcher/setup (HOME)")
+        self.assertEqual(guard.keep_reason("com.miui.tv.analytics"), "")
+        self.assertEqual(guard.keep_reason("tv.alphonso.alphonso_eula"), "")
+
+    def test_agent_parse_is_strict(self):
+        asked = {"a.b", "c.d"}
+        text = 'blah [{"pkg":"a.b","verdict":"REMOVE","phase":9},{"pkg":"x.y","verdict":"remove"}] tail'
+        self.assertEqual(agent.parse(text, asked), {"a.b": ("remove", 3, "")})
+        self.assertEqual(agent.parse("no json here", asked), {})
+        broken = '{"pkg":"c.d","verdict":"keep","phase":1,"reason":"r"} and {"pkg": oops}'
+        self.assertEqual(agent.parse(broken, asked), {"c.d": ("keep", 1, "r")})
+
+    def test_plan_apply_verify_restore(self):
+        self.assertTrue(adbio.connect(HOST))
+        info = adbio.identify(HOST)
+        p = plan.build(info, plan.facts(HOST), self.fake_agent)
+        removed = {r["pkg"] for r in p["remove"]}
+        # the careless agent said remove-all: the guard must still keep the essentials
+        for pkg in ("com.google.android.apps.mediashell", "com.google.android.katniss", "android",
+                    "com.google.android.apps.tv.launcherx", "com.google.android.tungsten.setupwraith",
+                    "com.netflix.ninja", "com.android.vending", "com.xiaomi.mitv.updateservice",
+                    "com.google.android.inputmethod.latin", "mitv.service"):
+            self.assertNotIn(pkg, removed, pkg)
+        self.assertIn("com.miui.tv.analytics", removed)  # from this model's known list
+        self.assertEqual(len(p["unanswered"]), 1)        # skipped by the agent -> kept
+        conflicts = {c["pkg"] for c in p["conflicts"]}
+        self.assertIn("com.xiaomi.mitv.updateservice", conflicts)
+        self.assertTrue(all(r["action"] == "disable" for r in p["remove"]))  # default: no uninstalls
+        pdir = plan.save(p, "test")
+        self.assertTrue(os.path.exists(os.path.join(pdir, "plan.json")))
+        self.assertEqual(self.writes(), [])  # planning changed nothing
+
+        bdir = tv.backup("tvgo-mitv-moor0-FAKE123")
+        applied = os.path.join(pdir, "applied.txt")
+        with open(applied, "w") as fh:
+            fh.writelines(f"{r['action']} {r['pkg']}\n" for r in p["remove"] if r["phase"] == 1)
+        tv.HOST = HOST
+        tv.apply(applied)
+        w = self.writes()
+        self.assertTrue(w and all(l.startswith("pm disable-user --user 0 ") for l in w))
+        ok, host = verify.reboot_and_check(HOST, "FAKE123", pdir)
+        self.assertTrue(ok)
+        self.assertEqual(host, HOST)
+
+        # restore everything back to the backup: re-enables exactly what was disabled
+        enable, reinstall = restore.diff_to_backup(HOST, bdir)
+        self.assertEqual(set(enable), {l.split()[-1] for l in w})
+        self.assertEqual(reinstall, [])
+        restore.restore_all(HOST, bdir)
+        self.assertEqual(adbio.packages(HOST, "-d"), set())
+
+        # a later run reuses what was applied as this model's known list
+        self.assertIn("com.miui.tv.analytics", known.for_model("MiTV-MOOR0"))
+        self.assertIn(applied, restore.phase_lists("MiTV-MOOR0"))
+
+    def test_uninstall_and_restore_list(self):
+        adbio.connect(HOST)
+        tv.HOST = HOST
+        path = os.path.join(self.tmp, "l.txt")
+        open(path, "w").write("uninstall com.sonyliv\ndisable com.xm.webcontent\n")
+        tv.apply(path)
+        self.assertNotIn("com.sonyliv", adbio.packages(HOST))
+        restore.restore_list(HOST, path)
+        self.assertIn("com.sonyliv", adbio.packages(HOST))
+        self.assertEqual(adbio.packages(HOST, "-d"), set())
+
+    def test_new_brand_has_no_known_list(self):
+        self.assertEqual(known.for_model("BRAVIA 4K VH2"), {})
+        self.assertTrue(known.model_dir("BRAVIA 4K VH2").endswith(os.path.join("lists", "bravia-4k-vh2")))
+        self.assertEqual(guard.keep_reason("com.sony.dtv.tvx"), "vendor HAL")
+
+
+if __name__ == "__main__":
+    unittest.main()
