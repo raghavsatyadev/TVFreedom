@@ -16,7 +16,8 @@ from . import adbio, agent, discover
 CONFIG = os.path.join(os.path.expanduser("~"), ".tvgo.json")
 
 INSTALL = {  # how to get each agent CLI on the phone (Termux) or a computer
-    "claude": "npm i -g @anthropic-ai/claude-code, then run `claude` once to log in",
+    "claude": "Termux: sh scripts/termux-setup.sh; elsewhere: npm i -g @anthropic-ai/claude-code."
+              " Then run `claude` once to log in",
     "gemini": "npm i -g @google/gemini-cli, then run `gemini` once to log in",
     "codex": "npm i -g @openai/codex, then run `codex` once to log in",
     "ollama": "Termux: pkg install ollama; then `ollama serve &` and `ollama pull qwen3:4b`",
@@ -72,9 +73,9 @@ def check_host():
     host = where()
     print(f"Phone / host ({host}):")
     ok = _line(sys.version_info >= (3, 8), f"Python {platform.python_version()}",
-               "Termux: pkg install python" if host == "termux" else "install Python 3.8+")
+               "Termux: sh scripts/termux-setup.sh" if host == "termux" else "install Python 3.8+")
     adb_bin = shutil.which(tv.ADB[0]) or (tv.ADB[0] if os.path.exists(tv.ADB[0]) else "")
-    hint = {"termux": "pkg install android-tools", "linxr": "apk add android-tools",
+    hint = {"termux": "sh scripts/termux-setup.sh", "linxr": "apk add android-tools",
             "darwin": "brew install android-platform-tools"}.get(host, "install Android platform-tools")
     if _line(bool(adb_bin), f"adb {adb_bin or 'not found'}", hint):
         version = adbio.adb("version", timeout=15).splitlines()

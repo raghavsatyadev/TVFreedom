@@ -125,15 +125,30 @@ tvgo existed, so their first tvgo backup is already debloated. To undo those ear
 
 ## Phone setup (Termux)
 
-Install Termux from F-Droid (the Play Store build is outdated). Then, once:
+Install Termux from F-Droid or its GitHub releases (the Play Store build is outdated). Then, once:
 
 ```bash
-pkg install python android-tools git gh nodejs
-gh auth login                        # the repo is private
+pkg install git gh && gh auth login          # the repo is private
 gh repo clone <owner>/TV_Debloater && cd TV_Debloater
-npm i -g @anthropic-ai/claude-code   # or codex / gemini, or: pkg install ollama && ollama pull qwen3:4b
+sh scripts/termux-setup.sh                   # or: sh scripts/termux-setup.sh ollama (on-phone model)
+claude                                       # once, to log in; then /exit
 python tvgo.py setup
 ```
+
+`scripts/termux-setup.sh` does the following, and is safe to run again:
+
+1. Switches to Termux's main Cloudflare mirror. The auto-picked mirror ran at about 36 KB/s on the Samsung.
+2. Runs `pkg upgrade` first. Freshly installed adb and node fail with "CANNOT LINK EXECUTABLE" on the
+   base libraries that ship with the app.
+3. Installs python, android-tools, git and nodejs.
+4. Installs Claude Code. Termux's Node reports the platform as `android`, so `npm i -g` gets no native
+   binary. The script fetches the `linux-arm64` build instead and runs it through `glibc-runner`
+   (`grun`), with a `claude` wrapper in `$PREFIX/bin`.
+
+Tested on the Samsung phone (Android 17) on 2026-10-19:
+- Termux 0.118.3, Python 3.14, adb 1.0.41, Node 26.
+- Claude Code 2.1.303 starts.
+- The 12 offline tests pass on the phone.
 
 `python tvgo.py setup` is the onboarding. It also runs by itself the first time you run `go` or `plan`.
 
