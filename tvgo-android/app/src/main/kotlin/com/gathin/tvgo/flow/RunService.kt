@@ -13,7 +13,7 @@ import android.os.IBinder
 import com.gathin.tvgo.ui.MainActivity
 
 /**
- * Keeps tvgo running while a job talks to the TV and the user is in another app: without it the phone cuts the adb
+ * Keeps TVFreedom running while a job talks to the TV and the user is in another app: without it the phone cuts the adb
  * connection (and may stop the app) mid-run. The work itself stays in the ViewModel; this only holds the process in
  * the foreground and shows the job's progress as an ongoing notification.
  */
@@ -36,7 +36,8 @@ class RunService : Service() {
         private const val CHANNEL = "run"
         private const val ASK_ID = 2
         private const val ASK_CHANNEL = "ask"
-        private var last = Progress("tvgo", "Working")
+        private const val ASK_NAME = "Open TVFreedom to go on"
+        private var last = Progress("TVFreedom", "Working")
         private var running = false
 
         /** Start (or update) the service; called from the foreground when a job begins. */
@@ -61,9 +62,10 @@ class RunService : Service() {
 
         private fun manager(ctx: Context): NotificationManager {
             val m = ctx.getSystemService(NotificationManager::class.java)
-            if (m.getNotificationChannel(CHANNEL) == null) {
+            // Creating a channel again only renames it, so the new app name reaches the phone's settings.
+            if (m.getNotificationChannel(ASK_CHANNEL)?.name != ASK_NAME) {
                 m.createNotificationChannel(NotificationChannel(CHANNEL, "Work on the TV", NotificationManager.IMPORTANCE_LOW))
-                m.createNotificationChannel(NotificationChannel(ASK_CHANNEL, "Open tvgo to go on", NotificationManager.IMPORTANCE_HIGH))
+                m.createNotificationChannel(NotificationChannel(ASK_CHANNEL, ASK_NAME, NotificationManager.IMPORTANCE_HIGH))
             }
             return m
         }

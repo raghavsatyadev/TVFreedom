@@ -27,7 +27,7 @@ import com.gathin.tvgo.ai.TermuxClaude
 import com.gathin.tvgo.ai.TermuxClaude.Step
 
 /**
- * Setting up Claude in Termux, one step at a time. Each time tvgo comes back to the front it checks Termux again,
+ * Setting up Claude in Termux, one step at a time. Each time TVFreedom comes back to the front it checks Termux again,
  * so steps already done never show and the user never has to tap "check".
  */
 @Composable
@@ -49,22 +49,22 @@ fun TermuxSetup(vm: TvGoViewModel) {
                 "Get Termux from F-Droid. The Play Store version is too old to run Claude.", "Get Termux", Icons.Link) {
                 ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TermuxClaude.GET_TERMUX)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
-            Step.PERMISSION -> StepCard(step, "Let tvgo use Termux",
-                "tvgo asks Termux to run Claude for it. Android asks you first.", "Allow", Icons.Shield) {
+            Step.PERMISSION -> StepCard(step, "Let TVFreedom use Termux",
+                "TVFreedom asks Termux to run Claude for it. Android asks you first.", "Allow", Icons.Shield) {
                 permission.launch(TermuxClaude.PERMISSION)
             }
             Step.OPEN_TERMUX -> StepCard(step, "Open Termux once",
                 "Termux sets itself up the first time it opens. Wait for its prompt, then come back.", "Open Termux", Icons.Next) {
                 termux.openTermux()
             }
-            Step.ALLOW_APPS -> StepCard(step, "Let Termux take commands from tvgo",
+            Step.ALLOW_APPS -> StepCard(step, "Let Termux take commands from TVFreedom",
                 "Only you can switch this on. Tap below, then in Termux long-press, Paste, press Enter, and come back.",
                 "Copy and open Termux", Icons.Next) {
                 clipboard.setText(AnnotatedString(TermuxClaude.ALLOW_LINE))
                 termux.openTermux()
             }
             Step.INSTALL_CLAUDE -> StepCard(step, "Install Claude Code",
-                "tvgo installs it in Termux for you, in about 5 to 10 minutes. When it asks, log in to your Claude account, " +
+                "TVFreedom installs it in Termux for you, in about 5 to 10 minutes. When it asks, log in to your Claude account, " +
                     "type /exit and come back.", "Install in Termux", Icons.Next) { termux.startInstall() }
             Step.LOGIN -> StepCard(step, "Log in to Claude",
                 "Log in with your Claude account in Termux, then type /exit and come back.", "Log in in Termux", Icons.Next) {

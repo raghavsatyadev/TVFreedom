@@ -93,7 +93,7 @@ private fun LocalNetworkPermission() {
     Card(shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
         Column(Modifier.padding(20.dp)) {
-            Text("tvgo needs to reach devices on your Wi-Fi to talk to the TV.", style = MaterialTheme.typography.bodyLarge,
+            Text("TVFreedom needs to reach devices on your Wi-Fi to talk to the TV.", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onTertiaryContainer)
             Box(Modifier.padding(top = 12.dp)) {
                 SecondAction("Allow local network access", Icons.Link) { launcher.launch(LOCAL_NETWORK) }

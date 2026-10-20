@@ -199,6 +199,23 @@ class Offline(unittest.TestCase):
         self.assertTrue(known.model_dir("BRAVIA 4K VH2").endswith(os.path.join("lists", "bravia-4k-vh2")))
         self.assertEqual(guard.keep_reason("com.sony.dtv.tvx"), "vendor HAL")
 
+    def test_home_screen_packages_are_left_to_the_app(self):
+        """Like the app: the Mi Box's phase 4/5 lists (Google TV launcher, setup, screensaver) are never planned."""
+        f = {"paths": {p: "/system/app/x.apk" for p in ("com.google.android.apps.tv.launcherx",
+                                                         "com.google.android.apps.tv.dreamx")},
+             "disabled": set(), "user": {"com.plexapp.android"}, "home": set(), "uids": {}}
+        info = {"host": HOST, "brand": "Xiaomi", "model": "MIBOX4", "device": "oneday", "android": "9", "ime": ""}
+        p = plan.build(info, f, self.fake_agent)
+        self.assertEqual(p["remove"], [])
+        self.assertEqual(p["kept"]["com.google.android.apps.tv.dreamx"], plan.HOME_OWNED)
+        self.assertNotEqual(p["kept"]["com.google.android.apps.tv.launcherx"], "")  # the guard or HOME_OWNED
+        self.assertEqual(p["user_apps"], ["com.plexapp.android"])
+        with mock.patch("builtins.print") as out:
+            plan.show(p)
+        shown = "\n".join(str(c.args[0]) for c in out.call_args_list)
+        self.assertIn("TVFreedom app", shown)
+        self.assertIn("com.google.android.apps.tv.dreamx", shown)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,8 +2,6 @@
  "already_off": [],
  "conflicts": [
   "android.autoinstalls.config.xiaomi.amelie",
-  "com.google.android.apps.tv.launcherx",
-  "com.google.android.tungsten.setupwraith",
   "com.mitv.upgrader",
   "com.xiaomi.mitv.updateservice"
  ],
@@ -67,6 +65,7 @@
   "com.android.wifi.resources": "core",
   "com.dolby.android.audio.service": "agent: fake agent",
   "com.google.android.apps.mediashell": "cast",
+  "com.google.android.apps.tv.dreamx": "home screen: phase 4 or 5 swaps it safely",
   "com.google.android.apps.tv.launcherx": "launcher/setup",
   "com.google.android.ext.services": "core",
   "com.google.android.ext.shared": "agent: fake agent",
@@ -136,13 +135,6 @@
    "phase": 2,
    "pkg": "com.epicchannel.epicon",
    "reason": "Epic ON",
-   "source": "known list"
-  },
-  {
-   "action": "disable",
-   "phase": 5,
-   "pkg": "com.google.android.apps.tv.dreamx",
-   "reason": "Google ambient screensaver (~88 MB), replaced by ClockDream",
    "source": "known list"
   },
   {

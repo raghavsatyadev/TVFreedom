@@ -2,8 +2,6 @@
  "already_off": [],
  "conflicts": [
   "android.autoinstalls.config.xiaomi.amelie",
-  "com.google.android.apps.tv.launcherx",
-  "com.google.android.tungsten.setupwraith",
   "com.mitv.upgrader",
   "com.xiaomi.mitv.updateservice"
  ],
@@ -55,6 +53,7 @@
   "com.android.vpndialogs": "network",
   "com.android.wifi.resources": "core",
   "com.google.android.apps.mediashell": "cast",
+  "com.google.android.apps.tv.dreamx": "home screen: phase 4 or 5 swaps it safely",
   "com.google.android.apps.tv.launcherx": "launcher/setup",
   "com.google.android.ext.services": "core",
   "com.google.android.gms": "core",
@@ -257,13 +256,6 @@
    "action": "disable",
    "phase": 2,
    "pkg": "com.epicchannel.epicon",
-   "reason": "fake agent",
-   "source": "agent"
-  },
-  {
-   "action": "disable",
-   "phase": 2,
-   "pkg": "com.google.android.apps.tv.dreamx",
    "reason": "fake agent",
    "source": "agent"
   },

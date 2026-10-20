@@ -27,7 +27,7 @@ fun plainSteps(plan: Plan, draft: HomeDraft?, phases: List<Int>, hasLogo: Boolea
     val rows = plan.remove.filter { it.phase == p }
     val gone = rows.count { it.action == UNINSTALL }
     val apps = "${rows.size} app${if (rows.size == 1) "" else "s"}" + if (gone > 0) " ($gone of them uninstalled)" else ""
-    val check = "Then the TV restarts and tvgo checks that its home screen opens."
+    val check = "Then the TV restarts and TVFreedom checks that its home screen opens."
     when (p) {
         1 -> PlainStep(p, "Stop tracking and ads", "Turns off $apps that report what you watch or show ads. $check")
         2 -> PlainStep(p, "Remove apps you don't use", "Turns off $apps nobody picked: demos, games, streaming apps. $check")

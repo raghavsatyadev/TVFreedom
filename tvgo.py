@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Press Go: debloat (or restore) an Android TV from the phone. An AI agent proposes, you confirm.
+"""TVFreedom on the PC: debloat (or restore) an Android TV. An AI agent proposes, you confirm.
+
+Plans exactly like the TVFreedom phone app (same guard, lists, AI prompt and phases 1-3). The app's other
+phases (its home screen, screensaver, company branding and extras) run from the phone app only; this
+tool never turns off the TV's own launcher or screensaver, so the TV always keeps a home screen.
 
 python tvgo.py setup             first-time checklist: phone, agent, TV settings, pairing (runs by itself once)
 python tvgo.py go [ip:port]        discover -> backup -> plan -> confirm -> apply -> reboot -> verify
@@ -11,7 +15,8 @@ python tvgo.py verify [ip:port]    reboot and check the TV reaches its home scre
 
 Options: --agent claude|gemini|codex|ollama|llama|"<any command reading stdin>" (default $TVGO_AGENT
 or claude), --subnet 192.168.1.0/24, --uninstall-user-apps (default disables everything; uninstall
-of a user app may need the Play Store to undo). See docs/phone-go.md.
+of a user app may need the Play Store to undo), --stop-updates (let this model's own list turn off
+firmware updates, which the guard otherwise keeps). See docs/phone-go.md.
 """
 import argparse
 import os
@@ -93,7 +98,7 @@ def make_plan(args):
     print(f"\n{info['brand']} {info['model']} ({info['device']}), Android {info['android']},"
           f" home {info['home'] or '?'}")
     bdir = tv.backup(f"tvgo-{known.slug(info['model'])}-{info['serial'] or 'noserial'}")
-    p = plan.build(info, plan.facts(info["host"]), args.agent, args.uninstall_user_apps)
+    p = plan.build(info, plan.facts(info["host"]), args.agent, args.uninstall_user_apps, args.stop_updates)
     pdir = plan.save(p)
     plan.show(p)
     print(f"\nplan saved: {os.path.relpath(pdir, tv.ROOT)}  backup: {os.path.relpath(bdir, tv.ROOT)}")
@@ -206,6 +211,8 @@ def main():
     ap.add_argument("--subnet", help="scan this subnet instead of the phone's /24")
     ap.add_argument("--uninstall-user-apps", action="store_true",
                     help="uninstall --user 0 user apps the plan removes instead of disabling them")
+    ap.add_argument("--stop-updates", action="store_true",
+                    help="let this model's own list turn off firmware updates (the guard keeps them otherwise)")
     args = ap.parse_args()
     args.agent = args.agent or os.environ.get("TVGO_AGENT") or onboard.load().get("agent")
     globals()[f"cmd_{args.command}"](args)

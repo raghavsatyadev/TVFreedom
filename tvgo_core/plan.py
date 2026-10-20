@@ -1,5 +1,9 @@
 """Build the removal plan: facts from the TV -> guard -> this model's known lists -> agent for the rest.
 
+Same rules as the TVFreedom app (core/Planner.kt): phases 4 and 5 of a model's lists (home screen and
+screensaver) are never planned here or shown to the agent as examples. Turning off the TV's own launcher
+without installing a new one leaves the TV with no home screen; the app's home-screen setup swaps them safely.
+
 The plan is written in the lists/ format (lists/<model>/ai-<date>/phaseN.txt) so tv.py apply/restore
 and the restore menu work on it unchanged, plus plan.json with every decision and its reason.
 """
@@ -22,11 +26,22 @@ def facts(host):
     }
 
 
-def build(info, f, agent_cmd=None, uninstall_user_apps=False):
-    """Returns plan dict: remove [{pkg, action, phase, reason, source}], kept, conflicts, already_off."""
+HOME_OWNED = "home screen: phase 4 or 5 swaps it safely"
+APP_HINT = ("This tool does phases 1-3. For phases 4-6 (a new home screen, the screensaver, company branding"
+            " and extras), use the TVFreedom app on your phone.")
+
+
+def build(info, f, agent_cmd=None, uninstall_user_apps=False, stop_updates=False):
+    """Returns plan dict: remove [{pkg, action, phase, reason, source}], kept, conflicts, already_off, user_apps.
+
+    stop_updates lets this model's own list turn off what the guard keeps as OTA (firmware updates), nothing else.
+    """
     keep = guard.user_keep()
-    own = known.for_model(info["model"])
-    examples = known.examples()
+    own_all = known.for_model(info["model"])
+    all_examples = known.examples()
+    own = {k: v for k, v in own_all.items() if v[1] in agent.PHASES}
+    examples = {k: v for k, v in all_examples.items() if v[1] in agent.PHASES}
+    home_owned = {k for k, v in list(own_all.items()) + list(all_examples.items()) if v[1] not in agent.PHASES}
     remove, kept, conflicts, ask = [], {}, [], []
     already_off = sorted(p for p in f["paths"] if p in f["disabled"])
 
@@ -39,11 +54,14 @@ def build(info, f, agent_cmd=None, uninstall_user_apps=False):
         if pkg in f["disabled"]:
             continue
         why = guard.keep_reason(pkg, apk, f["home"], info.get("ime", ""), keep, f["uids"].get(pkg))
-        if why:
+        if why and not (why == "OTA" and stop_updates and pkg in own):
             kept[pkg] = why
             if pkg in examples:
                 conflicts.append({"pkg": pkg, "kept_as": why,
                                   "earlier": f"{examples[pkg][0]} on {examples[pkg][3]}"})
+            continue
+        if pkg in home_owned:
+            kept[pkg] = HOME_OWNED
             continue
         if pkg in own:
             act, phase, comment = own[pkg]
@@ -66,7 +84,8 @@ def build(info, f, agent_cmd=None, uninstall_user_apps=False):
         else:
             kept[pkg] = f"agent: {reason}"
     return {"info": info, "remove": remove, "kept": kept, "conflicts": conflicts,
-            "already_off": already_off, "unanswered": [i["pkg"] for i in ask if i["pkg"] not in answers]}
+            "already_off": already_off, "unanswered": [i["pkg"] for i in ask if i["pkg"] not in answers],
+            "user_apps": sorted(f["user"])}
 
 
 def save(plan, stamp=None):
@@ -98,9 +117,17 @@ def show(plan):
         print(f"\nPhase {phase} ({agent.PHASES.get(phase, 'other')}):")
         for r in (r for r in rm if r["phase"] == phase):
             print(f"  {r['action'][:3]} {r['pkg']}  - {r['reason']}")
+    removed = {r["pkg"] for r in rm}
+    stay = [p for p in plan.get("user_apps", []) if p not in removed and p not in plan["already_off"]]
+    if stay:
+        print(f"\nYour apps that stay ({len(stay)}): {', '.join(stay)}")
     if plan["conflicts"]:
         print("\nKept by the safety guard although an earlier list removed them:")
         for c in plan["conflicts"]:
             print(f"  {c['pkg']}  ({c['kept_as']}; earlier: {c['earlier']})")
     if plan["unanswered"]:
         print(f"\nAgent gave no answer for {len(plan['unanswered'])} packages: kept.")
+    print("\n" + APP_HINT)
+    home = sorted(p for p, why in plan["kept"].items() if why == HOME_OWNED)
+    if home:
+        print(f"  The app swaps these safely; kept here: {', '.join(home)}")

@@ -42,7 +42,7 @@ class AdbKeys(dir: File) {
 
     private fun generate() {
         val kp = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-        val name = X500Name("CN=tvgo")
+        val name = X500Name("CN=TVFreedom")
         val now = System.currentTimeMillis()
         val holder = JcaX509v3CertificateBuilder(name, BigInteger.valueOf(now), Date(now - 86_400_000L),
             Date(now + 30L * 365 * 86_400_000L), name, kp.public)
@@ -61,7 +61,7 @@ private class Manager(private val keys: AdbKeys, timeoutS: Long) : AbsAdbConnect
 
     override fun getPrivateKey(): PrivateKey = keys.privateKey
     override fun getCertificate(): Certificate = keys.certificate
-    override fun getDeviceName(): String = "tvgo"
+    override fun getDeviceName(): String = "TVFreedom"
 }
 
 sealed interface ConnectResult {

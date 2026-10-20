@@ -89,7 +89,7 @@ fun PlanScreen(vm: TvGoViewModel) {
         title = "Start the debloat?",
         body = "On ${plan.info.model}, ${chosen.size} step${if (chosen.size == 1) "" else "s"}, one after another: " +
             plainSteps(plan, draft, chosen, vm.brand.file.isFile, s.extrasDraft?.let { it to s.extras }).joinToString("; ") { it.title.lowercase() } +
-            ". The TV restarts after each, and tvgo checks it before going on. Keep this app open until it finishes. " +
+            ". The TV restarts after each, and TVFreedom checks it before going on. Keep this app open until it finishes. " +
             "You can undo it any time from Restore.",
         word = "GO",
         onConfirm = { confirm = false; vm.apply() },

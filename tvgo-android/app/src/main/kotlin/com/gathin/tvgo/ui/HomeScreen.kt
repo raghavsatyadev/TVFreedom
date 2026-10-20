@@ -85,7 +85,7 @@ private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         GroupLabel("Favourites, in order")
-        if (old) Text("The home screen on the TV is an older version, so tvgo can't read its favourites. Leave this " +
+        if (old) Text("The home screen on the TV is an older version, so TVFreedom can't read its favourites. Leave this " +
             "list as it is to keep them, or change it to replace them.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (favourites.isEmpty()) Text("No favourites: every app shows in one grid.", style = MaterialTheme.typography.bodyMedium)
@@ -149,7 +149,7 @@ private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
                 OutlinedTextField(calendars, { calendars = it }, Modifier.fillMaxWidth().padding(top = 8.dp),
                     label = { Text("Calendars to show") }, shape = MaterialTheme.shapes.large,
                     supportingText = {
-                        Text((if (old) "tvgo can't read the ones the TV shows now: type them again. " else "") +
+                        Text((if (old) "TVFreedom can't read the ones the TV shows now: type them again. " else "") +
                             "Names as synced on the TV, separated by |. For example: Holidays in India")
                     })
             }
@@ -168,7 +168,7 @@ private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
 /** What phase 4 (home screen) or 5 (screensaver) would do on this TV, one line each, for the plan. */
 fun homeLines(draft: HomeDraft, phase: Int): List<String> = buildList {
     val install = when {
-        draft.installed == null -> "Install tvgo's home screen"
+        draft.installed == null -> "Install TVFreedom's home screen"
         draft.installed < draft.bundled -> "Update the home screen on the TV"
         else -> null
     }
@@ -182,7 +182,7 @@ fun homeLines(draft: HomeDraft, phase: Int): List<String> = buildList {
         draft.dreamOff.forEach { add("Turn off ${it.pkg}: ${it.comment.substringBefore('(').trim()}") }
     }
     add("Then restart the TV and check; undone at once if the check fails")
-    if (!draft.fromLists) add("This TV has no tested list, so tvgo picked these from what the TV reports. Check them.")
+    if (!draft.fromLists) add("This TV has no tested list, so TVFreedom picked these from what the TV reports. Check them.")
 }
 
 /** A readable name for a TV app from its package (adb can't read app labels). */
@@ -204,5 +204,5 @@ private val KNOWN_APPS = mapOf(
     "com.spotify.tv.android" to "Spotify",
     "com.disney.disneyplus" to "Disney+",
     "com.google.android.apps.tv.launcherx" to "Google TV",
-    HomeOps.LAUNCHER to "tvgo home",
+    HomeOps.LAUNCHER to "TVFreedom home",
 )

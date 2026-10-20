@@ -29,19 +29,13 @@ class PlannerTest {
         planner.build(RepoData.info.copy(model = model), RepoData.facts, ai)
     }
 
-    /** Packages the lists put in phase 4/5 (home screen, screensaver): the app leaves them to the home-screen setup. */
-    private val homeOwned = Known(RepoData.lists).let { k ->
-        k.allModels().keys.flatMap { m -> k.forModel(m).filterValues { it.phase !in PHASES }.keys }.toSet()
-    }
-
-    /** Python's plan, except that home-screen packages are kept (not removed, not asked, not conflicts) in the app. */
+    /** Python's plan (tvgo.py on the PC) and the app's must be the same, home-screen packages included. */
     private fun assertMatchesGolden(case: String, model: String, remove: Boolean) {
         val g = Json.parseToJsonElement(RepoData.golden("plan-$case.json")).jsonObject
         val p = plan(model, remove)
-        assertEquals(g["remove"]!!.jsonArray.map { it.jsonObject.toRemoval() }.filter { it.pkg !in homeOwned }, p.remove)
-        assertEquals(g["kept"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }.filterKeys { it !in homeOwned },
-            p.kept.filterKeys { it !in homeOwned }.toSortedMap())
-        assertEquals(g["conflicts"]!!.jsonArray.map { it.jsonPrimitive.content }.filter { it !in homeOwned }, p.conflicts.map { it.pkg })
+        assertEquals(g["remove"]!!.jsonArray.map { it.jsonObject.toRemoval() }, p.remove)
+        assertEquals(g["kept"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }, p.kept.toSortedMap())
+        assertEquals(g["conflicts"]!!.jsonArray.map { it.jsonPrimitive.content }, p.conflicts.map { it.pkg })
         assertEquals(g["already_off"]!!.jsonArray.map { it.jsonPrimitive.content }, p.alreadyOff)
     }
 

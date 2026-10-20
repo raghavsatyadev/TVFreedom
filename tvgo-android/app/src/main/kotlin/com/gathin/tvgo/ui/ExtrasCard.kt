@@ -76,7 +76,7 @@ fun LazyListScope.extrasPhase(vm: TvGoViewModel, d: ExtrasDraft) {
         val bad = runCatching { Parse.hostname(c.dnsHost) }.isFailure
         OutlinedTextField(c.dnsHost, { v -> edit { it.copy(dnsHost = v.trim()) } }, Modifier.fillMaxWidth().padding(vertical = 8.dp),
             label = { Text("DNS server (hostname)") }, singleLine = true, isError = bad, enabled = !s.busy,
-            supportingText = { Text(if (bad) "Not a hostname" else "Now: ${if (d.dnsMode == "hostname") d.dnsHost else "the TV's default"}. tvgo checks the TV can still look names up, or turns it off again.") })
+            supportingText = { Text(if (bad) "Not a hostname" else "Now: ${if (d.dnsMode == "hostname") d.dnsHost else "the TV's default"}. TVFreedom checks the TV can still look names up, or turns it off again.") })
     }
 
     toggle("tube", "Replace YouTube with SmartTube",

@@ -1,7 +1,13 @@
-# tvgo for Android: design note
+# TVFreedom (Android app): design note
+
+The app is called TVFreedom (it was tvgo). Its package id stays `com.gathin.tvgo`, so it installs over the old
+app and keeps its runs, backups and adb key.
 
 A phone app that does what `tvgo.py` does, without Termux: find the TV, back it up, plan, confirm, apply,
 reboot and check, restore. Same rules: the guard always wins, then the known lists, then the AI.
+Phases 1-3 plan the same on the PC and in the app: `tvgo-android/tools/make_golden.py` writes what `tvgo.py`
+decides and the app's PlannerTest must match it exactly. Phases 4-6 (home screen, screensaver, branding,
+extras) are in the app only; both leave the TV's own launcher and screensaver to the app's home-screen setup.
 Only `pm disable-user --user 0` and `pm uninstall --user 0` touch the TV.
 
 Project: `tvgo-android/` (one Gradle module `app`, package `com.gathin.tvgo`).

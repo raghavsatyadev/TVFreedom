@@ -28,8 +28,8 @@ object ListFiles {
     /** A plan's phase file, in the same shape tvgo.py writes. */
     fun formatPhase(info: TvInfo, phase: Int, rows: List<Removal>): String = buildString {
         append("# ${oneLine(info.brand)} ${oneLine(info.model)} (${oneLine(info.device)}, Android ${oneLine(info.android)}).")
-        append(" Phase $phase: ${PHASES[phase] ?: "other"}. Planned by the tvgo app.\n")
-        append("# Undo: Restore in the tvgo app (or python tv.py restore <this file>)\n")
+        append(" Phase $phase: ${PHASES[phase] ?: "other"}. Planned by the TVFreedom app.\n")
+        append("# Undo: Restore in the TVFreedom app (or python tv.py restore <this file>)\n")
         rows.forEach { r ->
             val note = r.reason + if (r.action == UNINSTALL) "; restore may need the Play Store" else ""
             append("${r.action.padEnd(9)} ${r.pkg.padEnd(48)} # ${oneLine(note, 120)} [${r.source}]\n")
@@ -37,7 +37,7 @@ object ListFiles {
     }
 
     fun formatApplied(info: TvInfo, phases: List<Int>, rows: List<Removal>): String = buildString {
-        append("# Applied by the tvgo app to ${oneLine(info.model)} ${oneLine(info.serial)}: phases $phases\n")
+        append("# Applied by the TVFreedom app to ${oneLine(info.model)} ${oneLine(info.serial)}: phases $phases\n")
         rows.forEach { append("${it.action} ${it.pkg}  # ${oneLine(it.reason)}\n") }
     }
 }

@@ -123,7 +123,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val app get() = getApplication<TvGoApp>()
 
-    /** Gemini Nano (or Termux) is waiting for tvgo to be on screen again. */
+    /** Gemini Nano (or Termux) is waiting for TVFreedom to be on screen again. */
     private var askOpen by mutableStateOf(false)
 
     private suspend fun waitOpen() {
@@ -137,8 +137,8 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** The notification while a job runs: its headline, the latest line, and the steps done. */
-    private fun progress() = RunService.Progress(state.headline.ifEmpty { "tvgo" },
-        if (askOpen) "Open tvgo to go on: the AI on this phone only answers while tvgo is open." else state.status.ifEmpty { "Working" },
+    private fun progress() = RunService.Progress(state.headline.ifEmpty { "TVFreedom" },
+        if (askOpen) "Open TVFreedom to go on: the AI on this phone only answers while TVFreedom is open." else state.status.ifEmpty { "Working" },
         state.runDone.size, state.runSteps.size, askOpen)
 
     private val runner by lazy { Runner(storage, keys, discovery, ::log) { update { copy(headline = it) } } }
@@ -150,7 +150,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     private fun job(headline: String = "", block: suspend () -> Unit) {
         if (state.busy) return
         update { copy(busy = true, headline = headline, status = "", notice = "") }
-        // Named jobs talk to the TV for a while: keep tvgo alive and show their progress if the user leaves the app.
+        // Named jobs talk to the TV for a while: keep TVFreedom alive and show their progress if the user leaves the app.
         val long = headline.isNotEmpty()
         if (long) RunService.start(app, progress())
         viewModelScope.launch {
@@ -445,7 +445,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     private fun outcome(r: RunResult, ok: Boolean, headline: String, body: String) =
         Outcome(ok, headline, body, r.ramBefore, r.ramAfter, r.screen)
 
-    /** The launcher APK in tvgo and its versionCode. */
+    /** The launcher APK in TVFreedom and its versionCode. */
     private suspend fun bundledLauncher(): Pair<ByteArray, Long> = withContext(Dispatchers.IO) {
         val apk = storage.launcherApk()
         val file = File(getApplication<Application>().cacheDir, "tvhome.apk").apply { writeBytes(apk) }
