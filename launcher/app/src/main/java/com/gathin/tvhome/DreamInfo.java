@@ -21,8 +21,8 @@ import java.util.TimeZone;
 
 /**
  * Data for the screensaver: current weather (Open-Meteo, no key) and upcoming events from the calendars
- * named in res/values/config.xml. Blocking calls: run off the main thread. Results are cached in statics
- * so a new dream does not refetch.
+ * named in local.properties or set by tvgo ({@link Config}). Blocking calls: run off the main thread.
+ * Results are cached in statics so a new dream does not refetch.
  */
 final class DreamInfo {
 
@@ -40,7 +40,7 @@ final class DreamInfo {
     static String weather(Context ctx) {
         long now = System.currentTimeMillis();
         if (weather != null && now - weatherAt < WEATHER_MAX_AGE_MS) return weather;
-        String lat = ctx.getString(R.string.weather_latitude), lon = ctx.getString(R.string.weather_longitude);
+        String lat = Config.latitude(ctx), lon = Config.longitude(ctx);
         if (lat.isEmpty() || lon.isEmpty()) return null;
         HttpURLConnection c = null;
         try {
@@ -52,7 +52,7 @@ final class DreamInfo {
             JSONObject cur = new JSONObject(read(c.getInputStream())).getJSONObject("current");
             long temp = Math.round(cur.getDouble("temperature_2m"));
             weather = temp + "°  ·  " + describe(cur.getInt("weather_code")) + "  ·  "
-                    + ctx.getString(R.string.weather_place);
+                    + Config.place(ctx);
             weatherAt = now;
         } catch (Exception ignored) {
             // Offline or API change: keep showing the last value.
@@ -69,7 +69,7 @@ final class DreamInfo {
             return out;
         }
         List<String> names = new ArrayList<>();
-        for (String n : ctx.getString(R.string.dream_calendars).split("\\|")) {
+        for (String n : Config.calendars(ctx).split("\\|")) {
             if (!n.trim().isEmpty()) names.add(n.trim());
         }
         if (names.isEmpty()) return out;

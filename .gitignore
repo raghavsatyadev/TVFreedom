@@ -2,6 +2,7 @@ local.properties
 launcher/.gradle/
 launcher/build/
 launcher/app/build/
+launcher/app/build-tvgo/
 vendor/
 backup/
 logs/

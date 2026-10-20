@@ -2,6 +2,7 @@
 # One-time phone setup for tvgo in Termux (F-Droid or GitHub build). Safe to run again.
 #   sh scripts/termux-setup.sh            tools + Claude Code
 #   sh scripts/termux-setup.sh ollama     tools + a small on-phone model instead
+#   sh termux-setup.sh app                only Claude Code, for the tvgo phone app (it runs this for you)
 set -e
 
 say() { printf '\n== %s\n' "$*"; }
@@ -13,8 +14,13 @@ echo "deb https://packages-cf.termux.dev/apt/termux-main stable main" > "$PREFIX
 say "Upgrading Termux first (new adb/node won't start on the older base libraries)"
 yes | pkg upgrade -o Dpkg::Options::=--force-confnew
 
-say "Installing python, adb, git, nodejs"
-yes | pkg install python android-tools git nodejs
+if [ "$1" = "app" ]; then
+  say "Installing nodejs"
+  yes | pkg install nodejs
+else
+  say "Installing python, adb, git, nodejs"
+  yes | pkg install python android-tools git nodejs
+fi
 
 if [ "$1" = "ollama" ]; then
   say "Installing Ollama and qwen3:4b (about 2.5 GB, needs ~4 GB free RAM while it runs)"
@@ -41,6 +47,17 @@ exec "$PREFIX/glibc/lib/ld-linux-aarch64.so.1" "$DIR/package/claude" "\$@"
 EOF
 chmod 755 "$PREFIX/bin/claude"
 claude --version
+
+say "Letting the tvgo app run claude here (Termux RUN_COMMAND)"
+mkdir -p "$HOME/.termux"
+grep -qs '^allow-external-apps *= *true' "$HOME/.termux/termux.properties" ||
+  echo "allow-external-apps=true" >> "$HOME/.termux/termux.properties"
+termux-reload-settings 2>/dev/null || true
+
+if [ "$1" = "app" ]; then
+  say "Claude Code is installed. Log in below (skip if it opens straight away), then type /exit and go back to tvgo."
+  exec claude
+fi
 
 say "Done. Next:"
 echo "  1. claude            (once, to log in; then /exit)"

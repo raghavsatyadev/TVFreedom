@@ -29,12 +29,19 @@ class PlannerTest {
         planner.build(RepoData.info.copy(model = model), RepoData.facts, ai)
     }
 
+    /** Packages the lists put in phase 4/5 (home screen, screensaver): the app leaves them to the home-screen setup. */
+    private val homeOwned = Known(RepoData.lists).let { k ->
+        k.allModels().keys.flatMap { m -> k.forModel(m).filterValues { it.phase !in PHASES }.keys }.toSet()
+    }
+
+    /** Python's plan, except that home-screen packages are kept (not removed, not asked, not conflicts) in the app. */
     private fun assertMatchesGolden(case: String, model: String, remove: Boolean) {
         val g = Json.parseToJsonElement(RepoData.golden("plan-$case.json")).jsonObject
         val p = plan(model, remove)
-        assertEquals(g["remove"]!!.jsonArray.map { it.jsonObject.toRemoval() }, p.remove)
-        assertEquals(g["kept"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }, p.kept.toSortedMap())
-        assertEquals(g["conflicts"]!!.jsonArray.map { it.jsonPrimitive.content }, p.conflicts.map { it.pkg })
+        assertEquals(g["remove"]!!.jsonArray.map { it.jsonObject.toRemoval() }.filter { it.pkg !in homeOwned }, p.remove)
+        assertEquals(g["kept"]!!.jsonObject.mapValues { it.value.jsonPrimitive.content }.filterKeys { it !in homeOwned },
+            p.kept.filterKeys { it !in homeOwned }.toSortedMap())
+        assertEquals(g["conflicts"]!!.jsonArray.map { it.jsonPrimitive.content }.filter { it !in homeOwned }, p.conflicts.map { it.pkg })
         assertEquals(g["already_off"]!!.jsonArray.map { it.jsonPrimitive.content }, p.alreadyOff)
     }
 
@@ -72,6 +79,26 @@ class PlannerTest {
             assertEquals("", Guard.keepReason(it.pkg, it.apk, RepoData.facts.home, RepoData.info.ime, RepoData.keep))
             assertTrue(it.pkg !in own)
         }
+    }
+
+    @Test
+    fun homeScreenPackagesStayOutOfTheDebloat() {
+        val ai = FakeAi(remove = true)
+        val p = plan("MiTV-MOOR0", remove = true, ai = ai)
+        listOf("com.google.android.apps.tv.dreamx").forEach { pkg ->
+            assertTrue(pkg !in p.remove.map { it.pkg })
+            assertTrue(pkg !in ai.asked.map { it.pkg })
+            assertEquals(Planner.HOME_OWNED, p.kept[pkg])
+        }
+    }
+
+    @Test
+    fun stopUpdatesLetsOnlyTheModelsOwnListTurnOffOta() {
+        val on = runBlocking { planner.build(RepoData.info.copy(model = "MiTV-MOOR0"), RepoData.facts, null, stopUpdates = true) }
+        assertTrue(on.remove.any { it.pkg == "com.xiaomi.mitv.updateservice" && it.phase == 1 })
+        assertTrue(on.remove.none { Guard.keepReason(it.pkg).let { why -> why.isNotEmpty() && why != Guard.OTA } })
+        val newTv = runBlocking { planner.build(RepoData.info.copy(model = "Brand New TV"), RepoData.facts, FakeAi(true), stopUpdates = true) }
+        assertTrue(newTv.remove.none { Guard.keepReason(it.pkg) == Guard.OTA })
     }
 
     @Test

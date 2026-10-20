@@ -37,7 +37,32 @@ android {
     testOptions.unitTests.all { it.systemProperty("tvgo.repo", repoRoot.path) }
 }
 
-tasks.named("preBuild") { dependsOn(bundleLists) }
+// The tvgo app runs scripts/termux-setup.sh in Termux to install Claude Code for the user.
+val bundleTermuxSetup by tasks.registering(Sync::class) {
+    from(File(repoRoot, "scripts")) { include("termux-setup.sh") }
+    into(layout.buildDirectory.dir("generated/tvgoAssets/termux"))
+}
+
+// The home screen tvgo installs on the TV: launcher/ built without the personal local.properties values
+// (tvgo sends favourites, weather and calendars at runtime), into launcher/app/build-tvgo.
+val launcherDir = File(repoRoot, "launcher")
+val launcherApk = File(launcherDir, "app/build-tvgo/outputs/apk/debug/app-debug.apk")
+val buildLauncher by tasks.registering(Exec::class) {
+    workingDir = launcherDir
+    val windows = System.getProperty("os.name").startsWith("Windows")
+    commandLine(if (windows) listOf("cmd", "/c", File(launcherDir, "gradlew.bat").path) else listOf(File(launcherDir, "gradlew").path))
+    args("assembleDebug", "-q", "-Ptvhome.noLocal")
+    inputs.dir(File(launcherDir, "app/src"))
+    inputs.file(File(launcherDir, "app/build.gradle"))
+    outputs.file(launcherApk)
+}
+val bundleLauncher by tasks.registering(Copy::class) {
+    dependsOn(buildLauncher)
+    from(launcherApk) { rename { "tvhome.apk" } }
+    into(layout.buildDirectory.dir("generated/tvgoAssets/launcher"))
+}
+
+tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup, bundleLauncher) }
 
 dependencies {
     implementation(libs.activity.compose)

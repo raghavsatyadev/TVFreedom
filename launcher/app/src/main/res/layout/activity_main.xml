@@ -39,12 +39,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <!-- Company logo from tvgo (Branding.java): a square one stands left of the clock, a wide one takes the
+                 greeting's line above it. -->
             <LinearLayout
                 android:id="@+id/leftBlock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/brandSquare"
+                android:layout_width="wrap_content"
+                android:layout_height="96dp"
+                android:layout_marginEnd="20dp"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/brandWide"
+                    android:layout_width="wrap_content"
+                    android:layout_height="60dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="6dp"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/greeting"
@@ -94,6 +119,7 @@
                         android:textAllCaps="true" />
 
                     <View
+                        android:id="@+id/dateDivider"
                         android:layout_width="1dp"
                         android:layout_height="26dp"
                         android:layout_gravity="bottom"
@@ -117,6 +143,7 @@
                         android:letterSpacing="0.14"
                         android:textAllCaps="true" />
                 </LinearLayout>
+            </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -162,6 +189,8 @@
                 android:id="@+id/grid"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:paddingTop="10dp"
                 android:paddingBottom="40dp"
                 android:clipToPadding="false"

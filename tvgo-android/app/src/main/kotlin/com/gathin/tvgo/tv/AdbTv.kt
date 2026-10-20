@@ -4,7 +4,9 @@ import android.util.Log
 import io.github.muntashirakon.adb.AbsAdbConnectionManager
 import io.github.muntashirakon.adb.AdbPairingRequiredException
 import io.github.muntashirakon.adb.AdbStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.bouncycastle.asn1.x500.X500Name
@@ -14,6 +16,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
@@ -101,7 +104,58 @@ class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell 
 
     val connected get() = mgr?.isConnected == true
 
-    override suspend fun sh(cmd: String): String = withContext(Dispatchers.IO) {
+    /**
+     * Run [cmd]. If the connection has dropped (adbd often restarts once more just after a boot, and libadb then
+     * throws "connect() must be called first"), connect again once and retry. Same when adbd turns down a new
+     * stream ("Stream open actively rejected", seen on a Mi Box mid-run): wait a moment and try once more.
+     */
+    override suspend fun sh(cmd: String): String = retry("sh $cmd") { shOnce(cmd) }
+
+    private suspend fun <T> retry(what: String, block: suspend () -> T): T = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e // a timeout or cancel is an IllegalStateException too; never retry it
+    } catch (e: IllegalStateException) {
+        Log.d(TAG, "$what: ${e.message}; reconnecting")
+        if (connect(30) != ConnectResult.Ok) throw e
+        block()
+    } catch (e: IOException) {
+        if (e.message?.contains("rejected", ignoreCase = true) != true) throw e
+        Log.d(TAG, "$what: ${e.message}; trying again")
+        delay(1_500)
+        if (!connected && connect(30) != ConnectResult.Ok) throw e
+        block()
+    }
+
+    /**
+     * Run [cmd] with the raw exec: service (no terminal, so binary output such as a PNG arrives untouched),
+     * writing what [input] opens to its stdin first. Returns every byte of stdout.
+     */
+    suspend fun exec(cmd: String, input: (() -> InputStream)? = null, timeoutMs: Long = 120_000): ByteArray = retry("exec $cmd") {
+        withContext(Dispatchers.IO) {
+            val m = mgr ?: throw IllegalStateException("not connected to $address")
+            Log.d(TAG, "exec $cmd")
+            withTimeout(timeoutMs) {
+                m.openStream("exec:$cmd").use { s ->
+                    input?.let { open -> open().use { feed(s, it) } } // opened per try, so a retry starts from byte 0
+                    readAll(s)
+                }
+            }
+        }
+    }
+
+    /** Write [input] in small packets, well under any adbd's maximum payload. */
+    private fun feed(s: AdbStream, input: InputStream) {
+        val buf = ByteArray(4 * 1024)
+        while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            s.write(buf, 0, n)
+        }
+        s.flush()
+    }
+
+    private suspend fun shOnce(cmd: String): String = withContext(Dispatchers.IO) {
         val m = mgr ?: throw IllegalStateException("not connected to $address")
         Log.d(TAG, "sh $cmd")
         withTimeout(120_000) {

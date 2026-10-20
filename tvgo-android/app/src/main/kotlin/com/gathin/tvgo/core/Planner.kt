@@ -3,6 +3,8 @@ package com.gathin.tvgo.core
 /**
  * Build the removal plan (port of tvgo_core/plan.py): facts from the TV, then the guard (always wins),
  * then this model's known lists, then the AI for the rest. Bad or missing AI answers mean keep.
+ * Phases 4 and 5 of a model's lists (home screen and screensaver) are left to the home-screen setup, which swaps
+ * them safely; they never appear here or as AI examples.
  */
 class Planner(private val known: Known, private val keep: Set<String>) {
 
@@ -12,9 +14,14 @@ class Planner(private val known: Known, private val keep: Set<String>) {
         classifier: Classifier?,
         uninstallUserApps: Boolean = false,
         log: (String) -> Unit = {},
+        /** Let this model's own list turn off what the guard keeps as OTA (firmware updates), and nothing else. */
+        stopUpdates: Boolean = false,
     ): Plan {
-        val own = known.forModel(info.model)
-        val examples = known.examples()
+        val ownAll = known.forModel(info.model)
+        val allExamples = known.examples()
+        val own = ownAll.filterValues { it.phase in PHASES }
+        val examples = allExamples.filterValues { it.phase in PHASES }
+        val homeOwned = (ownAll + allExamples).filterValues { it.phase !in PHASES }.keys
         val remove = mutableListOf<Removal>()
         val kept = linkedMapOf<String, String>()
         val conflicts = mutableListOf<Conflict>()
@@ -28,9 +35,13 @@ class Planner(private val known: Known, private val keep: Set<String>) {
         for ((pkg, apk) in f.paths.toSortedMap()) {
             if (pkg in f.disabled) continue
             val why = Guard.keepReason(pkg, apk, f.home, info.ime, keep, f.uids[pkg])
-            if (why.isNotEmpty()) {
+            if (why.isNotEmpty() && !(why == Guard.OTA && stopUpdates && pkg in own)) {
                 kept[pkg] = why
                 examples[pkg]?.let { conflicts += Conflict(pkg, why, "${it.action} on ${it.model}") }
+                continue
+            }
+            if (pkg in homeOwned) {
+                kept[pkg] = HOME_OWNED
                 continue
             }
             val mine = own[pkg]
@@ -54,6 +65,11 @@ class Planner(private val known: Known, private val keep: Set<String>) {
                 else -> kept[item.pkg] = "agent: ${v.reason}"
             }
         }
-        return Plan(info, remove, kept, conflicts, alreadyOff, ask.map { it.pkg }.filter { it !in answers })
+        return Plan(info, remove, kept, conflicts, alreadyOff, ask.map { it.pkg }.filter { it !in answers },
+            userApps = f.user)
+    }
+
+    companion object {
+        const val HOME_OWNED = "home screen: phase 4 or 5 swaps it safely"
     }
 }

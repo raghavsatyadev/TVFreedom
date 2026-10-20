@@ -101,6 +101,64 @@ class Storage(private val ctx: Context) {
     fun writeApplied(runDir: File, info: TvInfo, phases: List<Int>, rows: List<Removal>): File =
         File(runDir, "applied.txt").apply { writeText(ListFiles.formatApplied(info, phases, rows)) }
 
+    /**
+     * A home-screen setup run: runs/<model>/home-<stamp>/ with applied.txt (what it turns off) and settings.txt
+     * (each setting it changes, with the value from before). Written before the TV changes, so Restore can undo it.
+     * The home- prefix keeps it out of what the planner learns from.
+     */
+    fun writeHomeRun(info: TvInfo, phase: Int, rows: List<Removal>, settings: Map<String, String>): File {
+        val d = File(File(runs, safe(info.model)), "home-${stamp("yyyy-MM-dd-HHmmss")}")
+        d.mkdirs()
+        writeApplied(d, info, listOf(phase), rows)
+        File(d, SETTINGS).writeText(settings.entries.joinToString("") { (k, v) -> "secure $k $v\n" })
+        return d
+    }
+
+    /**
+     * A phase 6 run: runs/<model>/extra-<stamp>/ with applied.txt (stock YouTube, if SmartTube replaces it) and
+     * extras.txt, the undo line of each other change, appended just before the change is made.
+     */
+    fun writeExtraRun(info: TvInfo, rows: List<Removal>): File {
+        val d = File(File(runs, safe(info.model)), "extra-${stamp("yyyy-MM-dd-HHmmss")}")
+        d.mkdirs()
+        writeApplied(d, info, listOf(6), rows)
+        File(d, EXTRAS).writeText("")
+        return d
+    }
+
+    fun addUndo(runDir: File, line: String) = File(runDir, EXTRAS).appendText(line.trim() + "\n")
+
+    fun undoLines(runDir: File): List<String> = File(runDir, EXTRAS).takeIf { it.exists() }?.readLines().orEmpty().filter { it.isNotBlank() }
+
+    /** Phase 6 runs made after this backup, newest first: restoring the backup undoes them too. */
+    fun extraRunsSince(info: TvInfo, backupDir: File): List<File> = File(runs, safe(info.model)).listFiles().orEmpty()
+        .filter { it.name.startsWith("extra-") && it.lastModified() >= backupDir.lastModified() }.sortedByDescending { it.name }
+
+    /** A run that was put back at once: empty its files so Restore doesn't offer it again. */
+    fun clearRun(runDir: File) {
+        File(runDir, EXTRAS).writeText("")
+        File(runDir, "applied.txt").writeText("")
+    }
+
+    fun cacheDir(): File = ctx.cacheDir
+
+    /** (setting, value before) pairs a run changed, from its settings.txt. */
+    fun savedSettings(runDir: File): Map<String, String> = File(runDir, SETTINGS).takeIf { it.exists() }?.readLines().orEmpty()
+        .map { it.trim().split(' ', limit = 3) }.filter { it.size == 3 && it[0] == "secure" }.associate { it[1] to it[2] }
+
+    /** This model's phase N list from the repo (lists/phaseN.txt or lists/<model>/phaseN.txt), or null if it has none. */
+    fun modelList(info: TvInfo, phase: Int): List<ListEntry>? {
+        val slug = safe(info.model)
+        val path = if (slug == ListFiles.ROOT_MODEL) "phase$phase.txt" else "$slug/phase$phase.txt"
+        return assetLists()[path]?.let { ListFiles.readEntries(it) }
+    }
+
+    /** A new folder for a screenshot taken outside a run. */
+    fun shotDir(): File = File(File(root, "shots"), stamp("yyyy-MM-dd-HHmmss")).apply { mkdirs() }
+
+    /** The launcher APK bundled at build time (launcher/, without personal settings). */
+    fun launcherApk(): ByteArray = ctx.assets.open("launcher/tvhome.apk").use { it.readBytes() }
+
     fun markVerified(runDir: File, ok: Boolean) {
         val marker = File(runDir, VERIFIED)
         if (ok) marker.writeText("") else marker.delete()
@@ -118,10 +176,14 @@ class Storage(private val ctx: Context) {
     /** What restore can undo on this TV: tvgo runs (newest first), the repo's phase lists, then backups. */
     fun restoreOptions(info: TvInfo): List<RestoreOption> {
         val out = mutableListOf<RestoreOption>()
-        File(runs, safe(info.model)).listFiles().orEmpty().filter { it.name.startsWith("ai-") }
-            .sortedByDescending { it.name }.forEach { run ->
-                File(run, "applied.txt").takeIf { it.exists() }?.let {
-                    out += RestoreOption("Run ${run.name.removePrefix("ai-")}: everything it applied", RestoreOption.Kind.LIST, it.readText(), run)
+        File(runs, safe(info.model)).listFiles().orEmpty().filter { it.name.startsWith("ai-") || it.name.startsWith("home-") || it.name.startsWith("extra-") }
+            .sortedByDescending { it.name.substringAfter('-') }.forEach { run ->
+                File(run, "applied.txt").takeIf { it.exists() }
+                    ?.takeIf { !run.name.startsWith("extra-") || undoLines(run).isNotEmpty() || ListFiles.readEntries(it.readText()).isNotEmpty() }?.let {
+                    val label = if (run.name.startsWith("home-")) "Home screen setup ${run.name.removePrefix("home-")}: the old home screen back"
+                    else if (run.name.startsWith("extra-")) "Extras ${run.name.removePrefix("extra-")}: background, settings, DNS and YouTube as they were"
+                    else "Run ${run.name.removePrefix("ai-")}: everything it applied"
+                    out += RestoreOption(label, RestoreOption.Kind.LIST, it.readText(), run)
                 }
             }
         val slug = safe(info.model)
@@ -158,5 +220,7 @@ class Storage(private val ctx: Context) {
 
     companion object {
         const val VERIFIED = "verified" // marker in a run dir: applied, rebooted and the home screen came back
+        private const val SETTINGS = "settings.txt"
+        private const val EXTRAS = "extras.txt"
     }
 }

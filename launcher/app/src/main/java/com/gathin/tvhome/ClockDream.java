@@ -16,7 +16,7 @@ import java.util.Random;
 /**
  * Screensaver: the launcher's thin clock and date on black, over a slow ambient glow.
  * Every minute the clock drifts to a new spot and the glow shifts colour, so nothing burns in.
- * Below the date: weather and the next calendar events ({@link DreamInfo}), refreshed every 10 minutes.
+ * Above the clock: the company logo, if tvgo sent one. Below the date: weather and the next calendar events ({@link DreamInfo}), refreshed every 10 minutes.
  */
 public class ClockDream extends DreamService {
 
@@ -56,6 +56,7 @@ public class ClockDream extends DreamService {
         content = findViewById(R.id.dreamContent);
         weatherView = findViewById(R.id.dreamWeather);
         eventsView = findViewById(R.id.dreamEvents);
+        Branding.applyDream(this, findViewById(R.id.dreamLogo));
         View ambient = findViewById(R.id.dreamAmbient);
         glow = new GradientDrawable();
         glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);

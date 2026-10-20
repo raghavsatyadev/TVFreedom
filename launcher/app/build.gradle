@@ -5,12 +5,16 @@ plugins {
 // Personal settings (screensaver place and calendars) live in local.properties, which is not in git.
 def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
-if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+// -Ptvhome.noLocal builds a copy without them (the one bundled into the tvgo app, which sends its own at runtime).
+if (localFile.exists() && !project.hasProperty('tvhome.noLocal')) localFile.withInputStream { localProps.load(it) }
 // resValue strings go through aapt, so escape what it treats specially (backslash, quotes, a leading @ or ?).
 def local = { String key ->
     def v = (localProps.getProperty(key, '') ?: '').replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'")
     v.startsWith('@') || v.startsWith('?') ? '\\' + v : v
 }
+
+// The tvgo copy builds into its own folder so it never replaces the personal debug APK.
+if (project.hasProperty('tvhome.noLocal')) layout.buildDirectory = file('build-tvgo')
 
 android {
     namespace 'com.gathin.tvhome'
@@ -20,8 +24,8 @@ android {
         applicationId 'com.gathin.tvhome'
         minSdk 26
         targetSdk 29
-        versionCode 2
-        versionName '2.0'
+        versionCode 6
+        versionName '2.4'
         resValue 'string', 'weather_place', local('tvhome.weather.place')
         resValue 'string', 'weather_latitude', local('tvhome.weather.latitude')
         resValue 'string', 'weather_longitude', local('tvhome.weather.longitude')

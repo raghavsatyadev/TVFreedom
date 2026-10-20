@@ -44,6 +44,8 @@ data class Plan(
     val conflicts: List<Conflict>,
     val alreadyOff: List<String>,
     val unanswered: List<String>,
+    /** Apps the user installed (pm list packages -3), shown on the plan whether they stay or go. */
+    val userApps: Set<String> = emptySet(),
 ) {
     val phases: List<Int> get() = remove.map { it.phase }.distinct().sorted()
 }

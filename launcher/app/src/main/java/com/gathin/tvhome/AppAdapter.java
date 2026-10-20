@@ -97,6 +97,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         setHasStableIds(true);
     }
 
+    /** Every app tile, favourites first, without the dock's spacers. */
+    List<Entry> apps() {
+        List<Entry> out = new ArrayList<>();
+        for (Entry e : items) if (e != null) out.add(e);
+        return out;
+    }
+
     void reload() {
         PackageManager pm = ctx.getPackageManager();
         Map<String, Entry> byPkg = new LinkedHashMap<>();
@@ -189,13 +196,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.card.setVisibility(e == null ? View.INVISIBLE : View.VISIBLE);
         h.card.setFocusable(e != null);
         if (e == null) {
-            h.name.setVisibility(View.INVISIBLE);
+            h.name.setVisibility(position < dockSize ? View.GONE : View.INVISIBLE);
             h.card.setOnClickListener(null);
             h.card.setOnLongClickListener(null);
             return;
         }
         h.name.setText(e.label);
-        h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
+        h.name.setVisibility(position < dockSize ? View.GONE : View.VISIBLE);   // the dock has no labels (nor room for them)
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
         h.name.setAlpha(focused ? 1f : 0f);
         h.card.setScaleX(focused ? FOCUS_SCALE : 1f);

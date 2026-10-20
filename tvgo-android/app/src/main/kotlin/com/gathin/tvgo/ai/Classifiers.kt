@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.withContext
 
 /** Ask in batches; a failed batch is logged and its packages stay (no answer = keep). */
-private suspend fun inBatches(items: List<AskItem>, size: Int, log: (String) -> Unit, name: String,
+internal suspend fun inBatches(items: List<AskItem>, size: Int, log: (String) -> Unit, name: String,
                               ask: suspend (List<AskItem>) -> String): Map<String, Verdict> {
     val answers = linkedMapOf<String, Verdict>()
     items.chunked(size).forEachIndexed { i, chunk ->
@@ -31,7 +31,8 @@ private suspend fun inBatches(items: List<AskItem>, size: Int, log: (String) -> 
 }
 
 /** Gemini Nano through ML Kit's Prompt API: on the phone, free, offline. Small context, so small batches. */
-class NanoClassifier : Classifier {
+/** [waitOpen] returns once tvgo is on screen: AICore refuses Gemini Nano calls from an app in the background. */
+class NanoClassifier(private val waitOpen: suspend () -> Unit = {}) : Classifier {
     override val name = "Gemini Nano"
     private val model = Generation.getClient()
 
@@ -66,6 +67,7 @@ class NanoClassifier : Classifier {
                 temperature = 0f
                 maxOutputTokens = 1024
             }
+            waitOpen()
             model.generateContent(req).candidates.firstOrNull()?.text ?: ""
         }
     }

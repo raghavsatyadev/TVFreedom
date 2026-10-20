@@ -10,11 +10,12 @@ import java.util.List;
 
 /**
  * The favourite apps (package names, in dock order), changed from the remote via the tile menu.
- * Starts from res/values/config.xml (dock_apps) until the first change is saved.
+ * Starts from res/values/config.xml (dock_apps) until the first change is saved, here or from tvgo
+ * ({@link ConfigReceiver}).
  */
 final class Favourites {
 
-    private static final String PREFS = "home", KEY = "favourites";
+    static final String KEY = "favourites";
 
     private final Context ctx;
     private final List<String> list = new ArrayList<>();
@@ -24,6 +25,11 @@ final class Favourites {
         String saved = prefs().getString(KEY, null);
         if (saved == null) list.addAll(Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
         else if (!saved.isEmpty()) list.addAll(Arrays.asList(saved.split(",")));
+    }
+
+    /** Every favourite in dock order, installed or not. */
+    List<String> all() {
+        return new ArrayList<>(list);
     }
 
     /** Dock order; index -1 means not a favourite. */
@@ -64,6 +70,6 @@ final class Favourites {
     }
 
     private SharedPreferences prefs() {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        return Config.prefs(ctx);
     }
 }

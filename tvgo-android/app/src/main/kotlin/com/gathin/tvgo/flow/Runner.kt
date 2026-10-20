@@ -13,10 +13,24 @@ import com.gathin.tvgo.tv.AdbKeys
 import com.gathin.tvgo.tv.AdbTv
 import com.gathin.tvgo.tv.ConnectResult
 import com.gathin.tvgo.tv.Discovery
+import com.gathin.tvgo.tv.HomeOps
 import com.gathin.tvgo.tv.Parse
 import com.gathin.tvgo.tv.TvOps
+import com.gathin.tvgo.tv.Undo
 import kotlinx.coroutines.delay
 import java.io.File
+
+/**
+ * How a run that restarts the TV ended. [tv] is the connection to use afterwards (the port can move after a
+ * reboot), null if the TV never came back. RAM is MemAvailable in MB; [screen] is a PNG taken after the restart.
+ */
+data class RunResult(
+    val tv: AdbTv?,
+    val ok: Boolean,
+    val ramBefore: Int? = null,
+    val ramAfter: Int? = null,
+    val screen: File? = null,
+)
 
 /**
  * The steps of tvgo.py go / restore / verify, with every TV write logged.
@@ -27,8 +41,23 @@ class Runner(
     private val keys: AdbKeys,
     private val discovery: Discovery,
     private val log: (String) -> Unit,
+    /** A short plain-language name for the step starting now, for the screen. */
+    private val step: (String) -> Unit = {},
 ) {
+    /** Put before every step name while a phase-by-phase run is on ("Phase 2 (step 1 of 3): "). */
+    var stepPrefix = ""
+
+    /**
+     * Name the step on screen and wake the TV, so a TV that dozed off mid-run takes the next command
+     * (sh() reconnects first if the connection dropped).
+     */
+    suspend fun begin(tv: AdbTv, name: String) {
+        step(stepPrefix + name)
+        runCatching { tv.sh("input keyevent KEYCODE_WAKEUP") }
+    }
+
     suspend fun backup(tv: AdbTv, info: TvInfo): File {
+        begin(tv, "Backing up the TV")
         log("backing up the package lists")
         val dir = storage.writeBackup(info, TvOps(tv, tv.address).backupFiles())
         log("backup saved: ${dir.name}")
@@ -37,39 +66,57 @@ class Runner(
 
     /** Read the TV, then guard, lists and AI. Changes nothing on the TV. */
     suspend fun plan(tv: AdbTv, info: TvInfo, classifier: Classifier?): Pair<Plan, File> {
+        begin(tv, "Reading the TV's apps")
         log("reading packages")
         val facts = TvOps(tv, tv.address).facts()
         log("${facts.paths.size} packages, ${facts.disabled.size} already off")
         val planner = Planner(Known(storage.knownFiles()), storage.keep())
-        val plan = planner.build(info, facts, classifier, storage.settings.uninstallUserApps, log)
+        val plan = planner.build(info, facts, classifier, storage.settings.uninstallUserApps, log,
+            stopUpdates = storage.settings.stopUpdates)
         val dir = storage.savePlan(plan)
         log("plan: ${plan.remove.size} to remove, ${plan.kept.size} kept, ${plan.alreadyOff.size} already off")
         return plan to dir
     }
 
     /**
-     * Apply the chosen rows (disable-user / uninstall --user 0 only), wait 30 s, reboot and check the home screen.
-     * Returns the connection to use afterwards (the port can move after a reboot) and whether the home screen came back.
+     * Apply [rows] (disable-user / uninstall --user 0 only), wait 30 s, reboot and check the home screen.
+     * [applied] is everything this run has applied so far, rows included: applied.txt always lists all of it,
+     * so a run applied one phase at a time is undone as one.
      */
-    suspend fun apply(tv: AdbTv, info: TvInfo, runDir: File, phases: List<Int>, rows: List<Removal>): Pair<AdbTv?, Boolean> {
-        storage.writeApplied(runDir, info, phases, rows)
+    suspend fun apply(tv: AdbTv, info: TvInfo, runDir: File, phases: List<Int>, rows: List<Removal>,
+                      applied: List<Removal> = rows): RunResult {
+        storage.writeApplied(runDir, info, phases, applied)
+        val before = freeRam(tv)
+        begin(tv, "Changing ${rows.size} apps")
         val ops = TvOps(tv, tv.address)
         rows.forEach { r -> log("${r.action} ${r.pkg}: ${ops.apply(ListEntry(r.action, r.pkg, r.reason)).ifEmpty { "ok" }}") }
-        saveWait()
-        val (after, ok) = rebootAndCheck(tv, info)
-        storage.markVerified(runDir, ok)
-        return after to ok
+        saveWait(tv)
+        val result = rebootAndCheck(tv, info, runDir).copy(ramBefore = before)
+        storage.markVerified(runDir, result.ok)
+        return result
     }
 
-    /** Undo a list (newest line first, like tv.py restore). A run that is undone is no longer learned from. */
+    /**
+     * Undo a list (newest line first, like tv.py restore), then put back any setting the run changed.
+     * A run that is undone is no longer learned from.
+     */
     suspend fun restoreList(tv: AdbTv, option: RestoreOption) {
+        begin(tv, "Restoring ${option.entries.size} apps")
         option.dir?.let { storage.markVerified(it, false) }
         val ops = TvOps(tv, tv.address)
         option.entries.asReversed().forEach { e ->
             val verb = if (e.action == "disable") "enable" else "reinstall"
             log("$verb ${e.pkg}: ${ops.undo(e).ifEmpty { "ok" }}")
         }
-        saveWait()
+        option.dir?.let { storage.savedSettings(it) }?.forEach { (key, value) ->
+            if (key != HomeOps.SCREENSAVER) return@forEach
+            log("screensaver back to $value: ${HomeOps(tv).setScreensaver(value).ifEmpty { "ok" }}")
+        }
+        option.dir?.let { dir ->
+            Undo.run(tv, storage.undoLines(dir)).forEach(log) // phase 6: app-ops, settings, SmartTube
+            if (dir.name.startsWith("extra-")) storage.clearRun(dir) // undone: not offered (or replayed) again
+        }
+        saveWait(tv)
     }
 
     /** What "everything back to this backup" would do: (to enable, to reinstall). */
@@ -83,32 +130,54 @@ class Runner(
     }
 
     suspend fun restoreBackup(tv: AdbTv, info: TvInfo, backupDir: File) {
+        begin(tv, "Restoring the backup")
         storage.unlearnSince(info, backupDir)
+        // The backup only has package lists: phase 6's other changes are put back from their own runs.
+        storage.extraRunsSince(info, backupDir).forEach { run ->
+            Undo.run(tv, storage.undoLines(run)).forEach(log)
+            storage.clearRun(run)
+        }
         val (enable, reinstall) = diffToBackup(tv, backupDir)
         val ops = TvOps(tv, tv.address)
         reinstall.forEach { log("reinstall $it: ${ops.reinstall(it)}") }
         enable.forEach { log("enable $it: ${ops.enable(it).ifEmpty { "ok" }}") }
-        saveWait()
+        saveWait(tv)
     }
 
     /** Android saves package state lazily; a reboot within seconds loses it. */
-    private suspend fun saveWait() {
+    suspend fun saveWait(tv: AdbTv) {
+        begin(tv, "Letting the TV save the changes")
         log("waiting 30 s so the TV saves the package state before any reboot")
         delay(30_000)
     }
 
-    /** Reboot, wait for sys.boot_completed, press Home and check the focused window is the HOME package. */
-    suspend fun rebootAndCheck(tv: AdbTv, info: TvInfo): Pair<AdbTv?, Boolean> {
+    suspend fun freeRam(tv: AdbTv): Int? = runCatching { HomeOps(tv).freeRamMb() }.getOrNull()?.also { log("free RAM $it MB") }
+
+    /**
+     * Reboot, wait for sys.boot_completed, press Home and check the focused window is the HOME package
+     * (or exactly [expectHome], when a run has just set one). Then read free RAM and, with [shotDir], take a screenshot.
+     */
+    suspend fun rebootAndCheck(tv: AdbTv, info: TvInfo, shotDir: File? = null, expectHome: String? = null): RunResult {
+        begin(tv, "Restarting the TV")
         log("rebooting the TV")
         tv.reboot()
         val back = waitBoot(tv, info.serial)
         if (back == null) {
             log("the TV did not come back over adb within 4 min. Check it on screen.")
-            return null to false
+            return RunResult(null, false)
         }
-        val ok = homeOk(back)
+        begin(back, "Checking the home screen")
+        val ok = homeOk(back, expectHome)
         log(if (ok) "home screen OK" else "home screen NOT reached")
-        return back to ok
+        val ram = freeRam(back)
+        val shot = shotDir?.let { screenshot(back, it) }
+        return RunResult(back, ok, ramAfter = ram, screen = shot)
+    }
+
+    /** What the TV shows now, saved as [dir]/screen.png; null if screencap gave no PNG. */
+    suspend fun screenshot(tv: AdbTv, dir: File): File? {
+        val png = runCatching { HomeOps(tv).screenshot() }.getOrNull() ?: return null.also { log("no screenshot") }
+        return File(dir, "screen.png").apply { writeBytes(png) }
     }
 
     private suspend fun waitBoot(tv: AdbTv, serial: String): AdbTv? {
@@ -118,7 +187,10 @@ class Runner(
         while (System.currentTimeMillis() < deadline) {
             if (current.connect(15) == ConnectResult.Ok) {
                 val ops = TvOps(current, current.address)
-                if (runCatching { ops.getprop("sys.boot_completed") }.getOrNull() == "1") return current
+                if (runCatching { ops.getprop("sys.boot_completed") }.getOrNull() == "1") {
+                    delay(10_000) // the TV's adbd may restart once more right after boot; let it settle
+                    return current
+                }
             } else if (current.port != 5555) { // wireless debugging: the port may have changed
                 relocate(serial)?.let { current = it; log("TV is now at ${it.address}") }
             }
@@ -140,7 +212,11 @@ class Runner(
         return null
     }
 
-    private suspend fun homeOk(tv: AdbTv): Boolean {
+    /**
+     * Press Home and compare the focused app with the HOME package. With [expect], both must be exactly that
+     * package: a setup screen that took over Home would otherwise match itself.
+     */
+    suspend fun homeOk(tv: AdbTv, expect: String? = null): Boolean {
         val ops = TvOps(tv, tv.address)
         ops.key("KEYCODE_WAKEUP")
         delay(2_000)
@@ -149,6 +225,6 @@ class Runner(
         val home = ops.homeActivity().substringBefore('/')
         val focus = ops.focusedPackage()
         log("home package ${home.ifEmpty { "?" }}, focused ${focus.ifEmpty { "?" }}")
-        return home.isNotEmpty() && focus == home
+        return home.isNotEmpty() && focus == home && (expect == null || home == expect)
     }
 }

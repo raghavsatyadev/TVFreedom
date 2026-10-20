@@ -52,7 +52,7 @@ import java.util.List;
  */
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
-    /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
+    /** Tiles per row and dock slots (config.xml columns, or set by tvgo). Set in onCreate. */
     static int COLUMNS = 4;
     private static final long MINUTE_MS = 60_000L;
     private String liveTvPkg;
@@ -105,7 +105,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         density = getResources().getDisplayMetrics().density;
-        COLUMNS = Math.max(1, getResources().getInteger(R.integer.columns));
+        COLUMNS = Config.columns(this);
         liveTvPkg = getString(R.string.live_tv_package).trim();
 
         root = findViewById(R.id.root);
@@ -135,7 +135,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
             int rows = Math.max(1, adapter.dockSize() / COLUMNS);
-            int dockRow = (int) ((145 * rows + 6 + 12) * density);   // item heights plus DockDecoration offsets
+            int dockRow = (int) ((117 * rows + DockDecoration.ROW_GAP_DP * (rows - 1) + 6 + 12) * density);   // label-less items plus DockDecoration offsets
             int want = Math.max(0, h - dockRow - (int) (30 * density));
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
@@ -192,6 +192,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onResume() {
         super.onResume();
         forceOpaque();
+        Branding.apply(this, root, findViewById(R.id.brandSquare), findViewById(R.id.brandWide), greeting);
+        Branding.fitTopBar(findViewById(R.id.leftBlock), findViewById(R.id.topButtons),
+                findViewById(R.id.date), findViewById(R.id.dateDivider));
         glassShown = false;
         glass.setAlpha(0f);
         heroShown = false;
@@ -202,6 +205,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final int returnSlot = lastFocused;
         adapter.reload();
         grid.scheduleLayoutAnimation();
+        // A just-installed app: offer it as a favourite once the screen has settled.
+        handler.postDelayed(() -> {
+            if (!isFinishing() && hasWindowFocus()) NewApps.offer(this, root, findViewById(R.id.btnInputs), adapter, pkg -> {
+                adapter.reload();
+                grid.post(() -> focusTile(adapter.positionOf(adapter.keyOfPackage(pkg))));
+            });
+        }, 900);
         updateGreeting();
         updateWifiLabel();
         handler.postDelayed(minuteTick, MINUTE_MS);
@@ -295,7 +305,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View item = (View) card.getParent();
         if (position < adapter.dockSize()) {
             // Favourites: park their first row at the bottom of the screen and show the top shelf for this app.
-            int rowAbove = (position / COLUMNS) * item.getHeight();
+            int rowAbove = (position / COLUMNS) * (item.getHeight() + (int) (DockDecoration.ROW_GAP_DP * density));
             int decoratedTop = item.getTop() - rowAbove - (int) (6 * density);
             int dy = decoratedTop - grid.getPaddingTop();
             if (Math.abs(dy) > 1) grid.smoothScrollBy(0, dy);
@@ -311,9 +321,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- top shelf -------------------------------------------------------------------------------
 
     private void showHero(int position, float dockTopInRoot) {
-        String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - heroName.getHeight();
+        float y = dockTopInRoot - (DockDecoration.PAD_DP + 26) * density - heroName.getHeight();
+        // A logo or two rows of favourites can leave less room under the top bar: shrink the name to fit, or skip it.
+        float room = dockTopInRoot - (DockDecoration.PAD_DP + 26) * density - topBarBottom() - 8 * density;
+        float scale = heroName.getHeight() == 0 ? 1f : Math.min(1f, room / heroName.getHeight());
+        heroName.setPivotX(0f);
+        heroName.setPivotY(heroName.getHeight());
+        heroName.setScaleX(Math.max(scale, 0f));
+        heroName.setScaleY(Math.max(scale, 0f));
+        String label = scale < 0.55f ? "" : adapter.labelAt(position);
         boolean changed = !label.contentEquals(heroName.getText());
 
         if (!heroShown) {
@@ -340,6 +357,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } else {
             heroName.setY(y);
         }
+    }
+
+    /** The bottom of the clock and buttons row, in root coordinates. */
+    private float topBarBottom() {
+        View bar = (View) findViewById(R.id.leftBlock).getParent();
+        Rect r = new Rect(0, 0, bar.getWidth(), bar.getHeight());
+        root.offsetDescendantRectToMyCoords(bar, r);
+        return r.bottom;
     }
 
     private void setAmbient(int color) {

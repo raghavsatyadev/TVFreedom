@@ -22,6 +22,8 @@
     <string name="dream_name">Clock</string>
     <string name="add_favourite">Add to favourites</string>
     <string name="remove_favourite">Remove from favourites</string>
+    <string name="add_new_favourite">New: add %1$s to favourites</string>
+    <string name="not_now">Not now</string>
     <string name="move_left">Move left</string>
     <string name="move_right">Move right</string>
     <string name="app_info">App info</string>

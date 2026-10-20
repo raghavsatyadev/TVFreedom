@@ -12,6 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 /** Draws the tvOS style lighter band behind the favourite rows and adds a gap above and below them. */
 public class DockDecoration extends RecyclerView.ItemDecoration {
 
+    /** Band around the favourites: wider than a focused tile grows (1.10x plus the glass glow), so it never touches the edge. */
+    static final int PAD_DP = 22;
+    /** Extra space between favourite rows, so they are as far apart as the columns. */
+    static final int ROW_GAP_DP = 12;
+
     private final AppAdapter adapter;
     private final int columns;
     private final float density;
@@ -36,6 +41,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         int dockSize = adapter.dockSize();
         if (pos >= 0 && pos < columns) outRect.top = (int) (6 * density);
         if (pos >= 0 && pos < dockSize && pos >= dockSize - columns) outRect.bottom = (int) (12 * density);
+        else if (pos >= 0 && pos < dockSize) outRect.bottom = (int) (ROW_GAP_DP * density);
     }
 
     @Override
@@ -60,7 +66,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             }
         }
         if (!any) return;
-        float pad = 14 * density;
+        float pad = PAD_DP * density;
         rect.inset(-pad, -pad);
         float radius = 26 * density;
         c.drawRoundRect(rect, radius, radius, band);
