@@ -12,9 +12,12 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -52,33 +55,58 @@ class TermuxInstaller(private val ctx: Context) {
         }
     }
 
+    /**
+     * A slow or broken connection does not start over: each try asks only for the bytes still missing, and the part
+     * already downloaded stays in the cache for the next "Try again".
+     */
     private suspend fun download(progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
-        val api = get(API).inputStream.use { it.readBytes().decodeToString() }
+        val api = retrying { get(API).inputStream.use { it.readBytes().decodeToString() } }
         val vc = Regex("\"suggestedVersionCode\"\\s*:\\s*(\\d+)").find(api)?.groupValues?.get(1)
             ?: error("F-Droid did not say which Termux to get")
-        val conn = get("$REPO/com.termux_$vc.apk")
-        val total = conn.contentLengthLong
-        val file = File(ctx.cacheDir, "termux.apk")
-        conn.inputStream.use { input ->
-            file.outputStream().use { out ->
-                val buf = ByteArray(64 * 1024)
-                var done = 0L
-                while (true) {
-                    val n = input.read(buf)
-                    if (n < 0) break
-                    out.write(buf, 0, n)
-                    done += n
-                    if (total > 0) progress(done.toFloat() / total)
+        val file = File(ctx.cacheDir, "termux_$vc.apk")
+        ctx.cacheDir.listFiles { f -> f.name.startsWith("termux") && f != file }?.forEach { it.delete() }
+        retrying {
+            val conn = get("$REPO/com.termux_$vc.apk", from = file.length())
+            if (conn.responseCode == 416) return@retrying // the cached part is already the whole file
+            val resumed = conn.responseCode == 206
+            var done = if (resumed) file.length() else 0L
+            val total = conn.contentLengthLong.let { if (it > 0) done + it else 0L }
+            conn.inputStream.use { input ->
+                FileOutputStream(file, resumed).use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        done += n
+                        if (total > 0) progress(done.toFloat() / total)
+                    }
                 }
             }
         }
         file
     }
 
-    private fun get(url: String): HttpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {
+    /** Runs [block] up to [TRIES] times, waiting a little longer after each failed try. */
+    private suspend fun <T> retrying(block: () -> T): T {
+        var last: Exception? = null
+        repeat(TRIES) { n ->
+            try {
+                return block()
+            } catch (e: IOException) {
+                last = e
+                delay(2_000L * (n + 1))
+            }
+        }
+        throw last!!
+    }
+
+    /** [from] > 0 asks for the rest of a file (206); a server that ignores it answers 200 with the whole file. */
+    private fun get(url: String, from: Long = 0): HttpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {
         connectTimeout = 20_000
         readTimeout = 60_000
-        if (responseCode != 200) error("$url answered $responseCode")
+        if (from > 0) setRequestProperty("Range", "bytes=$from-")
+        if (responseCode !in setOf(200, 206, 416)) error("$url answered $responseCode")
     }
 
     /** Null when [apk] is com.termux signed with the pinned key; otherwise why not. */
@@ -142,6 +170,7 @@ class TermuxInstaller(private val ctx: Context) {
         private const val TERMUX = "com.termux"
         private const val API = "https://f-droid.org/api/v1/packages/com.termux"
         private const val REPO = "https://f-droid.org/repo"
+        private const val TRIES = 5
         /** F-Droid's signing key for com.termux (apksigner verify --print-certs on com.termux_1002.apk). */
         const val CERT_SHA256 = "228fb2cfe90831c1499ec3ccaf61e96e8e1ce70766b9474672ce427334d41c42"
     }

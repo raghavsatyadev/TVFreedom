@@ -78,7 +78,7 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
                 Get.Downloading -> StepCard(step, "Getting Termux", "Downloading, about 110 MB. Then tap Install when Android asks.",
                     "", Icons.Next, progress = progress, note = PLAY_PROTECT) {}
                 Get.Settings -> StepCard(step, "Allow TVFreedom to install Termux",
-                    "Turn on \"Allow from this source\", then come back.", "Open settings", Icons.Settings) {
+                    "Allow TVFreedom to install apps (\"Allow from this source\" or \"Always allow\"), then come back.", "Open settings", Icons.Settings) {
                     ctx.startActivity(installer.unknownSources())
                 }
                 is Get.Failed -> StepCard(step, "Termux did not install", g.why, "Try again", Icons.Refresh,
@@ -88,11 +88,8 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
                 "TVFreedom asks Termux to run Claude for it. Android asks you first.", "Allow", Icons.Shield) {
                 permission.launch(TermuxClaude.PERMISSION)
             }
-            Step.OPEN_TERMUX -> StepCard(step, "Open Termux once",
-                "Termux sets itself up the first time it opens. Wait for its prompt, then come back.", "Open Termux", Icons.Next) {
-                termux.openTermux()
-            }
-            Step.ALLOW_APPS -> StepCard(step, "Set up Claude in Termux",
+            // A new Termux can't answer until its first open sets it up; the paste step opens it anyway, so it is one step.
+            Step.OPEN_TERMUX, Step.ALLOW_APPS -> StepCard(step, "Set up Claude in Termux",
                 "Tap below. In Termux, wait for the \$ sign, then long-press, tap Paste and press Enter.",
                 "Copy and open Termux", Icons.Next,
                 note = "It takes 5 to 10 minutes. Log in when Claude asks; TVFreedom opens again after.") {
