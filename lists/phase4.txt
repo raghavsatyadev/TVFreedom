@@ -1,4 +1,4 @@
-# Phase 4: replace the Google TV home screen with launcher/ (com.gathin.tvhome, installed separately).
+# Phase 4: replace the Google TV home screen with launcher/ (io.github.raghavsatyadev.tvfreedom.home, installed separately).
 # Undo: python tv.py restore lists/phase4.txt  (brings Google TV's home back; the new launcher can stay installed)
 disable com.google.android.apps.tv.launcherx        # Google TV home (ads row, sponsored banner, ~195 MB)
 disable com.google.android.tungsten.setupwraith      # Google TV setup app: its RecoveryActivity outranks any third-party HOME; adb can't disable just that screen. Re-enable before a factory re-setup.

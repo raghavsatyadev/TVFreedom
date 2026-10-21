@@ -17,7 +17,7 @@
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
-        android:theme="@style/Theme.TvHome"
+        android:theme="@style/Theme.TVFreedomHome"
         android:allowBackup="false">
 
         <activity
@@ -37,7 +37,7 @@
         </activity>
 
         <!-- Screensaver: pick it in Settings, or `settings put secure screensaver_components
-             com.gathin.tvhome/.ClockDream` over adb. -->
+             io.github.raghavsatyadev.tvfreedom.home/.ClockDream` over adb. -->
         <service
             android:name=".ClockDream"
             android:label="@string/dream_name"
@@ -58,7 +58,7 @@
         <!-- The company logo from TVFreedom over adb (content write, see LogoProvider). DUMP, as above. -->
         <provider
             android:name=".LogoProvider"
-            android:authorities="com.gathin.tvhome.logo"
+            android:authorities="io.github.raghavsatyadev.tvfreedom.home.logo"
             android:exported="true"
             android:readPermission="android.permission.DUMP"
             android:writePermission="android.permission.DUMP" />

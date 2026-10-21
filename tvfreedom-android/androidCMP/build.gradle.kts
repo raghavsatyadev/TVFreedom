@@ -67,14 +67,14 @@ val buildLauncher by tasks.registering(Exec::class) {
     workingDir = launcherDir
     val windows = System.getProperty("os.name").startsWith("Windows")
     commandLine(if (windows) listOf("cmd", "/c", File(launcherDir, "gradlew.bat").path) else listOf(File(launcherDir, "gradlew").path))
-    args("assembleDebug", "-q", "-Ptvhome.noLocal")
+    args("assembleDebug", "-q", "-Ptvfreedom.noLocal")
     inputs.dir(File(launcherDir, "app/src"))
     inputs.file(File(launcherDir, "app/build.gradle"))
     outputs.file(launcherApk)
 }
-val bundleLauncher by tasks.registering(Copy::class) {
+val bundleLauncher by tasks.registering(Sync::class) {
     dependsOn(buildLauncher)
-    from(launcherApk) { rename { "tvhome.apk" } }
+    from(launcherApk) { rename { "launcher.apk" } }
     into(layout.buildDirectory.dir("generated/tvfreedomAssets/launcher"))
 }
 

@@ -96,7 +96,7 @@ class HomeOps(private val tv: Tv) {
     suspend fun columns(): Int = Parse.columns(tv.sh("wm size"), tv.sh("wm density"))
 
     companion object {
-        const val LAUNCHER = "com.gathin.tvhome"
+        const val LAUNCHER = "io.github.raghavsatyadev.tvfreedom.home"
         const val CLOCK_DREAM = "$LAUNCHER/.ClockDream"
         const val SCREENSAVER = "screensaver_components"
         const val LOGO_URI = "content://$LAUNCHER.logo/logo"

@@ -29,9 +29,9 @@
     <integer name="columns">4</integer>
 
     <!-- Screensaver weather (Open-Meteo, no key) and calendars: set in launcher/local.properties (not in git), e.g.
-           tvhome.weather.place=Your City
-           tvhome.weather.latitude=12.34
-           tvhome.weather.longitude=56.78
-           tvhome.dream.calendars=Holidays in Your Country|Family
+           tvfreedom.weather.place=Your City
+           tvfreedom.weather.latitude=12.34
+           tvfreedom.weather.longitude=56.78
+           tvfreedom.dream.calendars=Holidays in Your Country|Family
          Calendars are display names as synced on the TV, separated by |. Leave latitude empty to hide the weather. -->
 </resources>

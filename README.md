@@ -1,4 +1,4 @@
-# TV_Debloater
+# TVFreedom
 
 Debloat the living-room Android TV over adb (inspired by the "hacked my TV with Claude Code" bookmark).
 
@@ -44,14 +44,14 @@ Other gotchas: the TV drops adb in standby (wake with `input keyevent KEYCODE_WA
 - RAM available after a fresh boot after phase 3: ~880–900 MB (baseline ~883 MB). Readings swing
   ±60 MB between boots, so phases 1–3 gave no clear RAM gain yet; the launcher swap is the big one.
 - `tv.py` now reconnects and wakes the TV before every command (it drops adb in standby).
-- **Phase 4** (`lists/phase4.txt`, `launcher/`): new home screen `com.gathin.tvhome`, based on
+- **Phase 4** (`lists/phase4.txt`, `launcher/`): new home screen `io.github.raghavsatyadev.tvfreedom.home`, based on
   Gathin23/tv-vibehack's launcher (MIT, original kept in `vendor/`). Changes: favourites grid with
   full-size tiles (Netflix, Prime Video, JioHotstar, Xiaomi TV+ / YouTube, Jellyfin, Plex in a 4 + 3
   grid, padded with empty slots so other apps start on a new row; Down from TV+ goes to Plex), Live TV
   `com.mitv.livetv` in the Inputs menu. Build: `cd launcher && gradlew.bat assembleDebug` (JDK 21 works,
   `local.properties` = `sdk.dir=<path to Android SDK>`), then `adb install -r
   app/build/outputs/apk/debug/app-debug.apk` and
-  `adb shell pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION` (Wi-Fi name).
+  `adb shell pm grant io.github.raghavsatyadev.tvfreedom.home android.permission.ACCESS_FINE_LOCATION` (Wi-Fi name).
   Disabled: Google TV launcher `launcherx` and the Google TV setup app `setupwraith`.
   Gotcha: with `launcherx` off, Home went to setupwraith's invisible `RecoveryActivity` (HOME
   priority 1 beats third-party launchers at 0; `set-home-activity` and the HOME role didn't help, and
@@ -69,7 +69,7 @@ Uninstalled VLC (org.videolan.vlc) and MX Player (com.mxtech.videoplayer.televis
 
 ## Done (2026-10-19): phase 5
 
-- Info screensaver `com.gathin.tvhome/.ClockDream`: clock, date, Your City weather (Open-Meteo), next 3 events from "Holidays in Your Country". Selected with `settings put secure screensaver_components com.gathin.tvhome/.ClockDream`.
+- Info screensaver `io.github.raghavsatyadev.tvfreedom.home/.ClockDream`: clock, date, Your City weather (Open-Meteo), next 3 events from "Holidays in Your Country". Selected with `settings put secure screensaver_components io.github.raghavsatyadev.tvfreedom.home/.ClockDream`.
 - Google screensaver `com.google.android.apps.tv.dreamx` disabled (`lists/phase5.txt`); verified after reboot (`logs/p5-after-reboot.png`). Available RAM after boot: 914 MB.
 - Start the screensaver on demand: `adb shell service call dreams 1` (IDreamManager.dream). `tv.py shot` sends WAKEUP first, which ends the dream; capture with `adb exec-out screencap -p` instead.
 - Fixes: all-day holidays that ended yesterday (UTC vs IST) are skipped; the clock block is pulled back on screen when weather/events make it taller.

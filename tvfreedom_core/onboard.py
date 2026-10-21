@@ -14,7 +14,6 @@ import tv
 from . import adbio, agent, discover
 
 CONFIG = os.path.join(os.path.expanduser("~"), ".tvfreedom.json")
-OLD_CONFIG = os.path.join(os.path.expanduser("~"), ".tvgo.json")  # before the rename to TVFreedom
 
 INSTALL = {  # how to get each agent CLI on the phone (Termux) or a computer
     "claude": "Termux: sh scripts/termux-setup.sh; elsewhere: npm i -g @anthropic-ai/claude-code."
@@ -43,13 +42,11 @@ TV_STEPS = """On the TV (once). Menu names differ a little between brands; the u
 
 
 def load():
-    for path in (CONFIG, OLD_CONFIG):
-        try:
-            with open(path, encoding="utf-8") as fh:
-                return json.load(fh)
-        except (OSError, ValueError):
-            pass
-    return {}
+    try:
+        with open(CONFIG, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
 
 
 def save(cfg):

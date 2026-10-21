@@ -27,7 +27,6 @@ class Offline(unittest.TestCase):
         self.patches = [mock.patch.object(tv, "ROOT", self.tmp),
                         mock.patch.object(known, "LISTS", os.path.join(self.tmp, "lists")),
                         mock.patch.object(onboard, "CONFIG", os.path.join(self.tmp, "tvfreedom.json")),
-                        mock.patch.object(onboard, "OLD_CONFIG", os.path.join(self.tmp, "tvgo.json")),
                         mock.patch("time.sleep")]
         for p in self.patches:
             p.start()
@@ -85,7 +84,7 @@ class Offline(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(pdir, "plan.json")))
         self.assertEqual(self.writes(), [])  # planning changed nothing
 
-        bdir = tv.backup("tvgo-mitv-moor0-FAKE123")
+        bdir = tv.backup("tvfreedom-mitv-moor0-FAKE123")
         applied = os.path.join(pdir, "applied.txt")
         with open(applied, "w") as fh:
             fh.writelines(f"{r['action']} {r['pkg']}\n" for r in p["remove"] if r["phase"] == 1)

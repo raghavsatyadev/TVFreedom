@@ -1,4 +1,4 @@
-package com.gathin.tvhome;
+package io.github.raghavsatyadev.tvfreedom.home;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;

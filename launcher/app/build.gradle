@@ -5,8 +5,8 @@ plugins {
 // Personal settings (screensaver place and calendars) live in local.properties, which is not in git.
 def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
-// -Ptvhome.noLocal builds a copy without them (the one bundled into the TVFreedom app, which sends its own at runtime).
-if (localFile.exists() && !project.hasProperty('tvhome.noLocal')) localFile.withInputStream { localProps.load(it) }
+// -Ptvfreedom.noLocal builds a copy without them (the one bundled into the TVFreedom app, which sends its own at runtime).
+if (localFile.exists() && !project.hasProperty('tvfreedom.noLocal')) localFile.withInputStream { localProps.load(it) }
 // resValue strings go through aapt, so escape what it treats specially (backslash, quotes, a leading @ or ?).
 def local = { String key ->
     def v = (localProps.getProperty(key, '') ?: '').replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'")
@@ -14,22 +14,22 @@ def local = { String key ->
 }
 
 // The TVFreedom copy builds into its own folder so it never replaces the personal debug APK.
-if (project.hasProperty('tvhome.noLocal')) layout.buildDirectory = file('build-tvfreedom')
+if (project.hasProperty('tvfreedom.noLocal')) layout.buildDirectory = file('build-tvfreedom')
 
 android {
-    namespace 'com.gathin.tvhome'
+    namespace 'io.github.raghavsatyadev.tvfreedom.home'
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.gathin.tvhome'
+        applicationId 'io.github.raghavsatyadev.tvfreedom.home'
         minSdk 26
         targetSdk 29
         versionCode 6
         versionName '2.4'
-        resValue 'string', 'weather_place', local('tvhome.weather.place')
-        resValue 'string', 'weather_latitude', local('tvhome.weather.latitude')
-        resValue 'string', 'weather_longitude', local('tvhome.weather.longitude')
-        resValue 'string', 'dream_calendars', local('tvhome.dream.calendars')
+        resValue 'string', 'weather_place', local('tvfreedom.weather.place')
+        resValue 'string', 'weather_latitude', local('tvfreedom.weather.latitude')
+        resValue 'string', 'weather_longitude', local('tvfreedom.weather.longitude')
+        resValue 'string', 'dream_calendars', local('tvfreedom.dream.calendars')
     }
 
     buildTypes {

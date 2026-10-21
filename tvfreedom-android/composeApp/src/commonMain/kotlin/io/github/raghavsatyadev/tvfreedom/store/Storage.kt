@@ -25,7 +25,7 @@ data class RestoreOption(val label: String, val kind: Kind, val text: String = "
 }
 
 /**
- * App-private files, in the repo's layout: backups/<date>-tvgo-<model>-<serial>/ and runs/<model>/ai-<stamp>/
+ * App-private files, in the repo's layout: backups/<date>-tvfreedom-<model>-<serial>/ and runs/<model>/ai-<stamp>/
  * (phaseN.txt, plan.json, applied.txt, verified). The repo's lists/ ship as assets.
  */
 class Storage(
@@ -79,7 +79,7 @@ class Storage(
     private fun newDir(parent: Path, name: String): Path = (parent / name).also { fs.createDirectories(it) }
 
     fun writeBackup(info: TvInfo, files: Map<String, String>): Path {
-        val d = newDir(backups, "${stampNow()}-tvgo-${safe(info.model)}-${safe(info.serial.ifEmpty { "noserial" })}")
+        val d = newDir(backups, "${stampNow()}-tvfreedom-${safe(info.model)}-${safe(info.serial.ifEmpty { "noserial" })}")
         files.forEach { (name, text) -> fs.writeText(d / name, text) }
         return d
     }
@@ -92,7 +92,7 @@ class Storage(
 
     /** Backups of this TV (by serial, else model), newest first. */
     fun backupsFor(info: TvInfo): List<Path> {
-        val key = "-tvgo-${safe(info.model)}-${safe(info.serial.ifEmpty { "noserial" })}"
+        val key = "-tvfreedom-${safe(info.model)}-${safe(info.serial.ifEmpty { "noserial" })}"
         return fs.dirs(backups).filter { it.name.endsWith(key) }.sortedByDescending { it.name }
     }
 
@@ -167,7 +167,7 @@ class Storage(
     fun shotDir(): Path = newDir(root / "shots", stampNow())
 
     /** The launcher APK bundled at build time (launcher/, without personal settings). */
-    fun launcherApk(): ByteArray = assets.read("launcher/tvhome.apk")
+    fun launcherApk(): ByteArray = assets.read("launcher/launcher.apk")
 
     fun markVerified(runDir: Path, ok: Boolean) {
         val marker = runDir / VERIFIED

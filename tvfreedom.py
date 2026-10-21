@@ -97,7 +97,7 @@ def make_plan(args):
     info = pick_tv(args)
     print(f"\n{info['brand']} {info['model']} ({info['device']}), Android {info['android']},"
           f" home {info['home'] or '?'}")
-    bdir = tv.backup(f"tvgo-{known.slug(info['model'])}-{info['serial'] or 'noserial'}")
+    bdir = tv.backup(f"tvfreedom-{known.slug(info['model'])}-{info['serial'] or 'noserial'}")
     p = plan.build(info, plan.facts(info["host"]), args.agent, args.uninstall_user_apps, args.stop_updates)
     pdir = plan.save(p)
     plan.show(p)

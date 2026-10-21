@@ -13,12 +13,12 @@ PY=../tools/venv/bin/python
 [ -x "$PY" ] || PY=../tools/venv/Scripts/python.exe
 export MSYS_NO_PATHCONV=1
 APK=app/build/outputs/apk/debug/app-debug.apk
-"$PY" -I ../tools/b64push.py "$APK" /data/local/tmp/tvhome.apk
+"$PY" -I ../tools/b64push.py "$APK" /data/local/tmp/launcher.apk
 printf '%s\n' \
-  "pm install -r /data/local/tmp/tvhome.apk" \
-  "rm -f /data/local/tmp/tvhome.apk" \
-  "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
-  "cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity" \
+  "pm install -r /data/local/tmp/launcher.apk" \
+  "rm -f /data/local/tmp/launcher.apk" \
+  "pm grant io.github.raghavsatyadev.tvfreedom.home android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
+  "cmd package set-home-activity --user 0 io.github.raghavsatyadev.tvfreedom.home/.MainActivity" \
   "pm disable-user --user 0 $STOCK_LAUNCHER" \
   | "$PY" -I ../tools/tv.py --batch
 echo "Installed. Press Home on the remote to see it."

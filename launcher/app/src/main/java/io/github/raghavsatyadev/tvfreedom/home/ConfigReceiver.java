@@ -1,4 +1,4 @@
-package com.gathin.tvhome;
+package io.github.raghavsatyadev.tvfreedom.home;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,7 +13,7 @@ import java.net.URLEncoder;
 /**
  * Takes settings from adb, so the TVFreedom phone app can set up the home screen without rebuilding the APK:
  * <pre>
- * am broadcast -f 0x20 -n com.gathin.tvhome/.ConfigReceiver --es favourites com.a,com.b --ei columns 4 \
+ * am broadcast -f 0x20 -n io.github.raghavsatyadev.tvfreedom.home/.ConfigReceiver --es favourites com.a,com.b --ei columns 4 \
  *     --es weather_place 'Your City' --es weather_latitude 12.34 --es weather_longitude 56.78 \
  *     --es dream_calendars 'Holidays|Family' --es brand_color '#123456'
  * </pre>
@@ -44,7 +44,7 @@ public class ConfigReceiver extends BroadcastReceiver {
             changed.append(' ').append(Config.COLUMNS);
         }
         e.commit();
-        if (changed.length() > 0) Log.i("tvhome", "config:" + changed);
+        if (changed.length() > 0) Log.i("tvfreedom", "config:" + changed);
         setResultData("ok " + current(ctx));
     }
 

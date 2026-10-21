@@ -24,7 +24,7 @@ object Guard {
         "cast" to """cast|mediashell|dial|miracast|airplay|\.dlna""",
         "voice" to """katniss|voice|assistant|speech|\.tts|texttospeech|hotword|\.asr|mic\b""",
         OTA to """\bota|update|upgrad|firmware|abupdate|recovery|\.fota""",
-        "launcher/setup" to """launcher|setup|wraith|\.home$|gathin""",
+        "launcher/setup" to """launcher|setup|wraith|\.home$|tvfreedom""",
         "vendor HAL" to ("""^com\.(mediatek|mstar|droidlogic|amlogic|realtek|hisilicon|rockchip|qualcomm|qti""" +
             """|nvidia\.(shield\.remote|tegra|ota|blakepairing)|sony\.dtv\.(tvx|tvinput|hdmi|sonysystem)""" +
             """|tcl\.(tv$|tvinput|common|systemserver)|hisense\.(hiservice|tv$)|tpv\.|philips\.tv\.core)""" +

@@ -18,7 +18,7 @@ class HomeParseTest {
 
     @Test
     fun launcherReportIsDecoded() {
-        val out = "Broadcasting: Intent { flg=0x20 cmp=com.gathin.tvhome/.ConfigReceiver }\n" +
+        val out = "Broadcasting: Intent { flg=0x20 cmp=io.github.raghavsatyadev.tvfreedom.home/.ConfigReceiver }\n" +
             "Broadcast completed: result=0, data=\"ok favourites=com.netflix.ninja%2Corg.jellyfin.androidtv&columns=5" +
             "&weather_place=St+John%27s&weather_latitude=12.34&weather_longitude=-56.78&dream_calendars=Holidays+in+India%7CFamily\""
         assertEquals(LauncherConfig(listOf("com.netflix.ninja", "org.jellyfin.androidtv"), 5, "St John's", "12.34", "-56.78",

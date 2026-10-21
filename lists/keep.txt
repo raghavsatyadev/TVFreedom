@@ -7,5 +7,5 @@ com.google.android.youtube.tv         # YouTube
 org.jellyfin.androidtv                # Jellyfin
 com.plexapp.android                   # Plex
 com.android.vending                   # Play Store
-com.gathin.tvhome                     # custom launcher (launcher/)
+io.github.raghavsatyadev.tvfreedom.home                     # custom launcher (launcher/)
 com.google.android.syncadapters.calendar # calendar sync: ClockDream shows the next events

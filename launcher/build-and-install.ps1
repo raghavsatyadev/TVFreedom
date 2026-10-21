@@ -30,17 +30,17 @@ if ($LASTEXITCODE -ne 0) { throw 'Gradle build failed' }
 
 $py = '..\tools\venv\Scripts\python.exe'
 $apk = 'app\build\outputs\apk\debug\app-debug.apk'
-& $py -I ..\tools\b64push.py $apk /data/local/tmp/tvhome.apk
+& $py -I ..\tools\b64push.py $apk /data/local/tmp/launcher.apk
 if ($LASTEXITCODE -ne 0) { throw 'APK upload failed' }
-$out = & $py -I ..\tools\tv.py 'pm install -r /data/local/tmp/tvhome.apk; rm -f /data/local/tmp/tvhome.apk'
+$out = & $py -I ..\tools\tv.py 'pm install -r /data/local/tmp/launcher.apk; rm -f /data/local/tmp/launcher.apk'
 Write-Host $out
 if ("$out" -notmatch 'Success') { throw 'pm install failed; the stock launcher was left untouched' }
-$out = & $py -I ..\tools\tv.py 'cmd package set-home-activity --user 0 com.gathin.tvhome'
+$out = & $py -I ..\tools\tv.py 'cmd package set-home-activity --user 0 io.github.raghavsatyadev.tvfreedom.home'
 Write-Host $out
 if ("$out" -match 'Error') { throw 'could not set the new launcher as home; the stock launcher was left untouched' }
 @(
-    'pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted',
-    'cmd package set-home-activity --user 0 com.gathin.tvhome',
+    'pm grant io.github.raghavsatyadev.tvfreedom.home android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted',
+    'cmd package set-home-activity --user 0 io.github.raghavsatyadev.tvfreedom.home',
     "pm disable-user --user 0 $StockLauncher"
 ) | & $py -I ..\tools\tv.py --batch
 Write-Host 'Installed. Press Home on the remote to see it.'

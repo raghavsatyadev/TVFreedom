@@ -90,7 +90,7 @@ OTA package, the plan shows it under "kept by the safety guard".
 1. **Discover**, then pick a TV (asked only if there is more than one).
 2. **Connect**, with the approval prompt handled. **Identify**: brand, model, device, Android, serial,
    home activity, keyboard.
-3. **Back up** with `tv.backup` to `backup/<date>-tvgo-<model>-<serial>/`: packages (`-f`, `-d`, `-e`,
+3. **Back up** with `tv.backup` to `backup/<date>-tvfreedom-<model>-<serial>/`: packages (`-f`, `-d`, `-e`,
    `-3`), getprop, all settings, home, meminfo and a screenshot.
 4. **Plan**: guard, then known lists, then agent. Saved as
    `lists/<model>/ai-<date-time>/phaseN.txt` (the normal list format) plus `plan.json` with every reason.
@@ -129,7 +129,7 @@ Install Termux from F-Droid or its GitHub releases (the Play Store build is outd
 
 ```bash
 pkg install git gh && gh auth login          # the repo is private
-gh repo clone <owner>/TV_Debloater && cd TV_Debloater
+gh repo clone <owner>/TVFreedom && cd TVFreedom
 sh scripts/termux-setup.sh                   # or: sh scripts/termux-setup.sh ollama (on-phone model)
 claude                                       # once, to log in; then /exit
 python tvfreedom.py setup
@@ -161,7 +161,7 @@ Tested on the Samsung phone (Android 17) on 2026-10-19:
    Philips, Xiaomi/TCL, Fire TV), then looks for the TV. If none is found, it asks for the ip:port and
    the pairing code shown on the TV and pairs.
 
-It saves the agent and the TV (address and serial) to `~/.tvfreedom.json` (it still reads an old `~/.tvgo.json`). `go`, `plan` and `restore` then
+It saves the agent and the TV (address and serial) to `~/.tvfreedom.json`. `go`, `plan` and `restore` then
 use that TV directly when it still answers with the same serial. Otherwise they run discovery.
 
 ## Tests
@@ -172,7 +172,7 @@ discover, the guard and strict parsing, plan, apply, reboot and verify, restore-
 learning only verified runs, and the review fixes. No TV needed.
 
 **Emulator run (2026-10-19), real adb and Claude:** used a Google TV Android 14 image
-(`system-images;android-34;google-tv;x86`, AVD `tvgo_GoogleTV_34`).
+(`system-images;android-34;google-tv;x86`, AVD `tvfreedom_GoogleTV_34`).
 
 1. `setup` passed all checks.
 2. `go` planned 5 disables: Play Games, YouTube Music, print spooler, the two Google screensavers.

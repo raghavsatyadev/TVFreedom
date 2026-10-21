@@ -1,7 +1,6 @@
 # TVFreedom (Android app): design note
 
-The app is called TVFreedom. It was tvgo (`com.gathin.tvgo`); the package id is now `io.github.raghavsatyadev.tvfreedom`,
-so it installs as a new app: it starts with no runs or backups, and every TV asks to allow the phone again.
+The app is called TVFreedom (`io.github.raghavsatyadev.tvfreedom`).
 
 A phone app that does what `tvfreedom.py` does, without Termux: find the TV, back it up, plan, confirm, apply,
 reboot and check, restore. Same rules: the guard always wins, then the known lists, then the AI.

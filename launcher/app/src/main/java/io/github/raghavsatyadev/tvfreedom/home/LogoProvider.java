@@ -1,4 +1,4 @@
-package com.gathin.tvhome;
+package io.github.raghavsatyadev.tvfreedom.home;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -14,8 +14,8 @@ import java.io.FileNotFoundException;
 /**
  * The company logo, sent by the TVFreedom phone app over adb:
  * <pre>
- * content write --uri content://com.gathin.tvhome.logo/logo &lt; logo.png
- * content delete --uri content://com.gathin.tvhome.logo/logo
+ * content write --uri content://io.github.raghavsatyadev.tvfreedom.home.logo/logo &lt; logo.png
+ * content delete --uri content://io.github.raghavsatyadev.tvfreedom.home.logo/logo
  * </pre>
  * The manifest guards it with android.permission.DUMP, like {@link ConfigReceiver}. Home shows it the next time it
  * starts ({@link Branding}).

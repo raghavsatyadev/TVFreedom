@@ -27,7 +27,7 @@ RULES = [
     ("cast", r"cast|mediashell|dial|miracast|airplay|\.dlna"),
     ("voice", r"katniss|voice|assistant|speech|\.tts|texttospeech|hotword|\.asr|mic\b"),
     ("OTA", r"\bota|update|upgrad|firmware|abupdate|recovery|\.fota"),
-    ("launcher/setup", r"launcher|setup|wraith|\.home$|gathin"),
+    ("launcher/setup", r"launcher|setup|wraith|\.home$|tvfreedom"),
     ("vendor HAL", r"^com\.(mediatek|mstar|droidlogic|amlogic|realtek|hisilicon|rockchip|qualcomm|qti"
                    r"|nvidia\.(shield\.remote|tegra|ota|blakepairing)|sony\.dtv\.(tvx|tvinput|hdmi|sonysystem)"
                    r"|tcl\.(tv$|tvinput|common|systemserver)|hisense\.(hiservice|tv$)|tpv\.|philips\.tv\.core)"

@@ -18,8 +18,8 @@ No `desktopCMP`: the app needs an adb transport on the device it runs on, and th
 - Class names `io.github.raghavsatyadev.tvfreedom.TvFreedomApp`, `io.github.raghavsatyadev.tvfreedom.ui.MainActivity`,
   `io.github.raghavsatyadev.tvfreedom.flow.RunService` (launcher icon and service survive the update).
 - `filesDir/tvfreedom/{keys,backups,runs,shots}` and the SharedPreferences name `tvfreedom`. The rename to
-  `io.github.raghavsatyadev.tvfreedom` made a new app, so these start empty. Backup folders keep the
-  `-tvgo-` tag, the same as the PC tool's, so old backups still match.
+  `io.github.raghavsatyadev.tvfreedom` made a new app, so these start empty. Backup folders use the
+  `-tvfreedom-` tag, the same as the PC tool's.
 - `commonMain` imports no `android.*` or `java.*` (checked by `scripts/check-common.sh`).
 
 ## Steps (all done)
