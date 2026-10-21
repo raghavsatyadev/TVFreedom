@@ -19,3 +19,12 @@ secret.properties
 # Agent and plan state
 .claude/PLAN.md
 .claude/HISTORY.md
+
+# Agent kit
+tmp/
+memory/
+.cache/
+.env
+# setup-env links each .agents/skills/<name> here; links, not files to commit
+.claude/skills/
+.claude/settings.local.json

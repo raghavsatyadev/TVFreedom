@@ -1,0 +1,7 @@
+# Yes/no rule checks that lm-diffcheck (skill local-model) asks of each changed file's diff before
+# a review. One per line: "<glob> | <question>", phrased so that "yes" is the problem.
+*/ui/*.kt | Does this change hardcode a color with Color(0x...) instead of using a MaterialTheme.colorScheme role (brand colours the user picks do not count)?
+*/ui/*.kt | Does this change add user-visible text with technical jargon (adb, package, intent, shell) or more than one sentence per step?
+*.gradle.kts | Does this change write a library's group, name and version inline instead of using the version catalog (libs.*)?
+*/commonMain/*.kt | Does this change import or call android.* classes, java.io.File, java.time or other JVM-only APIs in this multiplatform common source file? androidx Compose/lifecycle libraries do not count.
+*.properties | Does this change add a password, token, keystore path or API key?
