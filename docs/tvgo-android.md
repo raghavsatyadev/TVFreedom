@@ -10,7 +10,8 @@ decides and the app's PlannerTest must match it exactly. Phases 4-6 (home screen
 extras) are in the app only; both leave the TV's own launcher and screensaver to the app's home-screen setup.
 Only `pm disable-user --user 0` and `pm uninstall --user 0` touch the TV.
 
-Project: `tvgo-android/` (one Gradle module `app`, package `com.gathin.tvgo`).
+Project: `tvgo-android/`, Compose Multiplatform with an Android target only: `composeApp` (shared code in
+`commonMain`, Android parts in `androidMain`) and `androidCMP` (the app shell). See [cmp-migration.md](cmp-migration.md).
 
 ## Build targets
 
@@ -19,7 +20,7 @@ Project: `tvgo-android/` (one Gradle module `app`, package `com.gathin.tvgo`).
 | minSdk | 26 | ML Kit GenAI needs 26. The phone (Samsung phone) is Android 17. |
 | compile/targetSdk | 37 | Matches the installed SDK and the user's other apps. |
 | AGP / Kotlin / Gradle | 9.3.1 / 2.4.0 (built-in Kotlin) / 9.8.0 | Already cached on this PC. |
-| UI | Jetpack Compose, Material 3, one Activity | No navigation library: a small screen enum in the ViewModel. |
+| UI | Compose Multiplatform, Material 3, one Activity | No navigation library: a small screen enum in the ViewModel. |
 
 ## adb client: libadb-android, not dadb
 

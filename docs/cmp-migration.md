@@ -21,10 +21,20 @@ No `desktopCMP`: the app needs an adb transport on the device it runs on, and th
   keeps its history).
 - `commonMain` imports no `android.*` or `java.*` (checked by `scripts/check-common.sh`).
 
-## Steps
+## Steps (all done)
 
 1. Module move: all code to `composeApp/androidMain`, app shell to `androidCMP`; build, test, install.
 2. Move to `commonMain` in order core → tv → flow → store → ViewModel → UI, behind small
    platform interfaces (`ui/Platform.kt`). Files: okio. Dates: kotlinx-datetime.
 3. Agent kit from SCUS: `AGENTS.md`, `.agents/`, `.claude/settings.json`, `global_skills/`,
-   `.githooks/`, `agent-kit.env`, `scripts/` local CI.
+   `.githooks/`, `agent-kit.env`, `scripts/` local CI. `GRADLE_DIR=tvgo-android` in `agent-kit.env`
+   points the kit at this Gradle root; ktfmt is off (`FORMAT_CHECK=0`); `scripts/ci-local.sh` also runs
+   `check-common.sh` and the 500-line limit.
+
+## Build
+
+```bash
+cd tvgo-android
+./gradlew :androidCMP:assembleRelease        # signed with the key in secret.properties
+./gradlew :composeApp:testAndroidHostTest    # unit tests and goldens
+```
