@@ -78,7 +78,7 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
                 Get.Downloading -> StepCard(step, "Getting Termux", "Downloading, about 110 MB. Then tap Install when Android asks.",
                     "", Icons.Next, progress = progress, note = PLAY_PROTECT) {}
                 Get.Settings -> StepCard(step, "Allow TVFreedom to install Termux",
-                    "Allow TVFreedom to install apps (\"Allow from this source\" or \"Always allow\"), then come back.", "Open settings", Icons.Settings) {
+                    "Turn on the switch for TVFreedom, then come back.", "Open settings", Icons.Settings) {
                     ctx.startActivity(installer.unknownSources())
                 }
                 is Get.Failed -> StepCard(step, "Termux did not install", g.why, "Try again", Icons.Refresh,
@@ -92,7 +92,7 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
             Step.OPEN_TERMUX, Step.ALLOW_APPS -> StepCard(step, "Set up Claude in Termux",
                 "Tap below. In Termux, wait for the \$ sign, then long-press, tap Paste and press Enter.",
                 "Copy and open Termux", Icons.Next,
-                note = "It takes 5 to 10 minutes. Log in when Claude asks; TVFreedom opens again after.") {
+                note = "If Termux asks about notifications, tap Allow. Setup takes a few minutes. Log in when Claude asks, then come back to TVFreedom.") {
                 clipboard.setText(AnnotatedString(termux.pasteLine()))
                 termux.openTermux()
             }
