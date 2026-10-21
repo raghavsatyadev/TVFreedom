@@ -1,6 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+}
+
+// Release signing comes from tvgo-android/secret.properties (gitignored): storeFile, storePassword, keyAlias, keyPassword.
+val secretProps = Properties().apply {
+    rootProject.file("secret.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
 val repoRoot = rootProject.projectDir.parentFile
@@ -23,8 +30,17 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            secretProps.getProperty("storeFile")?.let { storeFile = file(it) }
+            storePassword = secretProps.getProperty("storePassword")
+            keyAlias = secretProps.getProperty("keyAlias")
+            keyPassword = secretProps.getProperty("keyPassword")
+        }
+    }
     buildTypes {
         release {
+            if (secretProps.getProperty("storeFile") != null) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false // libadb loads Conscrypt by reflection; keep v1 simple
         }
     }

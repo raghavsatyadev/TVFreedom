@@ -13,3 +13,4 @@ tvgo-android/app/build/
 tv_host.txt
 .claude/.turn-start
 .openqodex/
+secret.properties
