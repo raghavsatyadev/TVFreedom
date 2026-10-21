@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import com.gathin.tvgo.ui.MainActivity
 
 /**
  * Keeps TVFreedom running while a job talks to the TV and the user is in another app: without it the phone cuts the adb
@@ -72,7 +71,7 @@ class RunService : Service() {
 
         private fun build(ctx: Context, p: Progress, channel: String = CHANNEL): Notification {
             manager(ctx)
-            val open = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java)
+            val open = PendingIntent.getActivity(ctx, 0, Intent().setClassName(ctx, "com.gathin.tvgo.ui.MainActivity")
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
             val b = Notification.Builder(ctx, channel)
                 .setSmallIcon(android.R.drawable.ic_menu_manage)

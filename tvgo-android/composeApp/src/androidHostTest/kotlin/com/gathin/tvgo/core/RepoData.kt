@@ -28,5 +28,5 @@ object RepoData {
             .associate { it.relativeTo(dir).invariantSeparatorsPath to it.readText() }
     }
 
-    fun golden(name: String) = File(root, "tvgo-android/app/src/test/resources/golden/$name").readText()
+    fun golden(name: String) = File(root, "tvgo-android/composeApp/src/androidHostTest/resources/golden/$name").readText()
 }

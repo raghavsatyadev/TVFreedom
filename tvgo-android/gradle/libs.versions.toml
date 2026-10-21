@@ -1,14 +1,24 @@
 [versions]
-agp = "9.3.1"
-kotlin = "2.4.0"
+# Plugin set shared with SCUS (SimpleCricketUmpireScorer), proven together on this machine.
+agp = "9.5.0-alpha10"
+kotlin = "2.5.0-Beta1"
+compose-multiplatform = "1.13.0-alpha02"
+compose-material3-mp = "1.13.0-alpha02"
+lifecycle-mp = "2.11.0"
+
 compileSdk = "37"
 minSdk = "26"
+versionCode = "2"
+versionName = "0.2.0"
+
 activity-compose = "1.14.0-alpha03"
 compose-ui = "1.12.0"
 material3 = "1.5.0-beta01"
 lifecycle = "2.11.0"
 coroutines = "1.11.0"
 serialization = "1.11.0"
+okio = "3.18.2"
+datetime = "0.8.0"
 libadb = "3.1.1"
 conscrypt = "2.5.3"
 bouncycastle = "1.81"
@@ -17,6 +27,20 @@ anthropic = "2.34.0"
 junit = "4.13.2"
 
 [libraries]
+# Multiplatform (composeApp commonMain)
+compose-runtime-mp = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+compose-ui-mp = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+compose-foundation-mp = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
+compose-material3-mp = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3-mp" }
+compose-components-resources-mp = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }
+lifecycle-viewmodel-compose-mp = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-mp" }
+lifecycle-runtime-compose-mp = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle-mp" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+
+# Android only
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose-ui" }
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose-ui" }
@@ -24,7 +48,6 @@ compose-material3 = { module = "androidx.compose.material3:material3", version.r
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 libadb = { module = "com.github.MuntashirAkon:libadb-android", version.ref = "libadb" }
 conscrypt = { module = "org.conscrypt:conscrypt-android", version.ref = "conscrypt" }
 bcpkix = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncycastle" }
@@ -34,4 +57,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

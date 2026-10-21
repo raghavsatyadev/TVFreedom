@@ -1,3 +1,6 @@
+@file:Suppress("UnstableApiUsage")
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google()
@@ -13,5 +16,9 @@ dependencyResolutionManagement {
         maven("https://jitpack.io") // libadb-android and its spake2 dependency
     }
 }
+
+rootProject.buildFileName = "project.gradle.kts"
+
 rootProject.name = "tvgo"
-include(":app")
+
+include(":composeApp", ":androidCMP")

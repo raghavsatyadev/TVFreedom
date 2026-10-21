@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
 }
 
@@ -20,14 +21,14 @@ val bundleLists by tasks.registering(Sync::class) {
 
 android {
     namespace = "com.gathin.tvgo"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk { version = release(libs.versions.compileSdk.get().toInt()) { minorApiLevel = 1 } }
 
     defaultConfig {
         applicationId = "com.gathin.tvgo"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.compileSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = libs.versions.versionCode.get().toInt()
+        versionName = libs.versions.versionName.get()
     }
 
     signingConfigs {
@@ -50,7 +51,6 @@ android {
         resources.excludes += setOf("META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/DEPENDENCIES",
             "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/INDEX.LIST")
     }
-    testOptions.unitTests.all { it.systemProperty("tvgo.repo", repoRoot.path) }
 }
 
 // The tvgo app runs scripts/termux-setup.sh in Termux to install Claude Code for the user.
@@ -81,18 +81,10 @@ val bundleLauncher by tasks.registering(Copy::class) {
 tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup, bundleLauncher) }
 
 dependencies {
+    implementation(projects.composeApp)
     implementation(libs.activity.compose)
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
     implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.coroutines.android)
-    implementation(libs.serialization.json)
-    implementation(libs.libadb)
-    implementation(libs.conscrypt)
-    implementation(libs.bcpkix)
-    implementation(libs.mlkit.genai.prompt)
-    implementation(libs.anthropic)
-    testImplementation(libs.junit)
 }

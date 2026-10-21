@@ -1,7 +1,7 @@
 """Golden files for the app's unit tests: what tvgo.py's guard and planner decide for data/packages-*.txt.
 
 python tvgo-android/tools/make_golden.py   (from the repo root; rerun after changing guard.py, plan.py or lists/)
-Writes tvgo-android/app/src/test/resources/golden/. The Kotlin tests must match these exactly.
+Writes tvgo-android/composeApp/src/androidHostTest/resources/golden/. The Kotlin tests must match these exactly.
 """
 import json
 import os
@@ -13,7 +13,7 @@ sys.path.insert(0, ROOT)
 
 from tvgo_core import agent, guard, plan  # noqa: E402
 
-OUT = os.path.join(ROOT, "tvgo-android", "app", "src", "test", "resources", "golden")
+OUT = os.path.join(ROOT, "tvgo-android", "composeApp", "src", "androidHostTest", "resources", "golden")
 
 
 def read(name):

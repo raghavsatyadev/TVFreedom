@@ -9,8 +9,13 @@ logs/
 tvgo-android/.gradle/
 tvgo-android/.kotlin/
 tvgo-android/build/
-tvgo-android/app/build/
+tvgo-android/*/build/
+tvgo-android/.kotlin/
 tv_host.txt
 .claude/.turn-start
 .openqodex/
 secret.properties
+
+# Agent and plan state
+.claude/PLAN.md
+.claude/HISTORY.md
