@@ -28,3 +28,6 @@ memory/
 # setup-env links each .agents/skills/<name> here; links, not files to commit
 .claude/skills/
 .claude/settings.local.json
+
+__pycache__/
+*.pyc
