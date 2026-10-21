@@ -25,7 +25,7 @@ Fix GitHub issue: $ARGUMENTS
    in `.agents/rules/` that covers the area. Add a unit test that fails against the old behaviour.
 5. **Format, build, test** — `bash scripts/ci-local.sh --fix`, then the checks in
    [AGENTS.md](../../../AGENTS.md#commands) (unit tests; screenshot tests if UI changed).
-6. **Verify on the device** — `./gradlew :androidCMP:assembleRelease` in `tvgo-android/`, then
+6. **Verify on the device** — `./gradlew :androidCMP:assembleRelease` in `tvfreedom-android/`, then
    `adb -s <phone> install -r androidCMP/build/outputs/apk/release/androidCMP-release.apk` (never installDebug), then re-run the *same*
    ARTEMIS reproduction.
 7. **Commit, push, open the PR** — commit `fix: <summary> (closes #<number>)`. PR body: `Closes

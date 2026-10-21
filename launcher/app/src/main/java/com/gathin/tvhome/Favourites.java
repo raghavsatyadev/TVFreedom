@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * The favourite apps (package names, in dock order), changed from the remote via the tile menu.
- * Starts from res/values/config.xml (dock_apps) until the first change is saved, here or from tvgo
+ * Starts from res/values/config.xml (dock_apps) until the first change is saved, here or from TVFreedom
  * ({@link ConfigReceiver}).
  */
 final class Favourites {

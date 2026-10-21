@@ -11,7 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 /**
- * Takes settings from adb, so the tvgo phone app can set up the home screen without rebuilding the APK:
+ * Takes settings from adb, so the TVFreedom phone app can set up the home screen without rebuilding the APK:
  * <pre>
  * am broadcast -f 0x20 -n com.gathin.tvhome/.ConfigReceiver --es favourites com.a,com.b --ei columns 4 \
  *     --es weather_place 'Your City' --es weather_latitude 12.34 --es weather_longitude 56.78 \
@@ -21,7 +21,7 @@ import java.net.URLEncoder;
  * "ok", then every setting now in effect as a URL query (favourites=…&amp;columns=…), so with no extras it only reports.
  * The manifest guards it with android.permission.DUMP, which the adb shell holds and normal apps can't get.
  * The logo comes through {@link LogoProvider}; "logo" in the report is its size in bytes (0: none).
- * Home reads the new values the next time it starts (tvgo force-stops it and presses Home).
+ * Home reads the new values the next time it starts (TVFreedom force-stops it and presses Home).
  */
 public class ConfigReceiver extends BroadcastReceiver {
 

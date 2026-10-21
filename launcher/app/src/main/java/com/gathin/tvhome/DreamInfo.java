@@ -21,7 +21,7 @@ import java.util.TimeZone;
 
 /**
  * Data for the screensaver: current weather (Open-Meteo, no key) and upcoming events from the calendars
- * named in local.properties or set by tvgo ({@link Config}). Blocking calls: run off the main thread.
+ * named in local.properties or set by TVFreedom ({@link Config}). Blocking calls: run off the main thread.
  * Results are cached in statics so a new dream does not refetch.
  */
 final class DreamInfo {

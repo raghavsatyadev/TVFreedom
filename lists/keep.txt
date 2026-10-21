@@ -1,4 +1,4 @@
-# Packages tvgo.py never removes, on any TV (the user's apps and the custom launcher). One per line.
+# Packages tvfreedom.py never removes, on any TV (the user's apps and the custom launcher). One per line.
 com.netflix.ninja                     # Netflix
 com.amazon.amazonvideo.livingroom     # Prime Video
 in.startv.hotstar                     # JioHotstar

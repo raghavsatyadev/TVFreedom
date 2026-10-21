@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 /**
- * Settings that the tvgo phone app (or adb) can change at runtime through {@link ConfigReceiver}.
+ * Settings that the TVFreedom phone app (or adb) can change at runtime through {@link ConfigReceiver}.
  * Each one falls back to the value built into the APK (res/values and local.properties) until it is set.
  */
 final class Config {

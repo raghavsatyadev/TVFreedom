@@ -16,7 +16,7 @@ Run parallel agents only when the user asks for them (see AGENTS.md, "How to wor
    ```bash
    for d in .claude/worktrees/*/; do git -C "$d" merge-base --is-ancestor <sha> HEAD && echo "OK $d" || echo "STALE $d"; done
    ```
-2. **Cap Gradle memory for three or more parallel builds.** The project `tvgo-android/gradle.properties` asks
+2. **Cap Gradle memory for three or more parallel builds.** The project `tvfreedom-android/gradle.properties` asks
    for 2 GB Gradle + 1.5 GB Kotlin daemon per build; Android Studio and the emulator add more. Create
    `~/.gradle/gradle.properties` (it overrides the project file, which stays unchanged):
    ```properties

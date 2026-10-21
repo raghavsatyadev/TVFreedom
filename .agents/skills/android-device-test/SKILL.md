@@ -31,13 +31,13 @@ Device cache in `memory/devices/`, dumps and screenshots in `tmp/` — see
 | Task | Command |
 | --- | --- |
 | List devices | `adb devices -l` |
-| Install the app | `./gradlew :androidCMP:assembleRelease` (in `tvgo-android/`), then `adb -s <phone> install -r androidCMP/build/outputs/apk/release/androidCMP-release.apk`; never installDebug |
+| Install the app | `./gradlew :androidCMP:assembleRelease` (in `tvfreedom-android/`), then `adb -s <phone> install -r androidCMP/build/outputs/apk/release/androidCMP-release.apk`; never installDebug |
 | Grant overlay | `bash $D grant overlay` |
 | Grant accessibility | `bash $D grant a11y` |
 | App logs | `adb logcat -s <Tag>` (or `bash $D log <Tag>`) |
 | App files (downloaded models, seeded data) | `bash $D files` |
 | Keep screen awake | `adb shell "svc power stayon true; settings put system screen_off_timeout 600000"` |
-| Reset app (deletes all app data, downloads too) | `adb shell pm clear com.gathin.tvgo` |
+| Reset app (deletes all app data, downloads too) | `adb shell pm clear io.github.raghavsatyadev.tvfreedom` |
 
 ## Gotchas
 
@@ -60,7 +60,7 @@ Device cache in `memory/devices/`, dumps and screenshots in `tmp/` — see
 7. **`connectedDebugAndroidTest` uninstalls the app afterwards**, deleting app data.
    Run UI tests without Gradle's uninstall:
    `./gradlew :androidCMP:assembleDebugAndroidTest`, `adb -s <phone> install -r` both APKs, then
-   `adb shell am instrument -w -e class <TestClass> com.gathin.tvgo.test/androidx.test.runner.AndroidJUnitRunner`
+   `adb shell am instrument -w -e class <TestClass> io.github.raghavsatyadev.tvfreedom.test/androidx.test.runner.AndroidJUnitRunner`
    (look for `OK (n tests)`). The Gradle task also reports FAILED even when every test passes.
 8. **Reinstalling stops the overlay service.** After `install -r`, start any overlay/accessibility
    service again and `bash $D grant a11y` again. A silent run (no rows, no log lines) looks like a
@@ -75,4 +75,4 @@ Device cache in `memory/devices/`, dumps and screenshots in `tmp/` — see
    `adb shell dumpsys settings | grep -A8 "History (accelerometer_rotation)"`.
 10. **Old app files can hide a change** (runs, backups and prefs live in the app's files dir).
     Stop the app, then look before deleting:
-    `adb shell "run-as com.gathin.tvgo ls -R files/tvgo"`.
+    `adb shell "run-as io.github.raghavsatyadev.tvfreedom ls -R files/tvfreedom"`.

@@ -52,7 +52,7 @@ import java.util.List;
  */
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
-    /** Tiles per row and dock slots (config.xml columns, or set by tvgo). Set in onCreate. */
+    /** Tiles per row and dock slots (config.xml columns, or set by TVFreedom). Set in onCreate. */
     static int COLUMNS = 4;
     private static final long MINUTE_MS = 60_000L;
     private String liveTvPkg;

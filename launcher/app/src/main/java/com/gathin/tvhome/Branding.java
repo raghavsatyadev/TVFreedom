@@ -11,7 +11,7 @@ import android.widget.ImageView;
 import java.io.File;
 
 /**
- * A company's look on the home screen, set by the tvgo phone app: its logo at the top left and a background colour
+ * A company's look on the home screen, set by the TVFreedom phone app: its logo at the top left and a background colour
  * picked from that logo ({@link Config#brandColor}). A square logo stands left of the clock; a wide one takes the
  * greeting's line above it. A dark logo with see-through parts sits on a light plate, so it shows on the dark background.
  */

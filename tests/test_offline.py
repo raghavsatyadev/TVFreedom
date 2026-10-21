@@ -13,7 +13,7 @@ os.environ["ADB"] = f'"{PY}" "{HERE.replace(chr(92), "/")}/fake_adb.py"'
 sys.path.insert(0, REPO)
 
 import tv  # noqa: E402  (reads $ADB at import)
-from tvgo_core import adbio, agent, discover, guard, known, mdns, onboard, plan, restore, verify  # noqa: E402
+from tvfreedom_core import adbio, agent, discover, guard, known, mdns, onboard, plan, restore, verify  # noqa: E402
 
 HOST = "192.168.1.20:5555"
 
@@ -26,7 +26,8 @@ class Offline(unittest.TestCase):
         shutil.copytree(os.path.join(REPO, "data"), os.path.join(self.tmp, "data"))
         self.patches = [mock.patch.object(tv, "ROOT", self.tmp),
                         mock.patch.object(known, "LISTS", os.path.join(self.tmp, "lists")),
-                        mock.patch.object(onboard, "CONFIG", os.path.join(self.tmp, "tvgo.json")),
+                        mock.patch.object(onboard, "CONFIG", os.path.join(self.tmp, "tvfreedom.json")),
+                        mock.patch.object(onboard, "OLD_CONFIG", os.path.join(self.tmp, "tvgo.json")),
                         mock.patch("time.sleep")]
         for p in self.patches:
             p.start()
@@ -130,12 +131,12 @@ class Offline(unittest.TestCase):
 
     def test_pick_tv_points_tv_py_at_the_chosen_tv(self):
         import argparse
-        import tvgo
+        import tvfreedom
         a, b = "192.168.1.20:5555", "192.168.1.21:5555"
         args = argparse.Namespace(host=None, subnet=None)
         with mock.patch.object(discover, "find", return_value=([(a, "x"), (b, "y")], [])), \
-                mock.patch.object(tvgo, "ask", return_value="1"):
-            info = tvgo.pick_tv(args)
+                mock.patch.object(tvfreedom, "ask", return_value="1"):
+            info = tvfreedom.pick_tv(args)
         self.assertEqual(info["host"], a)
         self.assertEqual(tv.HOST, a)  # not b, the last device discovery connected to
 
@@ -164,15 +165,15 @@ class Offline(unittest.TestCase):
 
     def test_unfinished_setup_runs_again(self):
         import argparse
-        import tvgo
+        import tvfreedom
         args = argparse.Namespace(host=HOST, subnet=None, agent=self.fake_agent, uninstall_user_apps=False)
         with mock.patch.object(onboard, "check_host", return_value=True),                 mock.patch.object(onboard, "check_agent", return_value=False):
-            self.assertFalse(onboard.run(tvgo.ask, self.fake_agent, host=HOST))
+            self.assertFalse(onboard.run(tvfreedom.ask, self.fake_agent, host=HOST))
         self.assertIs(onboard.load()["ready"], False)
         self.assertNotIn("agent", onboard.load())  # a failed agent is asked for again, not reused
         with mock.patch.object(onboard, "run", return_value=False) as setup:
             with self.assertRaises(SystemExit):
-                tvgo.make_plan(args)  # setup offered again, nothing planned
+                tvfreedom.make_plan(args)  # setup offered again, nothing planned
         setup.assert_called_once()
         self.assertEqual(self.writes(), [])
 

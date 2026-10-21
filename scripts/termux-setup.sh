@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/sh
-# One-time phone setup for tvgo in Termux (F-Droid or GitHub build). Safe to run again.
+# One-time phone setup for TVFreedom in Termux (F-Droid or GitHub build). Safe to run again.
 #   sh scripts/termux-setup.sh            tools + Claude Code
 #   sh scripts/termux-setup.sh ollama     tools + a small on-phone model instead
-#   sh termux-setup.sh app                only Claude Code, for the tvgo phone app (it runs this for you)
+#   sh termux-setup.sh app                only Claude Code, for the TVFreedom phone app (it runs this for you)
 set -e
 
 say() { printf '\n== %s\n' "$*"; }
@@ -27,7 +27,7 @@ if [ "$1" = "ollama" ]; then
   yes | pkg install ollama
   (ollama serve > "$HOME/ollama.log" 2>&1 &) ; sleep 3
   ollama pull qwen3:4b
-  echo "Agent: python tvgo.py setup --agent ollama (start the server first: ollama serve &)"
+  echo "Agent: python tvfreedom.py setup --agent ollama (start the server first: ollama serve &)"
   exit 0
 fi
 
@@ -48,17 +48,17 @@ EOF
 chmod 755 "$PREFIX/bin/claude"
 claude --version
 
-say "Letting the tvgo app run claude here (Termux RUN_COMMAND)"
+say "Letting the TVFreedom app run claude here (Termux RUN_COMMAND)"
 mkdir -p "$HOME/.termux"
 grep -qs '^allow-external-apps *= *true' "$HOME/.termux/termux.properties" ||
   echo "allow-external-apps=true" >> "$HOME/.termux/termux.properties"
 termux-reload-settings 2>/dev/null || true
 
 if [ "$1" = "app" ]; then
-  say "Claude Code is installed. Log in below (skip if it opens straight away), then type /exit and go back to tvgo."
+  say "Claude Code is installed. Log in below (skip if it opens straight away), then type /exit and go back to TVFreedom."
   exec claude
 fi
 
 say "Done. Next:"
 echo "  1. claude            (once, to log in; then /exit)"
-echo "  2. python tvgo.py setup"
+echo "  2. python tvfreedom.py setup"

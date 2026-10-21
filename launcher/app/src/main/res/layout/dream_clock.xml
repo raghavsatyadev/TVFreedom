@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Company logo from tvgo (Branding.applyDream); it drifts with the clock, so it never burns in. -->
+        <!-- Company logo from TVFreedom (Branding.applyDream); it drifts with the clock, so it never burns in. -->
         <ImageView
             android:id="@+id/dreamLogo"
             android:layout_width="wrap_content"

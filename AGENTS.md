@@ -10,14 +10,14 @@ and offers one button.
 
 | Part | Where |
 | --- | --- |
-| Phone app (Compose Multiplatform, Android only) | `tvgo-android/` — modules `composeApp`, `androidCMP` |
+| Phone app (Compose Multiplatform, Android only) | `tvfreedom-android/` — modules `composeApp`, `androidCMP` |
 | TV launcher APK (bundled into the app) | `launcher/` |
-| PC tool (phases 1-3, reads TV state) | `tvgo.py`, `tvgo_core/`, `tv.py`; tests in `tests/` |
+| PC tool (phases 1-3, reads TV state) | `tvfreedom.py`, `tvfreedom_core/`, `tv.py`; tests in `tests/` |
 | Package lists and known-bloat data | `lists/`, `data/` |
 | Docs | `docs/`, `README.md` |
 
-App module `:androidCMP` · applicationId `com.gathin.tvgo` · base branch `main` · Gradle root
-`tvgo-android/`. Values also live in `agent-kit.env`.
+App module `:androidCMP` · applicationId `io.github.raghavsatyadev.tvfreedom` · base branch `main` · Gradle root
+`tvfreedom-android/`. Values also live in `agent-kit.env`.
 
 ## How to work
 
@@ -57,11 +57,11 @@ New machine: run the setup doctor first — `scripts/setup-env.ps1` (Windows) or
 
 ```bash
 bash scripts/ci-local.sh                 # compile + commonMain purity + 500-line limit — before pushing
-scripts/gradle-agent.sh <tasks>          # agents: Gradle (in tvgo-android/) with errors only; log in tmp/
-cd tvgo-android && ./gradlew :androidCMP:assembleRelease      # signed APK (needs secret.properties)
-cd tvgo-android && ./gradlew :composeApp:testAndroidHostTest  # the app's unit tests
+scripts/gradle-agent.sh <tasks>          # agents: Gradle (in tvfreedom-android/) with errors only; log in tmp/
+cd tvfreedom-android && ./gradlew :androidCMP:assembleRelease      # signed APK (needs secret.properties)
+cd tvfreedom-android && ./gradlew :composeApp:testAndroidHostTest  # the app's unit tests
 python -m unittest tests.test_offline    # PC tool tests (fake adb, no TV needed)
-adb -s <phone> install -r tvgo-android/androidCMP/build/outputs/apk/release/androidCMP-release.apk
+adb -s <phone> install -r tvfreedom-android/androidCMP/build/outputs/apk/release/androidCMP-release.apk
 ```
 
 Never use `installDebug`: install with `adb -s <phone> install -r`. The hooks in `.githooks/`
@@ -70,7 +70,7 @@ checkout; the owner sets that, agents do not.
 
 ## Secrets
 
-`tvgo-android/secret.properties` holds the release keystore path, alias and passwords;
+`tvfreedom-android/secret.properties` holds the release keystore path, alias and passwords;
 `local.properties` holds the SDK path. Never read, print or commit them; copy them with `cp` when a
 worktree needs them. Never put a token in a remote URL or `.git/config`.
 

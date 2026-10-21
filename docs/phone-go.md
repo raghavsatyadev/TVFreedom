@@ -27,12 +27,12 @@ screen widget matters.
 ## How the phone talks adb to the TV
 
 - **Older TVs** (Android 9/10, e.g. the Mi Box 4) use *Network debugging* on port 5555. The first
-  `adb connect` shows "Allow debugging?" on the TV. `tvgo` sees `unauthorized`, tells you to accept it, and
+  `adb connect` shows "Allow debugging?" on the TV. TVFreedom sees `unauthorized`, tells you to accept it, and
   waits up to 90 s.
 - **Android 11+** uses *Wireless debugging*. On the TV, choose "Pair with code". Then run
-  `python tvgo.py pair <ip:pairport> <code>` once. The connect port is random (`_adb-tls-connect._tcp`) and
+  `python tvfreedom.py pair <ip:pairport> <code>` once. The connect port is random (`_adb-tls-connect._tcp`) and
   can change after a reboot, so verify finds the TV again by serial number.
-- **Discovery** (`tvgo_core/discover.py`) runs `adb mdns services` (`_adb._tcp`, `_adb-tls-connect`,
+- **Discovery** (`tvfreedom_core/discover.py`) runs `adb mdns services` (`_adb._tcp`, `_adb-tls-connect`,
   `_adb-tls-pairing`), plus a threaded port-5555 scan of the phone's /24, plus any `ip:port` you type.
   Candidates are kept only if `pm has-feature android.software.leanback` is true (or
   `ro.build.characteristics` contains `tv`), so phones and tablets are skipped. The phone's own IP is
@@ -42,29 +42,29 @@ screen widget matters.
 ## Agent interface
 
 The script drives the flow; the agent only classifies. Any command that reads a prompt on stdin and prints
-an answer works. Pick it with `--agent` or `$TVGO_AGENT`:
+an answer works. Pick it with `--agent` or `$TVFREEDOM_AGENT`:
 
 | preset | command | notes |
 |---|---|---|
 | `claude` (default) | `claude -p --tools ""` | print mode, all tools off |
 | `codex` | `codex exec --sandbox read-only -` | read-only sandbox |
 | `gemini` | `gemini -p ''` | flags not checked on the phone yet |
-| `ollama` | `ollama run qwen3:4b` | on-phone model; use `TVGO_BATCH=25` for small models |
+| `ollama` | `ollama run qwen3:4b` | on-phone model; use `TVFREEDOM_BATCH=25` for small models |
 | `llama` | `llama-cli -m model.gguf -no-cnv -f /dev/stdin` | set your model path |
 | anything else | the literal command | e.g. `--agent "my-agent --json"` |
 
-The prompt (`tvgo_core/agent.py`) holds the TV's brand, model and Android version, the keep rules and your
+The prompt (`tvfreedom_core/agent.py`) holds the TV's brand, model and Android version, the keep rules and your
 keep list. It also holds every decision from this repo's lists across all models as examples, and the
 packages to decide as JSON lines (name, install path, user app or not, what another TV's list did with it).
 The answer is a JSON array of `{pkg, verdict, phase, reason}`. The parser is strict: unknown packages, bad
 verdicts or broken JSON are dropped, and **anything unanswered is kept**. Packages go out in batches of
-`$TVGO_BATCH` (60).
+`$TVFREEDOM_BATCH` (60).
 
 ## Making it work on any brand or model
 
 Decisions are made in layers, and each layer can only keep more:
 
-1. **Guard** (`tvgo_core/guard.py`, code that always wins). It needs no brand knowledge:
+1. **Guard** (`tvfreedom_core/guard.py`, code that always wins). It needs no brand knowledge:
    - any package on a system uid (< 10000: `android.uid.system`, phone, Bluetooth, NFC), from
      `pm list packages -U`
    - every package with a HOME activity (`query-activities … HOME`)
@@ -85,7 +85,7 @@ Launchers are never touched in v1. That needs a working replacement home first, 
 setupwraith/HOME-priority gotchas from the README. OTA is kept by default. When an earlier list disabled an
 OTA package, the plan shows it under "kept by the safety guard".
 
-## Flow (`python tvgo.py go`)
+## Flow (`python tvfreedom.py go`)
 
 1. **Discover**, then pick a TV (asked only if there is more than one).
 2. **Connect**, with the approval prompt handled. **Identify**: brand, model, device, Android, serial,
@@ -105,22 +105,22 @@ OTA package, the plan shows it under "kept by the safety guard".
    and check the focused window belongs to the HOME package. A screenshot is saved in the run folder. If
    the check fails, it offers `RESTORE` of this run.
 
-`python tvgo.py plan` stops after step 4 and changes no packages. It wakes the chosen TV. During discovery
+`python tvfreedom.py plan` stops after step 4 and changes no packages. It wakes the chosen TV. During discovery
 it also `adb connect`s every candidate (which can show an approval prompt there) and disconnects any that
 turn out not to be TVs.
 
 ## Restore ("bloat")
 
-`python tvgo.py restore` lists every option for this TV:
+`python tvfreedom.py restore` lists every option for this TV:
 
 - **one list**: a repo phase (`lists/…/phaseN.txt`), a run's `applied.txt` or one of its phases. It uses
   `tv.restore`: `pm enable`, or `cmd package install-existing` and then the Play Store link.
-- **everything back to a backup**: compares the TV now against a tvgo backup. It enables what was enabled
+- **everything back to a backup**: compares the TV now against a TVFreedom backup. It enables what was enabled
   then and is disabled now, and runs `install-existing` on what was installed then and is missing now. It
   shows the diff first.
 
 Then you type `RESTORE`, it waits 30 s, and optionally reboots and verifies. Both TVs were debloated before
-tvgo existed, so their first tvgo backup is already debloated. To undo those earlier phases, restore
+TVFreedom existed, so their first TVFreedom backup is already debloated. To undo those earlier phases, restore
 `lists/phaseN.txt` (Mi TV) or `lists/mibox4/phaseN.txt`.
 
 ## Phone setup (Termux)
@@ -132,7 +132,7 @@ pkg install git gh && gh auth login          # the repo is private
 gh repo clone <owner>/TV_Debloater && cd TV_Debloater
 sh scripts/termux-setup.sh                   # or: sh scripts/termux-setup.sh ollama (on-phone model)
 claude                                       # once, to log in; then /exit
-python tvgo.py setup
+python tvfreedom.py setup
 ```
 
 `scripts/termux-setup.sh` does the following, and is safe to run again:
@@ -151,7 +151,7 @@ Tested on the Samsung phone (Android 17) on 2026-10-19:
 - Claude Code 2.1.303 starts.
 - The 12 offline tests pass on the phone.
 
-`python tvgo.py setup` is the onboarding. It also runs by itself the first time you run `go` or `plan`.
+`python tvfreedom.py setup` is the onboarding. It also runs by itself the first time you run `go` or `plan`.
 
 1. **Phone:** checks Python, adb and the Wi-Fi address. For each missing piece it prints the install
    command for Termux, LinXR, macOS or other hosts.
@@ -161,7 +161,7 @@ Tested on the Samsung phone (Android 17) on 2026-10-19:
    Philips, Xiaomi/TCL, Fire TV), then looks for the TV. If none is found, it asks for the ip:port and
    the pairing code shown on the TV and pairs.
 
-It saves the agent and the TV (address and serial) to `~/.tvgo.json`. `go`, `plan` and `restore` then
+It saves the agent and the TV (address and serial) to `~/.tvfreedom.json` (it still reads an old `~/.tvgo.json`). `go`, `plan` and `restore` then
 use that TV directly when it still answers with the same serial. Otherwise they run discovery.
 
 ## Tests

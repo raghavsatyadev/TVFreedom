@@ -12,7 +12,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 /**
- * The company logo, sent by the tvgo phone app over adb:
+ * The company logo, sent by the TVFreedom phone app over adb:
  * <pre>
  * content write --uri content://com.gathin.tvhome.logo/logo &lt; logo.png
  * content delete --uri content://com.gathin.tvhome.logo/logo

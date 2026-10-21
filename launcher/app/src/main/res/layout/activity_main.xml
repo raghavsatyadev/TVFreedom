@@ -39,7 +39,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Company logo from tvgo (Branding.java): a square one stands left of the clock, a wide one takes the
+            <!-- Company logo from TVFreedom (Branding.java): a square one stands left of the clock, a wide one takes the
                  greeting's line above it. -->
             <LinearLayout
                 android:id="@+id/leftBlock"

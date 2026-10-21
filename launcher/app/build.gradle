@@ -5,7 +5,7 @@ plugins {
 // Personal settings (screensaver place and calendars) live in local.properties, which is not in git.
 def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
-// -Ptvhome.noLocal builds a copy without them (the one bundled into the tvgo app, which sends its own at runtime).
+// -Ptvhome.noLocal builds a copy without them (the one bundled into the TVFreedom app, which sends its own at runtime).
 if (localFile.exists() && !project.hasProperty('tvhome.noLocal')) localFile.withInputStream { localProps.load(it) }
 // resValue strings go through aapt, so escape what it treats specially (backslash, quotes, a leading @ or ?).
 def local = { String key ->
@@ -13,8 +13,8 @@ def local = { String key ->
     v.startsWith('@') || v.startsWith('?') ? '\\' + v : v
 }
 
-// The tvgo copy builds into its own folder so it never replaces the personal debug APK.
-if (project.hasProperty('tvhome.noLocal')) layout.buildDirectory = file('build-tvgo')
+// The TVFreedom copy builds into its own folder so it never replaces the personal debug APK.
+if (project.hasProperty('tvhome.noLocal')) layout.buildDirectory = file('build-tvfreedom')
 
 android {
     namespace 'com.gathin.tvhome'
