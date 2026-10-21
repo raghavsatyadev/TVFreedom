@@ -46,7 +46,7 @@ an answer works. Pick it with `--agent` or `$TVGO_AGENT`:
 
 | preset | command | notes |
 |---|---|---|
-| `claude` (default) | `claude -p --tools ""` | print mode, all tools off |
+| `claude` (default) | `claude -p --tools "" --setting-sources "" --strict-mcp-config --disable-slash-commands` | print mode, all tools off, no MCP servers, plugins, hooks or skills |
 | `codex` | `codex exec --sandbox read-only -` | read-only sandbox |
 | `gemini` | `gemini -p ''` | flags not checked on the phone yet |
 | `ollama` | `ollama run qwen3:4b` | on-phone model; use `TVGO_BATCH=25` for small models |
