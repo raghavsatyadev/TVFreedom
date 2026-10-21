@@ -1,5 +1,6 @@
 package io.github.raghavsatyadev.tvfreedom.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +16,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -24,6 +31,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.raghavsatyadev.tvfreedom.ai.TermuxClaude
+import io.github.raghavsatyadev.tvfreedom.ai.TermuxInstaller
+import kotlinx.coroutines.launch
 import io.github.raghavsatyadev.tvfreedom.ui.TermuxStep as Step
 
 /**
@@ -34,8 +43,26 @@ import io.github.raghavsatyadev.tvfreedom.ui.TermuxStep as Step
 actual fun TermuxSetup(vm: TvFreedomViewModel) {
     val ctx = LocalContext.current
     val termux = TermuxClaude(ctx)
+    val installer = remember { TermuxInstaller(ctx) }
+    val scope = rememberCoroutineScope()
+    var get by remember { mutableStateOf<Get>(Get.Idle) }
+    var progress by remember { mutableFloatStateOf(0f) }
+    fun getTermux() {
+        if (!installer.canInstall()) { get = Get.Settings; ctx.startActivity(installer.unknownSources()); return }
+        get = Get.Downloading
+        progress = 0f
+        scope.launch {
+            get = when (val r = installer.install { progress = it }) {
+                TermuxInstaller.Result.Installed -> Get.Idle.also { vm.probeTermux() }
+                TermuxInstaller.Result.NeedsPermission -> Get.Settings.also { ctx.startActivity(installer.unknownSources()) }
+                is TermuxInstaller.Result.Failed -> Get.Failed(r.why)
+            }
+        }
+    }
     LifecycleResumeEffect(Unit) {
         vm.probeTermux()
+        // Back from "Install unknown apps": carry on by itself once it is on.
+        if (get == Get.Settings && installer.canInstall()) getTermux()
         onPauseOrDispose {}
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.probeTermux() }
@@ -45,9 +72,17 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
         when (step) {
             null -> AiStatusLine("Checking Termux…")
             Step.READY -> AiStatusLine("Claude is ready", ready = true)
-            Step.INSTALL_TERMUX -> StepCard(step, "Install Termux",
-                "Get Termux from F-Droid. The Play Store version is too old to run Claude.", "Get Termux", Icons.Link) {
-                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TermuxClaude.GET_TERMUX)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            Step.INSTALL_TERMUX -> when (val g = get) {
+                Get.Idle -> StepCard(step, "Install Termux", "Claude runs inside a free app called Termux. TVFreedom gets it for you.",
+                    "Install Termux", Icons.Next, note = PLAY_PROTECT) { getTermux() }
+                Get.Downloading -> StepCard(step, "Getting Termux", "Downloading, about 110 MB. Then tap Install when Android asks.",
+                    "", Icons.Next, progress = progress, note = PLAY_PROTECT) {}
+                Get.Settings -> StepCard(step, "Allow TVFreedom to install Termux",
+                    "Turn on \"Allow from this source\", then come back.", "Open settings", Icons.Settings) {
+                    ctx.startActivity(installer.unknownSources())
+                }
+                is Get.Failed -> StepCard(step, "Termux did not install", g.why, "Try again", Icons.Refresh,
+                    second = "Get it from F-Droid instead" to { openFdroid(ctx) }) { getTermux() }
             }
             Step.PERMISSION -> StepCard(step, "Let TVFreedom use Termux",
                 "TVFreedom asks Termux to run Claude for it. Android asks you first.", "Allow", Icons.Shield) {
@@ -57,10 +92,11 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
                 "Termux sets itself up the first time it opens. Wait for its prompt, then come back.", "Open Termux", Icons.Next) {
                 termux.openTermux()
             }
-            Step.ALLOW_APPS -> StepCard(step, "Let Termux take commands from TVFreedom",
-                "Only you can switch this on. Tap below, then in Termux long-press, Paste, press Enter, and come back.",
-                "Copy and open Termux", Icons.Next) {
-                clipboard.setText(AnnotatedString(TermuxClaude.ALLOW_LINE))
+            Step.ALLOW_APPS -> StepCard(step, "Set up Claude in Termux",
+                "Tap below. In Termux, wait for the \$ sign, then long-press, tap Paste and press Enter.",
+                "Copy and open Termux", Icons.Next,
+                note = "It takes 5 to 10 minutes. Log in when Claude asks; TVFreedom opens again after.") {
+                clipboard.setText(AnnotatedString(termux.pasteLine()))
                 termux.openTermux()
             }
             Step.INSTALL_CLAUDE -> StepCard(step, "Install Claude Code",
@@ -73,3 +109,16 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
         }
     }
 }
+
+/** Where getting Termux from F-Droid is. */
+private sealed interface Get {
+    data object Idle : Get
+    data object Downloading : Get
+    data object Settings : Get
+    data class Failed(val why: String) : Get
+}
+
+private const val PLAY_PROTECT = "If Play Protect asks, tap More details, then Install anyway."
+
+private fun openFdroid(ctx: Context) =
+    ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TermuxClaude.GET_TERMUX)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

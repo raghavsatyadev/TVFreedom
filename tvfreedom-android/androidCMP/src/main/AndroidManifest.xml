@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!-- Claude on the user's subscription: run Claude Code inside Termux (ai/TermuxClaude.kt) -->
     <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+    <!-- Install Termux from F-Droid for the user (ai/TermuxInstaller.kt); Android still asks "Install?" -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- The TV screensaver's weather: the phone's town, rounded to about 1 km (store/PhoneLocation.kt) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 

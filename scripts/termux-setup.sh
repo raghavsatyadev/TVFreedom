@@ -2,7 +2,8 @@
 # One-time phone setup for TVFreedom in Termux (F-Droid or GitHub build). Safe to run again.
 #   sh scripts/termux-setup.sh            tools + Claude Code
 #   sh scripts/termux-setup.sh ollama     tools + a small on-phone model instead
-#   sh termux-setup.sh app                only Claude Code, for the TVFreedom phone app (it runs this for you)
+#   sh termux-setup.sh app [component]    only Claude Code, for the TVFreedom phone app (it runs this for you);
+#                                         opens [component] (the app's screen) again after the login
 set -e
 
 say() { printf '\n== %s\n' "$*"; }
@@ -55,8 +56,10 @@ grep -qs '^allow-external-apps *= *true' "$HOME/.termux/termux.properties" ||
 termux-reload-settings 2>/dev/null || true
 
 if [ "$1" = "app" ]; then
-  say "Claude Code is installed. Log in below (skip if it opens straight away), then type /exit and go back to TVFreedom."
-  exec claude
+  say "Claude Code is installed. Log in below (skip if it opens straight away), then type /exit."
+  claude || true
+  if [ -n "$2" ]; then am start -n "$2" > /dev/null 2>&1 || echo "Now go back to TVFreedom."; fi
+  exit 0
 fi
 
 say "Done. Next:"

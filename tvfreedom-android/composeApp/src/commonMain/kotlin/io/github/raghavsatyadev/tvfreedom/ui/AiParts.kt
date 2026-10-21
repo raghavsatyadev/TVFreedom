@@ -3,11 +3,13 @@ package io.github.raghavsatyadev.tvfreedom.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,10 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-/** One Termux setup step: how many are left, one sentence, one button. */
+/**
+ * One Termux setup step: how many are left, one sentence, one button. [progress] (0..1) shows a bar instead of the
+ * button; [note] is a small line under the button; [second] is a quieter way out (text, action).
+ */
 @Composable
 fun StepCard(step: TermuxStep, title: String, body: String, action: String,
-             icon: ImageVector, onClick: () -> Unit) {
+             icon: ImageVector, progress: Float? = null, note: String? = null,
+             second: Pair<String, () -> Unit>? = null, onClick: () -> Unit) {
     val left = TermuxStep.READY.ordinal - step.ordinal
     Card(shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
@@ -28,7 +34,12 @@ fun StepCard(step: TermuxStep, title: String, body: String, action: String,
                 color = MaterialTheme.colorScheme.onSecondaryContainer)
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Column(Modifier.padding(top = 4.dp)) { MainAction(action, icon, onClick = onClick) }
+            Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (progress != null) LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth())
+                else MainAction(action, icon, onClick = onClick)
+                note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                second?.let { (text, go) -> SecondAction(text, null, onClick = go) }
+            }
         }
     }
 }

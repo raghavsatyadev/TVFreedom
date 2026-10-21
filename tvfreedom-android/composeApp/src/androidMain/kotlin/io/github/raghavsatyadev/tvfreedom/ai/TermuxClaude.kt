@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Base64
 import androidx.core.content.ContextCompat
 import io.github.raghavsatyadev.tvfreedom.core.AskItem
 import io.github.raghavsatyadev.tvfreedom.core.Classifier
@@ -80,10 +81,22 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     }
 
     /** Install Claude Code with the bundled scripts/termux-setup.sh, then log in, in a Termux window the user watches. */
-    fun startInstall() {
-        val script = ctx.assets.open("termux/termux-setup.sh").use { it.readBytes().decodeToString() }
-        openSession("$PREFIX/bin/sh", arrayOf("-c", script, "sh", "app"))
+    fun startInstall() = openSession("$PREFIX/bin/sh", arrayOf("-c", script(), "sh", "app", appScreen()))
+
+    /**
+     * The one line the user pastes in Termux: it switches on allow-external-apps and installs Claude Code, then logs in
+     * and opens TVFreedom again. The script travels inside the line (base64), so nothing else is downloaded for it.
+     */
+    fun pasteLine(): String {
+        val b64 = Base64.encodeToString(script().encodeToByteArray(), Base64.NO_WRAP)
+        return "echo $b64 | base64 -d > ~/tvfreedom-setup.sh && sh ~/tvfreedom-setup.sh app ${appScreen()}"
     }
+
+    private fun script() = ctx.assets.open("termux/termux-setup.sh").use { it.readBytes().decodeToString() }
+
+    /** TVFreedom's screen, for Termux's `am start -n` after the login. */
+    private fun appScreen() = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.component?.flattenToShortString()
+        ?: ctx.packageName
 
     /** Open `claude` in a Termux window so the user can log in once. */
     fun startLogin() = openSession("$PREFIX/bin/claude", emptyArray())
@@ -149,9 +162,6 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     companion object {
         const val READY = "ready"
         const val PERMISSION = "com.termux.permission.RUN_COMMAND"
-        /** Safe to paste twice: adds the line only if it isn't there yet. */
-        const val ALLOW_LINE = "mkdir -p ~/.termux; grep -qs '^allow-external-apps *= *true' ~/.termux/termux.properties || " +
-            "echo allow-external-apps=true >> ~/.termux/termux.properties; termux-reload-settings"
         const val GET_TERMUX = "https://f-droid.org/packages/com.termux/"
         private const val TERMUX = "com.termux"
         private const val PREFIX = "/data/data/com.termux/files/usr"
