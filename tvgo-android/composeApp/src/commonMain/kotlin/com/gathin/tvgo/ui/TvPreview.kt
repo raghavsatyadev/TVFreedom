@@ -1,6 +1,5 @@
 package com.gathin.tvgo.ui
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +24,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,12 +39,12 @@ import androidx.compose.ui.unit.sp
 
 private const val WIDE = 1.6f
 
-private fun isWide(b: Bitmap) = b.width.toFloat() / b.height >= WIDE
+private fun isWide(b: ImageBitmap) = b.width.toFloat() / b.height >= WIDE
 
 /** The company logo kept on this phone, read again when UiState.brandStamp changes. */
 @Composable
-fun rememberLogo(vm: TvGoViewModel): Bitmap? = androidx.compose.runtime.remember(vm.state.brandStamp) {
-    vm.brand.file.takeIf { it.isFile }?.let { android.graphics.BitmapFactory.decodeFile(it.path) }
+fun rememberLogo(vm: TvGoViewModel): ImageBitmap? = androidx.compose.runtime.remember(vm.state.brandStamp) {
+    vm.brand.logo?.let { decodeImage(it, maxWidth = 4096) }
 }
 
 /**
@@ -53,7 +52,7 @@ fun rememberLogo(vm: TvGoViewModel): Bitmap? = androidx.compose.runtime.remember
  * rows of [columns] tiles, at the bottom like on the TV, with the first one's name above it.
  */
 @Composable
-fun HomePreview(logo: Bitmap?, color: String, favourites: List<String>, columns: Int, modifier: Modifier = Modifier) {
+fun HomePreview(logo: ImageBitmap?, color: String, favourites: List<String>, columns: Int, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(16.dp)).background(parse(color))) {
         val k = maxWidth / 960.dp
         val wide = logo != null && isWide(logo)
@@ -109,7 +108,7 @@ fun HomePreview(logo: Bitmap?, color: String, favourites: List<String>, columns:
 
 /** The clock screensaver: black with a soft glow, the logo above the clock (they drift together on the TV). */
 @Composable
-fun DreamPreview(logo: Bitmap?, place: String, modifier: Modifier = Modifier) {
+fun DreamPreview(logo: ImageBitmap?, place: String, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(16.dp))
         .background(Brush.radialGradient(listOf(Color(0xFF0B1A4A), Color.Black)))) {
         val k = maxWidth / 960.dp
@@ -129,9 +128,9 @@ fun DreamPreview(logo: Bitmap?, place: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LogoImage(b: Bitmap, height: Dp, maxWidth: Dp, modifier: Modifier = Modifier) =
-    Image(b.asImageBitmap(), "Logo", contentScale = ContentScale.Fit, modifier = modifier.height(height).widthIn(max = maxWidth))
+private fun LogoImage(b: ImageBitmap, height: Dp, maxWidth: Dp, modifier: Modifier = Modifier) =
+    Image(b, "Logo", contentScale = ContentScale.Fit, modifier = modifier.height(height).widthIn(max = maxWidth))
 
 /** #RRGGBB, or black for "" (the plain home screen). */
 fun parse(c: String): Color =
-    runCatching { Color(android.graphics.Color.parseColor(c)) }.getOrDefault(Color.Black)
+    c.removePrefix("#").takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) } ?: Color.Black

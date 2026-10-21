@@ -5,7 +5,7 @@ package com.gathin.tvgo.tv
  * Android's own Private DNS, and SmartTube. Everything that goes into a command is a package name, a key from
  * [SETTINGS], a checked hostname, or a mode from a fixed set; every change has an undo line (see [Undo]).
  */
-class ExtraOps(private val tv: AdbTv) {
+class ExtraOps(private val tv: Tv) {
 
     /** The background op for this Android: RUN_ANY_IN_BACKGROUND from 9 (API 28), RUN_IN_BACKGROUND before. */
     fun backgroundOp(sdk: Int) = if (sdk >= 28) "RUN_ANY_IN_BACKGROUND" else "RUN_IN_BACKGROUND"
@@ -93,7 +93,7 @@ object Undo {
     }
 
     /** Put back what [lines] record, newest first. Returns one log line per change. */
-    suspend fun run(tv: AdbTv, lines: List<String>): List<String> {
+    suspend fun run(tv: Tv, lines: List<String>): List<String> {
         val ops = ExtraOps(tv)
         val home = HomeOps(tv)
         return lines.asReversed().mapNotNull { line ->

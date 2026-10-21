@@ -64,22 +64,15 @@ private class Manager(private val keys: AdbKeys, timeoutS: Long) : AbsAdbConnect
     override fun getDeviceName(): String = "TVFreedom"
 }
 
-sealed interface ConnectResult {
-    data object Ok : ConnectResult
-    data object PairingRequired : ConnectResult
-    data class Failed(val why: String) : ConnectResult
-}
-
 /**
  * One TV over adb (classic ip:5555 with the "Allow debugging?" prompt, or TLS wireless debugging after pairing).
  * A fresh connection manager is made for every connect, so a reboot never leaves a stale transport behind.
  */
-class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell {
-    val address get() = "$host:$port"
+class AdbTv(override val host: String, override val port: Int, private val keys: AdbKeys) : Tv {
     private var mgr: Manager? = null
 
     /** Connect; waits up to [timeoutS] for the user to accept "Allow debugging?" on the TV. */
-    suspend fun connect(timeoutS: Long = 90): ConnectResult = withContext(Dispatchers.IO) {
+    override suspend fun connect(timeoutS: Long): ConnectResult = withContext(Dispatchers.IO) {
         close()
         val m = Manager(keys, timeoutS)
         try {
@@ -102,7 +95,7 @@ class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell 
         }
     }
 
-    val connected get() = mgr?.isConnected == true
+    override val connected get() = mgr?.isConnected == true
 
     /**
      * Run [cmd]. If the connection has dropped (adbd often restarts once more just after a boot, and libadb then
@@ -127,17 +120,13 @@ class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell 
         block()
     }
 
-    /**
-     * Run [cmd] with the raw exec: service (no terminal, so binary output such as a PNG arrives untouched),
-     * writing what [input] opens to its stdin first. Returns every byte of stdout.
-     */
-    suspend fun exec(cmd: String, input: (() -> InputStream)? = null, timeoutMs: Long = 120_000): ByteArray = retry("exec $cmd") {
+    override suspend fun exec(cmd: String, input: ByteArray?, timeoutMs: Long): ByteArray = retry("exec $cmd") {
         withContext(Dispatchers.IO) {
             val m = mgr ?: throw IllegalStateException("not connected to $address")
             Log.d(TAG, "exec $cmd")
             withTimeout(timeoutMs) {
                 m.openStream("exec:$cmd").use { s ->
-                    input?.let { open -> open().use { feed(s, it) } } // opened per try, so a retry starts from byte 0
+                    input?.let { feed(s, it.inputStream()) } // a new stream per try, so a retry starts from byte 0
                     readAll(s)
                 }
             }
@@ -191,12 +180,12 @@ class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell 
     }
 
     /** Reboot the TV and drop this connection (the daemon goes away with it). */
-    suspend fun reboot() = withContext(Dispatchers.IO) {
+    override suspend fun reboot(): Unit = withContext(Dispatchers.IO) {
         runCatching { mgr?.openStream("reboot:")?.close() }
         close()
     }
 
-    fun close() {
+    override fun close() {
         runCatching { mgr?.close() }
         mgr = null
     }
@@ -219,15 +208,6 @@ class AdbTv(val host: String, val port: Int, private val keys: AdbKeys) : Shell 
             } finally {
                 runCatching { m.close() }
             }
-        }
-
-        /** "192.168.1.20:5555" or "192.168.1.20" (port 5555) to host and port, or null. */
-        fun parseAddress(text: String): Pair<String, Int>? {
-            val t = text.trim()
-            val host = t.substringBeforeLast(':', t).ifEmpty { return null }
-            val port = if (':' in t) t.substringAfterLast(':').toIntOrNull() ?: return null else 5555
-            if (port !in 1..65535 || !Regex("^[A-Za-z0-9.\\-]+$").matches(host)) return null
-            return host to port
         }
     }
 }

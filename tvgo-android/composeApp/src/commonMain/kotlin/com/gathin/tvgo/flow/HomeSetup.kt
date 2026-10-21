@@ -6,7 +6,7 @@ import com.gathin.tvgo.core.ListEntry
 import com.gathin.tvgo.core.Removal
 import com.gathin.tvgo.core.TvInfo
 import com.gathin.tvgo.store.Storage
-import com.gathin.tvgo.tv.AdbTv
+import com.gathin.tvgo.tv.Tv
 import com.gathin.tvgo.tv.HomeOps
 import com.gathin.tvgo.tv.LauncherConfig
 import com.gathin.tvgo.tv.TvOps
@@ -52,7 +52,7 @@ data class HomeDraft(
  */
 class HomeSetup(private val storage: Storage, private val runner: Runner, private val log: (String) -> Unit) {
 
-    suspend fun draft(tv: AdbTv, info: TvInfo, bundled: Long): HomeDraft {
+    suspend fun draft(tv: Tv, info: TvInfo, bundled: Long): HomeDraft {
         runner.begin(tv, "Reading the TV")
         val home = HomeOps(tv)
         val ops = TvOps(tv, tv.address)
@@ -99,7 +99,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
      * Phase 4, after the typed GO: install or update the launcher, set it up, turn off the stock home screen,
      * restart and check the new one opens. If it doesn't, the stock one is turned back on at once.
      */
-    suspend fun launcherPhase(tv: AdbTv, info: TvInfo, draft: HomeDraft, choice: Choice): RunResult {
+    suspend fun launcherPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice): RunResult {
         val rows = draft.homeOff.map { Removal(it.pkg, DISABLE, 4, it.comment, "home setup") }
         val runDir = storage.writeHomeRun(info, 4, rows, emptyMap())
         log("phase 4 saved: ${runDir.name}")
@@ -119,7 +119,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
      * Phase 5, after the typed GO: make ClockDream the screensaver (installing the launcher first if phase 4 didn't),
      * check it starts, turn off the stock screensaver, restart and check. On failure the old one comes back.
      */
-    suspend fun screensaverPhase(tv: AdbTv, info: TvInfo, draft: HomeDraft, choice: Choice, newHome: Boolean): RunResult {
+    suspend fun screensaverPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice, newHome: Boolean): RunResult {
         val rows = draft.dreamOff.map { Removal(it.pkg, DISABLE, 5, it.comment, "home setup") }
         val runDir = storage.writeHomeRun(info, 5, rows, mapOf(HomeOps.SCREENSAVER to draft.oldScreensaver))
         log("phase 5 saved: ${runDir.name}")
@@ -159,7 +159,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
     }
 
     /** Install or update the launcher once per run, grant its permissions, send the settings and check it opens. */
-    private suspend fun ensureLauncher(tv: AdbTv, draft: HomeDraft, choice: Choice) {
+    private suspend fun ensureLauncher(tv: Tv, draft: HomeDraft, choice: Choice) {
         if (ready) return
         val home = HomeOps(tv)
         val ops = TvOps(tv, tv.address)
@@ -201,7 +201,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
 
     /** The logo is a nice-to-have: if it doesn't arrive, say so and go on with the home screen. */
     private suspend fun sendLogo(home: HomeOps, logo: ByteArray?) {
-        val out = runCatching { home.setLogo(logo) }.getOrElse { it.message ?: it.javaClass.simpleName }
+        val out = runCatching { home.setLogo(logo) }.getOrElse { com.gathin.tvgo.core.Text.why(it) }
         var onTv = home.config()?.logoBytes ?: -1
         // content can still be writing when its stream closes: look once more before calling it lost.
         if (logo != null && onTv != logo.size.toLong()) {
@@ -216,7 +216,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
     }
 
     /** A phase didn't check out: turn back on what it turned off (and the old screensaver) rather than leave it half done. */
-    private suspend fun rollBack(tv: AdbTv, rows: List<Removal>, oldScreensaver: String?) {
+    private suspend fun rollBack(tv: Tv, rows: List<Removal>, oldScreensaver: String?) {
         runner.begin(tv, "Undoing this phase")
         val ops = TvOps(tv, tv.address)
         rows.asReversed().forEach { log("enable ${it.pkg}: ${ops.enable(it.pkg).ifEmpty { "ok" }}") }

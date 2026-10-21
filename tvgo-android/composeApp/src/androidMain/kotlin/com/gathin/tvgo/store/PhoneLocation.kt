@@ -10,6 +10,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.CancellationSignal
 import androidx.core.content.ContextCompat
+import com.gathin.tvgo.ui.Place
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -22,8 +23,6 @@ import kotlin.coroutines.resume
  * (about 1 km), so nothing more precise ever reaches the TV.
  */
 object PhoneLocation {
-    data class Place(val name: String, val latitude: String, val longitude: String)
-
     const val PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION
 
     fun granted(ctx: Context) = ContextCompat.checkSelfPermission(ctx, PERMISSION) == PackageManager.PERMISSION_GRANTED

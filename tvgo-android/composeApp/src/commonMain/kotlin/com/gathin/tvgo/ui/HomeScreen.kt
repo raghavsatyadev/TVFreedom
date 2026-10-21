@@ -2,8 +2,6 @@
 
 package com.gathin.tvgo.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,11 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gathin.tvgo.flow.HomeDraft
-import com.gathin.tvgo.store.PhoneLocation
 import com.gathin.tvgo.tv.HomeOps
 import com.gathin.tvgo.tv.LauncherConfig
 import kotlinx.coroutines.launch
@@ -54,7 +50,6 @@ fun HomeScreen(vm: TvGoViewModel) {
 
 @Composable
 private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
-    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val c = vm.state.homeConfig ?: draft.config
     val favourites = remember { mutableStateListOf<String>().apply { addAll(c.favourites) } }
@@ -69,14 +64,14 @@ private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
 
     fun locate() = scope.launch {
         locating = "Finding this phone's town…"
-        val p = PhoneLocation.find(ctx)
+        val p = vm.phonePlace()
         locating = if (p == null) "This phone couldn't tell where it is. Type the town and its coordinates." else ""
         if (p != null) { place = p.name.ifEmpty { place }; lat = p.latitude; lon = p.longitude }
     }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) locate() }
+    val permission = rememberPermission(Permission.LOCATION) { if (it) locate() }
     // Android asks once; after that the weather fills in by itself whenever it is still empty.
     LaunchedEffect(Unit) {
-        if (lat.isEmpty()) if (PhoneLocation.granted(ctx)) locate() else permission.launch(PhoneLocation.PERMISSION)
+        if (lat.isEmpty()) if (permission.granted) locate() else permission.ask()
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -144,7 +139,7 @@ private fun HomeForm(vm: TvGoViewModel, draft: HomeDraft) {
                 if (locating.isNotEmpty()) Text(locating, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 SecondAction("Use this phone's location", Icons.Place) {
-                    if (PhoneLocation.granted(ctx)) locate() else permission.launch(PhoneLocation.PERMISSION)
+                    if (permission.granted) locate() else permission.ask()
                 }
                 OutlinedTextField(calendars, { calendars = it }, Modifier.fillMaxWidth().padding(top = 8.dp),
                     label = { Text("Calendars to show") }, shape = MaterialTheme.shapes.large,

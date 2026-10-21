@@ -1,110 +1,41 @@
 package com.gathin.tvgo.ui
 
-import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.pm.PackageInfoCompat
-import androidx.lifecycle.AndroidViewModel
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gathin.tvgo.TvGoApp
-import com.gathin.tvgo.ai.ClaudeClassifier
-import com.gathin.tvgo.ai.NanoClassifier
-import com.gathin.tvgo.ai.TermuxClaude
 import com.gathin.tvgo.core.Classifier
-import com.gathin.tvgo.core.Plan
-import com.gathin.tvgo.core.TvInfo
+import com.gathin.tvgo.core.Text
 import com.gathin.tvgo.flow.Extras
-import com.gathin.tvgo.tv.HomeOps
-import com.gathin.tvgo.tv.Undo
 import com.gathin.tvgo.flow.ExtrasChoice
-import com.gathin.tvgo.flow.ExtrasDraft
 import com.gathin.tvgo.flow.HomeDraft
 import com.gathin.tvgo.flow.HomeSetup
 import com.gathin.tvgo.flow.PhaseRun
-import com.gathin.tvgo.flow.RunService
 import com.gathin.tvgo.flow.RunResult
 import com.gathin.tvgo.flow.Runner
-import com.gathin.tvgo.store.Brand
-import com.gathin.tvgo.store.PhoneLocation
 import com.gathin.tvgo.store.RestoreOption
 import com.gathin.tvgo.store.Settings
-import com.gathin.tvgo.tv.AdbKeys
-import com.gathin.tvgo.tv.AdbTv
-import com.gathin.tvgo.tv.Candidate
 import com.gathin.tvgo.tv.ConnectResult
-import com.gathin.tvgo.tv.Discovery
+import com.gathin.tvgo.tv.HomeOps
 import com.gathin.tvgo.tv.LauncherConfig
+import com.gathin.tvgo.tv.Tv
+import com.gathin.tvgo.tv.TvLink
 import com.gathin.tvgo.tv.TvOps
-import androidx.compose.runtime.snapshotFlow
+import com.gathin.tvgo.tv.Undo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
-enum class Screen { SETUP, CONNECT, TV, PLAN, RUN, RESTORE, SETTINGS, HOME }
-
-/** How a run ended, for the result screen: free RAM in MB before and after, and the TV's screen after the restart. */
-data class Outcome(
-    val ok: Boolean,
-    val headline: String,
-    val body: String,
-    val ramBefore: Int? = null,
-    val ramAfter: Int? = null,
-    val screen: File? = null,
-)
-
-data class UiState(
-    val screen: Screen = Screen.SETUP,
-    val busy: Boolean = false,
-    /** Plain name of the step running now; empty for quick steps, which show nothing. */
-    val headline: String = "",
-    /** The latest log line: the detail under the headline. */
-    val status: String = "",
-    /** What the user has to know from the last step (a failure or something to do); empty when all went well. */
-    val notice: String = "",
-    val log: List<String> = emptyList(),
-    val searched: Boolean = false,
-    val candidates: List<Candidate> = emptyList(),
-    val showPair: Boolean = false,
-    val pairAddress: String = "",
-    val info: TvInfo? = null,
-    val plan: Plan? = null,
-    val runDir: File? = null,
-    val phases: Set<Int> = emptySet(),
-    val outcome: Outcome? = null,
-    val restoreOptions: List<RestoreOption> = emptyList(),
-    val restoreChoice: RestoreOption? = null,
-    val restorePreview: String = "",
-    val aiStatus: String = "",
-    /** The next thing to do to use Claude in Termux; null while checking. */
-    val termuxStep: TermuxClaude.Step? = null,
-    /** What phases 4 and 5 (home screen, screensaver) would do on this TV; read with the plan. */
-    val homeDraft: HomeDraft? = null,
-    /** The launcher settings the user chose for phases 4 and 5. */
-    val homeConfig: LauncherConfig? = null,
-    /** Keep the favourites an older launcher on the TV saved (the user left the list as it was). */
-    val keepTvFavourites: Boolean = false,
-    /** Background colours that go with the company logo; bumps [brandStamp] when the logo or colour changes. */
-    val brandColors: List<String> = emptyList(),
-    val brandStamp: Int = 0,
-    /** While a debloat runs: the phase on now and the ones done, for the step list. */
-    val runPhase: Int? = null,
-    val runDone: List<Int> = emptyList(),
-    /** The steps of the debloat on the run screen, in everyday words; empty for a restore or a restart. */
-    val runSteps: List<PlainStep> = emptyList(),
-    /** What phase 6 (lockdown, settings, DNS, SmartTube) finds on this TV, and what the user switched on. */
-    val extrasDraft: ExtrasDraft? = null,
-    val extras: ExtrasChoice = ExtrasChoice(),
-)
-
-class TvGoViewModel(app: Application) : AndroidViewModel(app) {
-    private val storage = (app as TvGoApp).storage
+class TvGoViewModel(private val platform: AppPlatform) : ViewModel() {
+    private val storage = platform.storage
     val settings: Settings = storage.settings
-    val brand = Brand(app, settings)
-    private val discovery = Discovery(app)
-    private val keys by lazy { AdbKeys(storage.keysDir) }
-    private var tv: AdbTv? = null
+    val brand = platform.brand
+    private val link: TvLink = platform.link
+    private var tv: Tv? = null
 
     var state by mutableStateOf(UiState(screen = if (settings.onboarded) Screen.CONNECT else Screen.SETUP))
         private set
@@ -121,29 +52,27 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
         update { copy(notice = line) }
     }
 
-    private val app get() = getApplication<TvGoApp>()
-
     /** Gemini Nano (or Termux) is waiting for TVFreedom to be on screen again. */
     private var askOpen by mutableStateOf(false)
 
     private suspend fun waitOpen() {
-        if (app.open.value > 0) return
+        if (platform.open.value > 0) return
         askOpen = true
         try {
-            app.awaitOpen()
+            platform.open.first { it > 0 }
         } finally {
             askOpen = false
         }
     }
 
     /** The notification while a job runs: its headline, the latest line, and the steps done. */
-    private fun progress() = RunService.Progress(state.headline.ifEmpty { "TVFreedom" },
+    private fun progress() = Progress(state.headline.ifEmpty { "TVFreedom" },
         if (askOpen) "Open TVFreedom to go on: the AI on this phone only answers while TVFreedom is open." else state.status.ifEmpty { "Working" },
         state.runDone.size, state.runSteps.size, askOpen)
 
-    private val runner by lazy { Runner(storage, keys, discovery, ::log) { update { copy(headline = it) } } }
+    private val runner by lazy { Runner(storage, link, ::log) { update { copy(headline = it) } } }
     private val homeSetup by lazy { HomeSetup(storage, runner, ::log) }
-    private val extras by lazy { Extras(storage, runner, ::log) }
+    private val extras by lazy { Extras(storage, platform.net, runner, ::log) }
     private val phaseRun by lazy { PhaseRun(runner, homeSetup, extras, ::log) }
 
     /** One job at a time: nothing starts while another step runs. [headline] names it on screen; empty = silent. */
@@ -152,20 +81,20 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
         update { copy(busy = true, headline = headline, status = "", notice = "") }
         // Named jobs talk to the TV for a while: keep TVFreedom alive and show their progress if the user leaves the app.
         val long = headline.isNotEmpty()
-        if (long) RunService.start(app, progress())
+        if (long) platform.startJob(progress())
         viewModelScope.launch {
-            val watch = if (long) launch { snapshotFlow { progress() }.collect { RunService.update(app, it) } } else null
+            val watch = if (long) launch { snapshotFlow { progress() }.collect { platform.updateJob(it) } } else null
             try {
                 block()
             } catch (e: Exception) {
-                val why = "Something went wrong: ${e.message ?: e.javaClass.simpleName}"
+                val why = "Something went wrong: ${Text.why(e)}"
                 log(why)
                 if (state.screen == Screen.RUN && state.outcome == null)
                     update { copy(outcome = Outcome(false, "Stopped", "$why. Check the TV; Restore can undo this run.")) }
                 else update { copy(notice = why) }
             } finally {
                 watch?.cancel()
-                if (long) RunService.stop(app)
+                if (long) platform.stopJob()
                 update { copy(busy = false, headline = "") }
             }
         }
@@ -185,14 +114,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
         if (checking?.isActive == true) return
         update { copy(aiStatus = "") }
         checking = viewModelScope.launch {
-            val status = runCatching {
-                when (settings.ai) {
-                    Settings.Ai.TERMUX -> TermuxClaude(getApplication(), settings.termuxModel.alias).check().let { if (it == TermuxClaude.READY) "Claude is ready" else it }
-                    Settings.Ai.NANO -> NanoClassifier().let { n -> try { n.prepare(::log) } finally { n.close() } }
-                    Settings.Ai.CLAUDE -> if (settings.claudeKey.isBlank()) "add a Claude API key" else "key saved"
-                    Settings.Ai.NONE -> "no AI: only the guard and the lists decide"
-                }
-            }.getOrElse { "check failed: ${it.message ?: it.javaClass.simpleName}" }
+            val status = runCatching { platform.checkAi(settings.ai, settings, ::log) }.getOrElse { "check failed: ${Text.why(it)}" }
             update { copy(aiStatus = status) }
         }
     }
@@ -209,7 +131,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     fun probeTermux() {
         if (probing?.isActive == true) return
         probing = viewModelScope.launch {
-            val step = runCatching { TermuxClaude(getApplication()).probe(::log) }.getOrDefault(TermuxClaude.Step.OPEN_TERMUX)
+            val step = runCatching { platform.termuxStep(::log) }.getOrDefault(TermuxStep.OPEN_TERMUX)
             update { copy(termuxStep = step) }
         }
     }
@@ -218,9 +140,9 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun search() {
         update { copy(candidates = emptyList(), log = emptyList()) }
-        if (discovery.localIp() == null) return tell("This phone is not on Wi-Fi. Join the TV's Wi-Fi, or type the TV's address.")
+        if (link.localIp() == null) return tell("This phone is not on Wi-Fi. Join the TV's Wi-Fi, or type the TV's address.")
         log("looking for TVs (mDNS and port 5555)")
-        val found = discovery.find()
+        val found = link.find()
         update { copy(candidates = found, searched = true) }
         log("found ${found.size}")
     }
@@ -232,9 +154,9 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     fun connect(address: String) = job("Connecting") { open(address) }
 
     private suspend fun open(address: String) {
-        val (host, port) = AdbTv.parseAddress(address) ?: return tell("\"$address\" is not an address. Use ip:port, e.g. 192.168.1.20:5555.")
+        val (host, port) = TvLink.parseAddress(address) ?: return tell("\"$address\" is not an address. Use ip:port, e.g. 192.168.1.20:5555.")
         tv?.close()
-        val t = AdbTv(host, port, keys)
+        val t = link.tv(host, port)
         log("If the TV asks \"Allow debugging?\", tick Always allow and press OK")
         when (val r = t.connect()) {
             ConnectResult.Ok -> Unit
@@ -259,9 +181,9 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Pair, then find the TV's own debugging port and connect to it, so the user doesn't have to. */
     fun pair(address: String, code: String) = job("Pairing") {
-        val (host, port) = AdbTv.parseAddress(address) ?: return@job tell("\"$address\" is not an address. Use the ip:port the TV shows.")
+        val (host, port) = TvLink.parseAddress(address) ?: return@job tell("\"$address\" is not an address. Use the ip:port the TV shows.")
         update { copy(pairAddress = address) }
-        val r = AdbTv.pair(host, port, code, keys)
+        val r = link.pair(host, port, code)
         if (r != "paired") return@job tell("Pairing failed. Check the code on the TV and try again. ($r)")
         update { copy(showPair = false, headline = "Finding the TV") }
         search()
@@ -278,13 +200,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
         update { copy(info = null, plan = null, notice = "", screen = Screen.CONNECT) }
     }
 
-    private fun classifier(): Classifier? = when (settings.ai) {
-        Settings.Ai.TERMUX -> TermuxClaude(getApplication(), settings.termuxModel.alias, ::waitOpen)
-        Settings.Ai.NANO -> NanoClassifier(::waitOpen)
-        Settings.Ai.CLAUDE -> settings.claudeKey.takeIf { it.isNotBlank() }?.let { ClaudeClassifier(it, settings.claudeModel) }
-            ?: null.also { log("no Claude API key: only the guard and the lists decide") }
-        Settings.Ai.NONE -> null
-    }
+    private fun classifier(): Classifier? = platform.classifier(settings.ai, settings, ::waitOpen, ::log)
 
     /** Backup, then plan. Changes nothing on the TV. */
     fun makePlan() = job("Making a plan") {
@@ -297,20 +213,20 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
         val (plan, dir) = try {
             runner.plan(t, info, ai)
         } finally {
-            (ai as? NanoClassifier)?.close()
+            ai?.close()
         }
         // Phases 4 and 5 come from the launcher and screensaver on the TV, not from the package lists.
         val draft = runCatching { homeSetup.draft(t, info, bundledLauncher().second) }
-            .onFailure { log("could not read the home screen: ${it.message ?: it.javaClass.simpleName}") }.getOrNull()
+            .onFailure { log("could not read the home screen: ${Text.why(it)}") }.getOrNull()
         val extra = runCatching { extras.draft(t, info, plan) }
-            .onFailure { log("could not read the extras: ${it.message ?: it.javaClass.simpleName}") }.getOrNull()
+            .onFailure { log("could not read the extras: ${Text.why(it)}") }.getOrNull()
         // Every phase with something to do starts on; phase 4 also when the TV's logo or colour isn't the company's.
         val home = listOfNotNull(4.takeIf { draft != null && (draft.launcherDue || brandDue(draft)) },
             5.takeIf { draft?.screensaverDue == true }, 6.takeIf { extra != null && ExtrasChoice().due(extra) })
         // The screensaver's weather: if the TV has none yet, use this phone's town (Android asked once, on the form).
         val config = draft?.config?.let { c ->
-            if (c.latitude.isNotEmpty() || !PhoneLocation.granted(getApplication())) c
-            else PhoneLocation.find(getApplication())?.let { p -> c.copy(place = p.name, latitude = p.latitude, longitude = p.longitude) } ?: c
+            if (c.latitude.isNotEmpty() || !platform.locationGranted()) c
+            else platform.phonePlace()?.let { p -> c.copy(place = p.name, latitude = p.latitude, longitude = p.longitude) } ?: c
         }
         update {
             copy(plan = plan, runDir = dir, phases = plan.phases.toSet() + home, homeDraft = draft, homeConfig = config,
@@ -353,7 +269,7 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
             bundledLauncher().first, withContext(Dispatchers.IO) { brand.logo }) else null
         update {
             copy(screen = Screen.RUN, log = emptyList(), outcome = null, runPhase = null, runDone = emptyList(),
-                runSteps = plainSteps(plan, draft, phases, brand.file.isFile, state.extrasDraft?.let { it to state.extras }))
+                runSteps = plainSteps(plan, draft, phases, brand.hasLogo, state.extrasDraft?.let { it to state.extras }))
         }
         val o = phaseRun.run(t, plan.info, plan, dir, phases, draft, choice, state.extrasDraft, state.extras) { now, done ->
             update { copy(runPhase = now, runDone = done) }
@@ -420,10 +336,10 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The TV's home screen doesn't show the company's logo and colour yet. */
     private fun brandDue(draft: HomeDraft) = !draft.config.brandColor.equals(brand.color, ignoreCase = true) ||
-        draft.config.logoBytes != brand.file.length()
+        draft.config.logoBytes != brand.logoSize
 
-    fun pickLogo(uri: android.net.Uri) = job {
-        val colors = withContext(Dispatchers.IO) { brand.import(uri) }
+    fun pickLogo(image: ByteArray) = job {
+        val colors = withContext(Dispatchers.IO) { brand.import(image) }
         update { copy(brandColors = colors, brandStamp = brandStamp + 1) }
     }
 
@@ -448,11 +364,14 @@ class TvGoViewModel(app: Application) : AndroidViewModel(app) {
     /** The launcher APK in TVFreedom and its versionCode. */
     private suspend fun bundledLauncher(): Pair<ByteArray, Long> = withContext(Dispatchers.IO) {
         val apk = storage.launcherApk()
-        val file = File(getApplication<Application>().cacheDir, "tvhome.apk").apply { writeBytes(apk) }
-        val info = getApplication<Application>().packageManager.getPackageArchiveInfo(file.path, 0)
-        file.delete()
-        apk to (info?.let { PackageInfoCompat.getLongVersionCode(it) } ?: 0L)
+        apk to platform.apkVersion(apk)
     }
+
+    /** This phone's town for the weather, when Android allows it. */
+    suspend fun phonePlace(): Place? = withContext(Dispatchers.IO) { platform.phonePlace() }
+
+    /** A file the run left, such as the TV's screenshot. */
+    fun readBytes(p: okio.Path): ByteArray? = storage.readBytes(p)
 
     override fun onCleared() {
         tv?.close()

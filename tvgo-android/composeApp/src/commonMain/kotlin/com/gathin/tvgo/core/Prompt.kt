@@ -36,10 +36,10 @@ Answer with ONLY a JSON array, one object per package, nothing else:
     fun build(info: TvInfo, items: List<AskItem>, examples: Map<String, Example>, keep: Set<String>,
               withExamples: Boolean): String = buildString {
         val phases = PHASES.entries.joinToString("; ") { "${it.key} = ${it.value}" }
-        append(RULES.format(info.brand, info.model, info.android, keep.sorted().joinToString(", ").ifEmpty { "-" }, phases))
+        append(Text.fill(RULES, info.brand, info.model, info.android, keep.sorted().joinToString(", ").ifEmpty { "-" }, phases))
         if (withExamples) {
             append("\nDecisions made on the user's other TVs (pkg: action, phase, note), use them as examples:\n")
-            examples.toSortedMap().forEach { (p, e) -> append("$p: ${e.action}, phase ${e.phase}, ${e.comment.ifEmpty { "-" }} [${e.model}]\n") }
+            examples.sortedByKey().forEach { (p, e) -> append("$p: ${e.action}, phase ${e.phase}, ${e.comment.ifEmpty { "-" }} [${e.model}]\n") }
         }
         append("\nPackages to classify, one JSON object per line (apk = install path; user_app = installed by the user\n")
         append("or the vendor as a normal app; hint = what another TV's list did with it):\n")

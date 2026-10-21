@@ -20,9 +20,6 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
-/** An adb endpoint seen on the Wi-Fi. Nothing has connected to it yet. */
-data class Candidate(val address: String, val why: String, val pairing: Boolean = false)
-
 /**
  * Find Android TVs on the Wi-Fi without touching them: adb's mDNS services plus a port 5555 scan.
  * It only lists addresses. The app connects (and the TV may ask "Allow debugging?") only when the user picks one.

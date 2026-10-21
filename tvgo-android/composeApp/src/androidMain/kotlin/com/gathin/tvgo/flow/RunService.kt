@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import com.gathin.tvgo.ui.Progress
 
 /**
  * Keeps TVFreedom running while a job talks to the TV and the user is in another app: without it the phone cuts the adb
@@ -26,9 +27,6 @@ class RunService : Service() {
         else startForeground(ID, n)
         return START_NOT_STICKY
     }
-
-    /** What the notification shows: [done] of [total] steps (total 0 = no bar); [attention] asks the user to open tvgo. */
-    data class Progress(val title: String, val text: String, val done: Int = 0, val total: Int = 0, val attention: Boolean = false)
 
     companion object {
         private const val ID = 1

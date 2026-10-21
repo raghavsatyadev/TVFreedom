@@ -80,6 +80,6 @@ object BrandColors {
             else -> Triple(c, 0f, x)
         }
         fun ch(v: Float) = ((v + m) * 255).toInt().coerceIn(0, 255)
-        return "#%02X%02X%02X".format(ch(r), ch(g), ch(b))
+        return Text.rgb(ch(r), ch(g), ch(b))
     }
 }

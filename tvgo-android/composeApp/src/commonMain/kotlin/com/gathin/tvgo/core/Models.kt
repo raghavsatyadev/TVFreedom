@@ -60,6 +60,9 @@ interface Classifier {
         keep: Set<String>,
         log: (String) -> Unit,
     ): Map<String, Verdict>
+
+    /** Free what the classifier holds (an on-device model). */
+    fun close() {}
 }
 
 const val DISABLE = "disable"

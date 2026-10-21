@@ -2,9 +2,6 @@
 
 package com.gathin.tvgo.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,7 +44,7 @@ import com.gathin.tvgo.flow.HomeSetup
 @Composable
 fun BrandCard(vm: TvGoViewModel) {
     val s = vm.state
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::pickLogo) }
+    val pick = rememberImagePicker(vm::pickLogo)
     val logo = rememberLogo(vm)
     LaunchedEffect(Unit) { if (s.brandColors.isEmpty()) vm.loadBrand() }
     val color = vm.brand.color
@@ -62,7 +58,7 @@ fun BrandCard(vm: TvGoViewModel) {
             HomePreview(logo, color, c?.favourites?.ifEmpty { null } ?: HomeSetup.DEFAULT_FAVOURITES, c?.columns ?: 4)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SecondAction(if (logo == null) "Add a logo" else "Change logo", Icons.Add, enabled = !s.busy) {
-                    pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    pick()
                 }
                 if (logo != null || color.isNotEmpty()) SecondAction("Remove", Icons.Close, enabled = !s.busy, onClick = vm::clearBrand)
             }

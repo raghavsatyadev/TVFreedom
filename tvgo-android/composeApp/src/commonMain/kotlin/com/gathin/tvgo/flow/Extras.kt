@@ -7,7 +7,7 @@ import com.gathin.tvgo.core.Plan
 import com.gathin.tvgo.core.Removal
 import com.gathin.tvgo.core.TvInfo
 import com.gathin.tvgo.store.Storage
-import com.gathin.tvgo.tv.AdbTv
+import com.gathin.tvgo.tv.Tv
 import com.gathin.tvgo.tv.ExtraOps
 import com.gathin.tvgo.tv.HomeOps
 import com.gathin.tvgo.tv.Parse
@@ -17,9 +17,10 @@ import com.gathin.tvgo.tv.Undo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.URL
-import java.security.MessageDigest
+import com.gathin.tvgo.store.Net
+import kotlinx.coroutines.IO
+import okio.ByteString.Companion.toByteString
+import okio.Path
 
 /** What phase 6 finds on the TV, read with the plan. Values are the TV's now. */
 data class ExtrasDraft(
@@ -58,9 +59,9 @@ data class ExtrasChoice(
  * YouTube. Every change is written to the run's extras.txt (applied.txt for YouTube) before it is made, the TV
  * restarts and is checked, and a failed check puts everything back.
  */
-class Extras(private val storage: Storage, private val runner: Runner, private val log: (String) -> Unit) {
+class Extras(private val storage: Storage, private val net: Net, private val runner: Runner, private val log: (String) -> Unit) {
 
-    suspend fun draft(tv: AdbTv, info: TvInfo, plan: Plan): ExtrasDraft {
+    suspend fun draft(tv: Tv, info: TvInfo, plan: Plan): ExtrasDraft {
         val ops = ExtraOps(tv)
         val sdk = info.sdk.toIntOrNull() ?: 0
         val homes = TvOps(tv, tv.address).homePackages()
@@ -78,7 +79,7 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
         return d
     }
 
-    suspend fun phase(tv: AdbTv, info: TvInfo, d: ExtrasDraft, c: ExtrasChoice): RunResult {
+    suspend fun phase(tv: Tv, info: TvInfo, d: ExtrasDraft, c: ExtrasChoice): RunResult {
         val tube = c.tubeDue(d)
         // Fetch SmartTube before anything changes: a failed download then leaves the TV as it was.
         val apk = if (tube && !d.smartTube) download(tv) else null
@@ -114,7 +115,7 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
         return result.copy(ok = ok)
     }
 
-    private suspend fun lockdown(tv: AdbTv, ops: ExtraOps, dir: File, d: ExtrasDraft, c: ExtrasChoice) {
+    private suspend fun lockdown(tv: Tv, ops: ExtraOps, dir: Path, d: ExtrasDraft, c: ExtrasChoice) {
         val targets = c.lockTargets(d)
         if (targets.isEmpty()) return
         runner.begin(tv, "Stopping ${targets.size} apps running in the background")
@@ -128,7 +129,7 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
         }
     }
 
-    private suspend fun settings(tv: AdbTv, ops: ExtraOps, dir: File, d: ExtrasDraft) {
+    private suspend fun settings(tv: Tv, ops: ExtraOps, dir: Path, d: ExtrasDraft) {
         runner.begin(tv, "Changing ${ExtraOps.SETTINGS.size} settings")
         for ((ns, key, value) in ExtraOps.SETTINGS) {
             val old = ops.setting(ns, key)
@@ -139,7 +140,7 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
     }
 
     /** Turn on Private DNS and look a name up through it; if that fails, it goes straight back. True if it stayed on. */
-    private suspend fun privateDns(tv: AdbTv, ops: ExtraOps, dir: File, host: String): Boolean {
+    private suspend fun privateDns(tv: Tv, ops: ExtraOps, dir: Path, host: String): Boolean {
         runner.begin(tv, "Turning on Private DNS ($host)")
         val oldMode = ops.setting("global", "private_dns_mode")
         val oldHost = ops.setting("global", "private_dns_specifier")
@@ -154,7 +155,7 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
         return false
     }
 
-    private suspend fun smartTube(tv: AdbTv, ops: ExtraOps, dir: File, rows: List<Removal>, apk: ByteArray?) {
+    private suspend fun smartTube(tv: Tv, ops: ExtraOps, dir: Path, rows: List<Removal>, apk: ByteArray?) {
         if (!ops.present(ExtraOps.SMARTTUBE)) {
             requireNotNull(apk) { "SmartTube was not downloaded" }
             runner.begin(tv, "Installing SmartTube")
@@ -181,24 +182,23 @@ class Extras(private val storage: Storage, private val runner: Runner, private v
     }
 
     /** dumbtv's pinned SmartTube build, kept on the phone once it checks out. */
-    private suspend fun download(tv: AdbTv): ByteArray = withContext(Dispatchers.IO) {
+    private suspend fun download(tv: Tv): ByteArray = withContext(Dispatchers.IO) {
         runner.begin(tv, "Downloading SmartTube (${ExtraOps.SMARTTUBE_MB} MB)")
-        val cached = File(storage.cacheDir(), "smarttube-${ExtraOps.SMARTTUBE_SHA256.take(12)}.apk")
-        if (cached.isFile && sha256(cached.readBytes()) == ExtraOps.SMARTTUBE_SHA256) return@withContext cached.readBytes()
-        val conn = URL(ExtraOps.SMARTTUBE_URL).openConnection().apply { connectTimeout = 20_000; readTimeout = 30_000 }
-        val bytes = conn.getInputStream().use { it.readBytes() }
+        val name = "smarttube-${ExtraOps.SMARTTUBE_SHA256.take(12)}.apk"
+        storage.readCache(name)?.takeIf { sha256(it) == ExtraOps.SMARTTUBE_SHA256 }?.let { return@withContext it }
+        val bytes = net.get(ExtraOps.SMARTTUBE_URL)
         if (bytes.size != ExtraOps.SMARTTUBE_BYTES) error("the SmartTube download is ${bytes.size} bytes, not ${ExtraOps.SMARTTUBE_BYTES}, so it wasn't installed")
         val got = sha256(bytes)
         if (got != ExtraOps.SMARTTUBE_SHA256) error("the SmartTube download doesn't match its pinned checksum ($got), so it wasn't installed")
-        cached.writeBytes(bytes)
+        storage.writeCache(name, bytes)
         log("SmartTube downloaded, checksum ok")
         bytes
     }
 
-    private fun sha256(b: ByteArray) = MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }
+    private fun sha256(b: ByteArray) = b.toByteString().sha256().hex()
 
     /** Put back everything this run changed: its undo lines, then YouTube. */
-    private suspend fun rollBack(tv: AdbTv, dir: File, rows: List<Removal>) {
+    private suspend fun rollBack(tv: Tv, dir: Path, rows: List<Removal>) {
         runner.begin(tv, "Undoing phase 6")
         Undo.run(tv, storage.undoLines(dir)).forEach(log)
         val ops = TvOps(tv, tv.address)

@@ -24,14 +24,14 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.gathin.tvgo.ai.TermuxClaude
-import com.gathin.tvgo.ai.TermuxClaude.Step
+import com.gathin.tvgo.ui.TermuxStep as Step
 
 /**
  * Setting up Claude in Termux, one step at a time. Each time TVFreedom comes back to the front it checks Termux again,
  * so steps already done never show and the user never has to tap "check".
  */
 @Composable
-fun TermuxSetup(vm: TvGoViewModel) {
+actual fun TermuxSetup(vm: TvGoViewModel) {
     val ctx = LocalContext.current
     val termux = TermuxClaude(ctx)
     LifecycleResumeEffect(Unit) {
@@ -71,31 +71,5 @@ fun TermuxSetup(vm: TvGoViewModel) {
                 termux.startLogin()
             }
         }
-    }
-}
-
-@Composable
-private fun StepCard(step: Step, title: String, body: String, action: String,
-                     icon: ImageVector, onClick: () -> Unit) {
-    val left = Step.READY.ordinal - step.ordinal
-    Card(shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(if (left == 1) "Last step" else "Up to $left steps left", style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Column(Modifier.padding(top = 4.dp)) { MainAction(action, icon, onClick = onClick) }
-        }
-    }
-}
-
-/** One line under the AI choice, the same for every AI: a tick and "… is ready", or what is happening now. */
-@Composable
-fun AiStatusLine(text: String, ready: Boolean = false) {
-    Row(Modifier.padding(start = 4.dp).heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (ready) Icon(Icons.Done, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 8.dp))
-        Text(text, style = MaterialTheme.typography.bodyLarge,
-            color = if (ready) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

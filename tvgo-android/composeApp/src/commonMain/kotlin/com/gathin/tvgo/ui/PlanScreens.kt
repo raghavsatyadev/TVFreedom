@@ -30,6 +30,7 @@ import com.gathin.tvgo.core.PHASES
 import com.gathin.tvgo.flow.HomeDraft
 import com.gathin.tvgo.core.Plan
 import com.gathin.tvgo.core.UNINSTALL
+import com.gathin.tvgo.core.sortedByKey
 import com.gathin.tvgo.store.Settings
 
 /** The plan, phase by phase, then a typed GO before anything touches the TV. */
@@ -54,7 +55,7 @@ fun PlanScreen(vm: TvGoViewModel) {
             return@Page
         }
         item { Summary(plan, count) }
-        val steps = plainSteps(plan, draft, chosen, vm.brand.file.isFile, s.extrasDraft?.let { it to s.extras })
+        val steps = plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras })
         item(key = "steps:label") { GroupLabel(if (steps.isEmpty()) "Nothing to do yet" else "What happens, step by step") }
         if (steps.isNotEmpty()) item(key = "steps:intro") {
             Text("One tap does it all, in this order. Each step is checked before the next starts, and the first one " +
@@ -76,7 +77,7 @@ fun PlanScreen(vm: TvGoViewModel) {
             TextButton(onClick = { showKept = !showKept }) { Text(if (showKept) "Hide kept apps" else "Show kept apps (${plan.kept.size})") }
         }
         if (showKept) {
-            val kept = plan.kept.toSortedMap().toList()
+            val kept = plan.kept.sortedByKey().toList()
             kept.forEachIndexed { i, (p, why) ->
                 item(key = "kept:$p") {
                     SegmentedListItem(onClick = {}, shapes = seg(i, kept.size), colors = segColors(),
@@ -88,7 +89,7 @@ fun PlanScreen(vm: TvGoViewModel) {
     if (confirm && plan != null) TypedConfirm(
         title = "Start the debloat?",
         body = "On ${plan.info.model}, ${chosen.size} step${if (chosen.size == 1) "" else "s"}, one after another: " +
-            plainSteps(plan, draft, chosen, vm.brand.file.isFile, s.extrasDraft?.let { it to s.extras }).joinToString("; ") { it.title.lowercase() } +
+            plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras }).joinToString("; ") { it.title.lowercase() } +
             ". The TV restarts after each, and TVFreedom checks it before going on. Keep this app open until it finishes. " +
             "You can undo it any time from Restore.",
         word = "GO",
@@ -194,7 +195,7 @@ fun RunScreen(vm: TvGoViewModel) {
         if (outcome != null && !s.busy) {
             item { OutcomeView(outcome.ok, outcome.headline, outcome.body) }
             outcome.ramAfter?.let { after -> item { RamCard(outcome.ramBefore, after) } }
-            outcome.screen?.let { file -> item { TvScreenshot(file) } }
+            outcome.screen?.let { file -> item { TvScreenshot(remember(file) { vm.readBytes(file) }) } }
             item { MainAction("Back to the TV", Icons.Tv) { vm.go(Screen.TV) } }
             if (!outcome.ok) item { SecondAction("Restore", Icons.History, modifier = Modifier.fillMaxWidth(), onClick = vm::openRestore) }
         }

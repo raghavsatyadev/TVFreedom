@@ -3,9 +3,9 @@ package com.gathin.tvgo.flow
 import com.gathin.tvgo.core.Plan
 import com.gathin.tvgo.core.Removal
 import com.gathin.tvgo.core.TvInfo
-import com.gathin.tvgo.tv.AdbTv
+import com.gathin.tvgo.tv.Tv
 import com.gathin.tvgo.tv.HomeOps
-import java.io.File
+import okio.Path
 
 /** How a phase-by-phase run ended: the last step's result (RAM from before the first) and the phases that checked out. */
 data class PhaseOutcome(val last: RunResult, val done: List<Int>, val failed: Int?)
@@ -17,7 +17,7 @@ data class PhaseOutcome(val last: RunResult, val done: List<Int>, val failed: In
  */
 class PhaseRun(private val runner: Runner, private val home: HomeSetup, private val extras: Extras, private val log: (String) -> Unit) {
 
-    suspend fun run(tv: AdbTv, info: TvInfo, plan: Plan, runDir: File, phases: List<Int>,
+    suspend fun run(tv: Tv, info: TvInfo, plan: Plan, runDir: Path, phases: List<Int>,
                     draft: HomeDraft?, choice: HomeSetup.Choice?,
                     extrasDraft: ExtrasDraft? = null, extrasChoice: ExtrasChoice? = null,
                     progress: (now: Int?, done: List<Int>) -> Unit = { _, _ -> }): PhaseOutcome {

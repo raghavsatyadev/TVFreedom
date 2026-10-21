@@ -14,6 +14,7 @@ import com.gathin.tvgo.core.Example
 import com.gathin.tvgo.core.Prompt
 import com.gathin.tvgo.core.TvInfo
 import com.gathin.tvgo.core.Verdict
+import com.gathin.tvgo.ui.TermuxStep as Step
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
@@ -34,9 +35,6 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     override val name = "Claude (Termux, $model)"
 
     data class Result(val exit: Int, val out: String, val err: String)
-
-    /** What is still missing before tvgo can use Claude in Termux, in the order the user has to do it. */
-    enum class Step { INSTALL_TERMUX, PERMISSION, OPEN_TERMUX, ALLOW_APPS, INSTALL_CLAUDE, LOGIN, READY }
 
     /** The first missing step, found without asking Claude anything (no usage, a second or two). */
     suspend fun probe(log: (String) -> Unit = {}): Step {

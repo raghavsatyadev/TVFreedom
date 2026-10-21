@@ -1,6 +1,5 @@
 package com.gathin.tvgo.tv
 
-import java.net.URLDecoder
 import kotlin.math.roundToInt
 
 /** The launcher's settings, as its ConfigReceiver reports and takes them. */
@@ -22,7 +21,7 @@ data class LauncherConfig(
  * The home-screen side of the TV (tv.py phases 4 and 5): install and set up the launcher, swap the screensaver,
  * and read RAM and the screen. Everything that goes into a command is a package name, a checked number, or quoted.
  */
-class HomeOps(private val tv: AdbTv) {
+class HomeOps(private val tv: Tv) {
 
     suspend fun sdk(): Int = tv.sh("getprop ro.build.version.sdk").trim().toIntOrNull() ?: 0
 
@@ -34,7 +33,7 @@ class HomeOps(private val tv: AdbTv) {
 
     /** Stream [apk] into the package installer (no file left on the TV). Returns its answer, "Success" when it worked. */
     suspend fun install(apk: ByteArray): String =
-        tv.exec("cmd package install -r -S ${apk.size}", { apk.inputStream() }, 180_000).decodeToString().trim()
+        tv.exec("cmd package install -r -S ${apk.size}", apk, 180_000).decodeToString().trim()
 
     suspend fun grant(permission: String) = tv.sh("pm grant $LAUNCHER ${Parse.safePackage(permission)}")
 
@@ -62,7 +61,7 @@ class HomeOps(private val tv: AdbTv) {
     suspend fun setLogo(png: ByteArray?): String =
         if (png == null) tv.sh("content delete --uri $LOGO_URI").trim()
         // exec: can't close the TV's stdin, so content would wait for more forever: head stops it after the logo's bytes.
-        else tv.exec("head -c ${png.size} | content write --uri $LOGO_URI", { png.inputStream() }, 60_000).decodeToString().trim()
+        else tv.exec("head -c ${png.size} | content write --uri $LOGO_URI", png, 60_000).decodeToString().trim()
 
     /** Close the launcher so it reads its settings again when it next opens. */
     suspend fun stopLauncher() = tv.sh("am force-stop $LAUNCHER")
@@ -125,7 +124,7 @@ fun Parse.coordinate(s: String): String = s.trim().takeIf { Regex("^-?\\d{1,3}(\
 fun Parse.launcherConfig(out: String): LauncherConfig? {
     val query = Regex("data=\"ok ([^\"]*)\"").find(out)?.groupValues?.get(1) ?: return null
     val v = query.split('&').filter { '=' in it }.associate {
-        it.substringBefore('=') to URLDecoder.decode(it.substringAfter('='), "UTF-8")
+        it.substringBefore('=') to Parse.formDecode(it.substringAfter('='))
     }
     return LauncherConfig(
         favourites = v["favourites"].orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() },
@@ -137,6 +136,25 @@ fun Parse.launcherConfig(out: String): LauncherConfig? {
         brandColor = v["brand_color"].orEmpty(),
         logoBytes = v["logo"]?.toLongOrNull() ?: 0,
     )
+}
+
+/** application/x-www-form-urlencoded value: + is a space, %XX bytes are UTF-8. A bad escape stays as it is. */
+fun Parse.formDecode(s: String): String {
+    val out = okio.Buffer()
+    var i = 0
+    while (i < s.length) {
+        val hex = if (s[i] == '%' && i + 3 <= s.length) s.substring(i + 1, i + 3).toIntOrNull(16) else null
+        when {
+            s[i] == '+' -> { out.writeByte(' '.code); i++ }
+            hex != null -> { out.writeByte(hex); i += 3 }
+            else -> {
+                var j = i + 1
+                while (j < s.length && s[j] != '%' && s[j] != '+') j++
+                out.writeUtf8(s, i, j); i = j
+            }
+        }
+    }
+    return out.readUtf8()
 }
 
 /** #RRGGBB in upper case, or "" if [s] isn't one (the value goes into a shell command). */

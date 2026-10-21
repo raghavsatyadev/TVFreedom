@@ -11,13 +11,18 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.gathin.tvgo.TvGoApp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
-    private val vm: TvGoViewModel by viewModels()
+    private val vm: TvGoViewModel by viewModels {
+        viewModelFactory { initializer { TvGoViewModel((application as TvGoApp).platform) } }
+    }
 
     /** Android 13+: the run's progress notification needs this; the run goes on either way. */
     private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}

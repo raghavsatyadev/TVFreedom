@@ -72,7 +72,7 @@ class NanoClassifier(private val waitOpen: suspend () -> Unit = {}) : Classifier
         }
     }
 
-    fun close() = model.close()
+    override fun close() = model.close()
 
     companion object {
         const val READY = "ready"

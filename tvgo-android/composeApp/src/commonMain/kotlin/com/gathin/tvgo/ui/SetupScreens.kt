@@ -2,10 +2,6 @@
 
 package com.gathin.tvgo.ui
 
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,11 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import com.gathin.tvgo.ai.NanoClassifier
 import com.gathin.tvgo.store.Settings
 
 private val TV_STEPS = listOf(
@@ -51,8 +44,6 @@ private val TV_STEPS = listOf(
     "Same Wi-Fi" to "Keep this phone and the TV on the same Wi-Fi.",
     "Allow debugging" to "When the TV asks \"Allow debugging?\", tick \"Always allow\" and press OK.",
 )
-
-private const val LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /** First run: the TV settings, the phone permission if it is still missing, and which AI plans. */
 @Composable
@@ -83,20 +74,16 @@ private fun StepNumber(n: Int) {
 /** Shown only while Android 17's local network permission is missing; once granted there is nothing to say. */
 @Composable
 private fun LocalNetworkPermission() {
-    val ctx = LocalContext.current
-    val needed = Build.VERSION.SDK_INT >= 37
-    var granted by remember {
-        mutableStateOf(!needed || ContextCompat.checkSelfPermission(ctx, LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED)
-    }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
-    if (granted) return
+    var granted by remember { mutableStateOf(false) }
+    val permission = rememberPermission(Permission.LOCAL_NETWORK) { granted = it }
+    if (granted || permission.granted) return
     Card(shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
         Column(Modifier.padding(20.dp)) {
             Text("TVFreedom needs to reach devices on your Wi-Fi to talk to the TV.", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onTertiaryContainer)
             Box(Modifier.padding(top = 12.dp)) {
-                SecondAction("Allow local network access", Icons.Link) { launcher.launch(LOCAL_NETWORK) }
+                SecondAction("Allow local network access", Icons.Link) { permission.ask() }
             }
         }
     }
@@ -156,7 +143,7 @@ private fun NanoStatus(vm: TvGoViewModel) {
     LaunchedEffect(Unit) { if (status.isEmpty()) vm.checkAi() }
     when {
         status.isEmpty() -> AiStatusLine("Checking Gemini Nano…")
-        status == NanoClassifier.READY -> AiStatusLine("Gemini Nano is ready", ready = true)
+        status == AI_READY -> AiStatusLine("Gemini Nano is ready", ready = true)
         else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AiStatusLine(status.replaceFirstChar { it.uppercase() })
             SecondAction("Try again", Icons.Refresh, onClick = vm::checkAi)

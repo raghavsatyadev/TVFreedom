@@ -32,7 +32,7 @@ class Planner(private val known: Known, private val keep: Set<String>) {
             if (pkg in f.user && uninstallUserApps && suggested == UNINSTALL) UNINSTALL
             else DISABLE // always reversible with pm enable
 
-        for ((pkg, apk) in f.paths.toSortedMap()) {
+        for ((pkg, apk) in f.paths.sortedByKey()) {
             if (pkg in f.disabled) continue
             val why = Guard.keepReason(pkg, apk, f.home, info.ime, keep, f.uids[pkg])
             if (why.isNotEmpty() && !(why == Guard.OTA && stopUpdates && pkg in own)) {

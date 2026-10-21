@@ -11,7 +11,7 @@ class Known(private val files: Map<String, String>) {
 
     /** {model slug: [paths]}: the root model first, then the other models sorted, like known.all_models(). */
     fun allModels(): Map<String, List<String>> {
-        val byModel = sortedMapOf<String, MutableList<String>>()
+        val byModel = mutableMapOf<String, MutableList<String>>()
         val root = mutableListOf<String>()
         for (path in files.keys) {
             val parts = path.split('/')
@@ -27,7 +27,7 @@ class Known(private val files: Map<String, String>) {
         }
         val out = linkedMapOf<String, List<String>>()
         out[ListFiles.ROOT_MODEL] = ordered(root)
-        byModel.forEach { (model, paths) -> out[model] = ordered(paths) }
+        byModel.sortedByKey().forEach { (model, paths) -> out[model] = ordered(paths) }
         return out
     }
 
@@ -43,7 +43,7 @@ class Known(private val files: Map<String, String>) {
         allModels().forEach { (model, paths) ->
             paths.forEach { path ->
                 ListFiles.readEntries(files.getValue(path)).forEach { e ->
-                    ex.putIfAbsent(e.pkg, Example(e.action, ListFiles.phaseOf(path), e.comment, model))
+                    ex.getOrPut(e.pkg) { Example(e.action, ListFiles.phaseOf(path), e.comment, model) }
                 }
             }
         }
