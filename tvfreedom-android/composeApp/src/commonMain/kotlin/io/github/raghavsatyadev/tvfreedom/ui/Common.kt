@@ -75,6 +75,8 @@ fun Page(
     content: LazyListScope.() -> Unit,
 ) {
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    // The phone's back does what the arrow does; while a job runs it does nothing, so it can't close the app mid-job.
+    SystemBack(enabled = onBack != null || state.busy) { if (!state.busy) onBack?.invoke() }
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         contentWindowInsets = WindowInsets.safeDrawing,

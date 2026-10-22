@@ -19,7 +19,7 @@ import okio.Path
 
 /** Something restore can undo: a list (repo phase or a TVFreedom run) or everything back to a backup. */
 data class RestoreOption(val label: String, val kind: Kind, val text: String = "", val dir: Path? = null) {
-    enum class Kind { LIST, BACKUP }
+    enum class Kind { LIST, BACKUP, FACTORY }
 
     val entries: List<ListEntry> get() = ListFiles.readEntries(text)
 }
@@ -142,6 +142,9 @@ class Storage(
     fun extraRunsSince(info: TvInfo, backupDir: Path): List<Path> = fs.listOrNull(runs / safe(info.model)).orEmpty()
         .filter { it.name.startsWith("extra-") && fs.modified(it) >= fs.modified(backupDir) }.sortedByDescending { it.name }
 
+    /** Every TVFreedom run on this model, newest first. */
+    fun allRuns(info: TvInfo): List<Path> = fs.dirs(runs / safe(info.model)).sortedByDescending { it.name.substringAfter('-') }
+
     /** A run that was put back at once: empty its files so Restore doesn't offer it again. */
     fun clearRun(runDir: Path) {
         fs.writeText(runDir / EXTRAS, "")
@@ -205,6 +208,7 @@ class Storage(
                     RestoreOption.Kind.LIST, text)
             }
         }
+        out += RestoreOption("Everything back to how the TV came", RestoreOption.Kind.FACTORY)
         backupsFor(info).forEach { out += RestoreOption("Everything back to backup ${it.name.take(17)}", RestoreOption.Kind.BACKUP, dir = it) }
         return out
     }

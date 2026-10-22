@@ -14,6 +14,7 @@ import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
 import io.github.raghavsatyadev.tvfreedom.flow.HomeSetup
 import io.github.raghavsatyadev.tvfreedom.flow.PhaseRun
 import io.github.raghavsatyadev.tvfreedom.flow.RunResult
+import io.github.raghavsatyadev.tvfreedom.flow.Rebloat
 import io.github.raghavsatyadev.tvfreedom.flow.Runner
 import io.github.raghavsatyadev.tvfreedom.store.RestoreOption
 import io.github.raghavsatyadev.tvfreedom.store.Settings
@@ -70,6 +71,7 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
         if (askOpen) "Open TVFreedom to go on: the AI on this phone only answers while TVFreedom is open." else state.status.ifEmpty { "Working" },
         state.runDone.size, state.runSteps.size, askOpen)
 
+    private val rebloat by lazy { Rebloat(storage, runner, ::log) }
     private val runner by lazy { Runner(storage, link, ::log) { update { copy(headline = it) } } }
     private val homeSetup by lazy { HomeSetup(storage, runner, ::log) }
     private val extras by lazy { Extras(storage, platform.net, runner, ::log) }
@@ -299,7 +301,8 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
 
     fun previewRestore(option: RestoreOption) = job {
         val t = tv ?: return@job
-        val preview = if (option.kind == RestoreOption.Kind.BACKUP) {
+        val preview = if (option.kind == RestoreOption.Kind.FACTORY) rebloat.plan(t, state.info ?: return@job).describe()
+        else if (option.kind == RestoreOption.Kind.BACKUP) {
             val (enable, reinstall) = runner.diffToBackup(t, option.dir!!)
             listOfNotNull(
                 enable.takeIf { it.isNotEmpty() }?.let { "Turn back on (${it.size}): ${it.joinToString(", ")}" },
@@ -318,6 +321,14 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
         val info = state.info ?: return@job
         val option = state.restoreChoice ?: return@job
         update { copy(screen = Screen.RUN, log = emptyList(), outcome = null, runSteps = emptyList()) }
+        if (option.kind == RestoreOption.Kind.FACTORY) {
+            val r = rebloat.run(t, info)
+            r.tv?.let { tv = it }
+            return@job update {
+                copy(outcome = if (r.ok) outcome(r, true, "Back to how it came", "Every app is back and the TV's own home screen opened.")
+                else outcome(r, false, "Home screen not reached", "Everything was put back, but check the TV's home screen."))
+            }
+        }
         if (option.kind == RestoreOption.Kind.BACKUP) runner.restoreBackup(t, info, option.dir!!) else runner.restoreList(t, option)
         update { copy(outcome = Outcome(true, "Restored", "Restart the TV and check the home screen if you like.")) }
     }

@@ -27,6 +27,10 @@ enum class Permission { LOCATION, LOCAL_NETWORK }
 @Composable
 expect fun rememberPermission(p: Permission, onResult: (Boolean) -> Unit = {}): PermissionAsk
 
+/** The phone's back button runs [onBack] while [enabled]. */
+@Composable
+expect fun SystemBack(enabled: Boolean, onBack: () -> Unit)
+
 /** The steps that set up Claude in Termux (Android only). */
 @Composable
 expect fun TermuxSetup(vm: TvFreedomViewModel)

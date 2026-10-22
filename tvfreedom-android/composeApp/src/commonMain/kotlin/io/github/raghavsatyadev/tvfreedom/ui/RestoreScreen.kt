@@ -33,7 +33,8 @@ fun RestoreScreen(vm: TvFreedomViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         val groups = s.restoreOptions.groupBy { it.kind }
-        listOf(RestoreOption.Kind.LIST to "Undo a run or a list", RestoreOption.Kind.BACKUP to "Go back to a backup").forEach { (kind, label) ->
+        listOf(RestoreOption.Kind.LIST to "Undo a run or a list", RestoreOption.Kind.BACKUP to "Go back to a backup",
+            RestoreOption.Kind.FACTORY to "Full rebloat").forEach { (kind, label) ->
             val options = groups[kind].orEmpty()
             if (options.isEmpty()) return@forEach
             item(key = "label:$kind") { GroupLabel(label) }
@@ -52,7 +53,9 @@ fun RestoreScreen(vm: TvFreedomViewModel) {
     }
     if (confirm && choice != null) TypedConfirm(
         title = "Restore?",
-        body = "${choice.label} on ${s.info?.model}. The apps are turned back on or reinstalled, then the TV gets 30 s to save.",
+        body = if (choice.kind == RestoreOption.Kind.FACTORY) "Every app on ${s.info?.model} comes back, TVFreedom's changes " +
+            "are undone and its home screen is uninstalled. Then the TV restarts."
+        else "${choice.label} on ${s.info?.model}. The apps are turned back on or reinstalled, then the TV gets 30 s to save.",
         word = "RESTORE",
         onConfirm = { confirm = false; vm.restore() },
         onDismiss = { confirm = false },

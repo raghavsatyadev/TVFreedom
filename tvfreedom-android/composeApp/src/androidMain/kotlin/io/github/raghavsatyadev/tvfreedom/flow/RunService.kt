@@ -67,12 +67,16 @@ class RunService : Service() {
             return m
         }
 
+        /** TVFreedom's status-bar icon; it lives in the app module (androidCMP), so it is found by name. */
+        private fun icon(ctx: Context) = ctx.resources.getIdentifier("ic_notification", "drawable", ctx.packageName)
+            .takeIf { it != 0 } ?: ctx.applicationInfo.icon
+
         private fun build(ctx: Context, p: Progress, channel: String = CHANNEL): Notification {
             manager(ctx)
             val open = PendingIntent.getActivity(ctx, 0, Intent().setClassName(ctx, "io.github.raghavsatyadev.tvfreedom.ui.MainActivity")
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
             val b = Notification.Builder(ctx, channel)
-                .setSmallIcon(android.R.drawable.ic_menu_manage)
+                .setSmallIcon(icon(ctx))
                 .setContentTitle(p.title)
                 .setContentText(p.text)
                 .setStyle(Notification.BigTextStyle().bigText(p.text))

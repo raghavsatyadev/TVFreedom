@@ -152,7 +152,7 @@ private fun PairCard(vm: TvFreedomViewModel) {
 fun TvScreen(vm: TvFreedomViewModel) {
     val s = vm.state
     val info = s.info ?: return ConnectScreen(vm)
-    Page("${info.brand} ${info.model}".trim(), s, subtitle = "Android ${info.android} · ${info.host}", actions = {
+    Page("${info.brand} ${info.model}".trim(), s, subtitle = "Android ${info.android} · ${info.host}", onBack = vm::disconnect, actions = {
         IconButton(onClick = vm::disconnect, enabled = !s.busy) { Icon(Icons.Swap, "Other TV") }
         IconButton(onClick = { vm.go(Screen.SETTINGS) }) { Icon(Icons.Settings, "Settings") }
     }) {

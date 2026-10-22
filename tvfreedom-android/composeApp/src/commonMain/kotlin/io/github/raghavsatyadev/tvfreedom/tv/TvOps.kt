@@ -87,6 +87,14 @@ class TvOps(private val shell: Shell, private val host: String) {
         return if (e.action == DISABLE) shell.sh("pm enable $pkg") else reinstall(pkg)
     }
 
+    /** Packages turned off with disable-user; the ones the TV came with off (enabled=2) are left out. */
+    suspend fun userDisabled(): Set<String> = Parse.userDisabled(
+        shell.sh("dumpsys package packages | grep -E '^  Package \\[| User 0:.* enabled=3'"))
+
+    /** Packages taken off user 0 with uninstall --user 0 that are still on the TV, so install-existing
+     * can bring them back. Some were never on user 0 (Android leaves a few off per user type). */
+    suspend fun uninstalledForUser(): Set<String> = packages("-u") - packages()
+
     suspend fun enable(pkg: String) = shell.sh("pm enable ${Parse.safePackage(pkg)}")
 
     suspend fun reinstall(pkg: String): String {
@@ -119,6 +127,18 @@ object Parse {
     fun uids(out: String): Map<String, Int> =
         Regex("^package:(\\S+) uid:(\\d+)", RegexOption.MULTILINE).findAll(out)
             .associate { it.groupValues[1] to it.groupValues[2].toInt() }
+
+    /** From dumpsys lines "  Package [pkg] (...)" each followed by its "User 0: ... enabled=3" line, if any. */
+    fun userDisabled(out: String): Set<String> {
+        var pkg: String? = null
+        val off = mutableSetOf<String>()
+        out.lines().forEach { line ->
+            Regex("^  Package \\[([^\\]]+)]").find(line)?.let { pkg = it.groupValues[1]; return@forEach }
+            if (Regex(" User 0:.* enabled=3\\b").containsMatchIn(line)) pkg?.let { off += it }
+            pkg = null
+        }
+        return off
+    }
 
     fun focused(out: String): String {
         val m = Regex("mCurrentFocus=Window\\{\\S+ \\S+ ([\\w.]+)/").find(out)

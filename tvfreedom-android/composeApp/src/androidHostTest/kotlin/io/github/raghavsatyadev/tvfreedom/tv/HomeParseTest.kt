@@ -55,4 +55,15 @@ class HomeParseTest {
         assertNull(Parse.memAvailableMb("permission denied"))
         assertEquals(3L, Parse.versionCode("    versionCode=3 minSdk=26 targetSdk=29"))
     }
+
+    @Test
+    fun onlyAppsTurnedOffByHandAreUserDisabled() {
+        val out = """
+            |  Package [com.factory.off] (1a2b):
+            |  Package [com.user.off] (3c4d):
+            |    User 0: ceDataInode=1 installed=true hidden=false suspended=false stopped=true notLaunched=false enabled=3 instant=false
+            |  Package [com.on] (5e6f):
+        """.trimMargin()
+        assertEquals(setOf("com.user.off"), Parse.userDisabled(out))
+    }
 }

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +37,9 @@ actual fun decodeImage(bytes: ByteArray, maxWidth: Int): ImageBitmap? {
     o.inJustDecodeBounds = false
     return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)?.asImageBitmap()
 }
+
+@Composable
+actual fun SystemBack(enabled: Boolean, onBack: () -> Unit) = BackHandler(enabled, onBack)
 
 @Composable
 actual fun rememberImagePicker(onPicked: (ByteArray) -> Unit): () -> Unit {
