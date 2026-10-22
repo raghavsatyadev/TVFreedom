@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Launcher configuration (TV_Debloater, Xiaomi Mi TV MiTV-MOOR0). Based on Gathin23/tv-vibehack (MIT).
+  Launcher configuration (TVFreedom, Xiaomi Mi TV MiTV-MOOR0). Based on Gathin23/tv-vibehack (MIT).
   Package names: python tv.py is the helper; on the TV `pm list packages`.
 -->
 <resources>
