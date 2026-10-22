@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Base64
 import androidx.core.content.ContextCompat
 import io.github.raghavsatyadev.tvfreedom.core.AskItem
@@ -174,5 +176,17 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
         fun installed(ctx: Context) = runCatching { ctx.packageManager.getPackageInfo(TERMUX, 0) }.isSuccess
 
         fun granted(ctx: Context) = ContextCompat.checkSelfPermission(ctx, PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+        /** False for a Termux that takes no commands from other apps (no RUN_COMMAND): Android then asks nothing. */
+        fun offersPermission(ctx: Context) = runCatching { ctx.packageManager.getPermissionInfo(PERMISSION, 0) }.isSuccess
+
+        /** TVFreedom's App info page, where a permission Android stopped asking about can still be turned on. */
+        fun appSettings(ctx: Context) = details(ctx.packageName)
+
+        /** Termux's App info page, to uninstall a Termux that takes no commands. */
+        fun termuxSettings() = details(TERMUX)
+
+        private fun details(pkg: String) = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }

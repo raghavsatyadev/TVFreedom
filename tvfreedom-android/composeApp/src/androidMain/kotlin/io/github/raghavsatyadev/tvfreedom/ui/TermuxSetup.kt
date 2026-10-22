@@ -65,7 +65,12 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
         if (get == Get.Settings && installer.canInstall()) getTermux()
         onPauseOrDispose {}
     }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.probeTermux() }
+    // Android shows no dialog once the user said no (twice on Android 11+), so a "no" leads to App info instead.
+    var refused by remember { mutableStateOf(false) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        refused = !ok
+        vm.probeTermux()
+    }
     val clipboard = LocalClipboardManager.current
     val step = vm.state.termuxStep
     Column(Modifier.padding(top = 12.dp)) {
@@ -84,7 +89,18 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
                 is Get.Failed -> StepCard(step, "Termux did not install", g.why, "Try again", Icons.Refresh,
                     second = "Get it from F-Droid instead" to { openFdroid(ctx) }) { getTermux() }
             }
-            Step.PERMISSION -> StepCard(step, "Let TVFreedom use Termux",
+            // A Termux from elsewhere (like the Play Store one) may take no commands from other apps; F-Droid's does.
+            Step.PERMISSION -> if (!TermuxClaude.offersPermission(ctx)) StepCard(step, "Swap Termux for the F-Droid one",
+                "This Termux doesn't let other apps run commands in it. Uninstall it, come back, and TVFreedom installs " +
+                    "the F-Droid Termux.", "Uninstall Termux", Icons.Settings,
+                note = "On Termux's page, tap Uninstall. Anything you keep in Termux is deleted.") {
+                ctx.startActivity(TermuxClaude.termuxSettings())
+            } else if (refused) StepCard(step, "Let TVFreedom use Termux",
+                "Android won't ask again. On TVFreedom's page, tap Permissions, then Additional permissions, " +
+                    "then Run commands in Termux environment, and allow it. Then come back.", "Open settings", Icons.Settings,
+                second = "Ask again" to { permission.launch(TermuxClaude.PERMISSION) }) {
+                ctx.startActivity(TermuxClaude.appSettings(ctx))
+            } else StepCard(step, "Let TVFreedom use Termux",
                 "TVFreedom asks Termux to run Claude for it. Android asks you first.", "Allow", Icons.Shield) {
                 permission.launch(TermuxClaude.PERMISSION)
             }
