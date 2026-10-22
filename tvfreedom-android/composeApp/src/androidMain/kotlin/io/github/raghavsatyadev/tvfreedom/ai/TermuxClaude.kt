@@ -26,7 +26,7 @@ import kotlin.coroutines.resumeWithException
 /**
  * Claude Code inside Termux, so planning runs on the user's Claude subscription and TVFreedom holds no API key.
  * TVFreedom sends the prompt through Termux's RUN_COMMAND service as stdin to `claude -p --tools ""` (print mode,
- * no tools) and reads stdout back from the result PendingIntent.
+ * no tools, and no MCP servers, plugins, hooks or skills) and reads stdout back from the result PendingIntent.
  * Termux needs allow-external-apps=true in ~/.termux/termux.properties, and TVFreedom needs Termux's RUN_COMMAND permission.
  */
 /** [model] is a Claude Code model alias ("opus", "sonnet"). */
@@ -36,6 +36,10 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     override val name = "Claude (Termux, $model)"
 
     data class Result(val exit: Int, val out: String, val err: String)
+
+    /** Plain chat: no tools, and none of the user's MCP servers, plugins, hooks or skills load into the context. */
+    private fun claudeArgs() = arrayOf("-p", "--model", model, "--tools", "", "--setting-sources", "",
+        "--strict-mcp-config", "--disable-slash-commands")
 
     /** The first missing step, found without asking Claude anything (no usage, a second or two). */
     suspend fun probe(log: (String) -> Unit = {}): Step {
@@ -60,7 +64,7 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     suspend fun check(): String {
         val step = probe()
         if (step != Step.READY && step != Step.LOGIN) return "Claude in Termux is not set up yet (${step.name.lowercase()}). Open Settings."
-        val r = runCatching { exec("$PREFIX/bin/claude", arrayOf("-p", "--model", model, "--tools", ""), "Reply with the single word OK.", 120_000) }
+        val r = runCatching { exec("$PREFIX/bin/claude", claudeArgs(), "Reply with the single word OK.", 120_000) }
             .getOrElse { return "Termux did not answer: ${it.message ?: it.javaClass.simpleName}" }
         return if (r.exit == 0 && r.out.isNotBlank()) READY
         else "Claude in Termux failed (exit ${r.exit}): ${r.err.ifBlank { r.out }.take(200)}. Log in to Claude in Termux."
@@ -74,7 +78,7 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
             return emptyMap()
         }
         return inBatches(items, 60, log, name) { chunk ->
-            val r = exec("$PREFIX/bin/claude", arrayOf("-p", "--model", model, "--tools", ""), Prompt.build(info, chunk, examples, keep, withExamples = true), 900_000)
+            val r = exec("$PREFIX/bin/claude", claudeArgs(), Prompt.build(info, chunk, examples, keep, withExamples = true), 900_000)
             if (r.exit != 0) log("claude exited ${r.exit}: ${r.err.take(300)}")
             r.out
         }

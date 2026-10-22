@@ -12,7 +12,8 @@ import tv
 
 # Presets: a prompt goes to stdin. Each runs the agent with tools off / read-only where the CLI allows it.
 PRESETS = {
-    "claude": 'claude -p --tools ""',                       # Claude Code: print mode, no tools
+    # Claude Code: print mode, no tools, and no MCP servers, plugins, hooks or skills from the user's setup
+    "claude": 'claude -p --tools "" --setting-sources "" --strict-mcp-config --disable-slash-commands',
     "gemini": "gemini -p ''",                               # Gemini CLI: stdin is appended to -p
     "codex": "codex exec --sandbox read-only -",            # Codex: read-only sandbox, prompt from stdin
     "ollama": "ollama run qwen3:4b",                        # local model (Termux: pkg install ollama)
