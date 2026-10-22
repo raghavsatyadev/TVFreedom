@@ -31,3 +31,8 @@ memory/
 
 __pycache__/
 *.pyc
+
+# Claude working notes (plan-keeper) — never commit
+PLAN.md
+DECISIONS.md
+HISTORY.md
