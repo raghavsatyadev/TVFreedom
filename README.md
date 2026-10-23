@@ -22,8 +22,9 @@ You do not need a computer, root, or any technical skill. You need your phone, y
 
 ## How to install
 
-1. Get the TVFreedom app (`.apk` file) on your phone and open it. If Android asks, allow your browser or
-   file app to install apps.
+1. On your phone, download **[TVFreedom.apk](https://github.com/raghavsatyadev/TVFreedom/releases/latest/download/TVFreedom.apk)**
+   (from the [Releases page](https://github.com/raghavsatyadev/TVFreedom/releases/latest)) and open it.
+   If Android asks, allow your browser or file app to install apps.
 2. Open TVFreedom. Tap **Allow local network access**, so the app can find your TV on your Wi-Fi.
 3. Pick the AI that suggests what to remove (you can change this later):
    - **Gemini Nano**: runs on your phone. Free. Only on newer phones.
