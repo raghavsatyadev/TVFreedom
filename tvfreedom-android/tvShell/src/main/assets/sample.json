@@ -1,0 +1,10 @@
+[
+  {"version": "v0.9", "createSurface": {"surfaceId": "home", "catalogId": "https://tvfreedom.app/a2ui/tv/v1"}},
+  {"version": "v0.9", "updateComponents": {"surfaceId": "home", "components": [
+    {"id": "root", "component": "Column", "gap": 32, "children": ["top", "apps"]},
+    {"id": "top", "component": "Row", "gap": 32, "children": ["clock", "hello"]},
+    {"id": "clock", "component": "Clock"},
+    {"id": "hello", "component": "Text", "style": "title", "text": "Your apps"},
+    {"id": "apps", "component": "AppRow", "apps": {"path": "/apps"}}
+  ]}}
+]

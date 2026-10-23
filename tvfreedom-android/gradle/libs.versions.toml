@@ -25,6 +25,7 @@ bouncycastle = "1.81"
 mlkit-genai = "1.0.0-beta4"
 anthropic = "2.34.0"
 junit = "4.13.2"
+a2ui = "1.0.0-alpha02"
 
 [libraries]
 # Multiplatform (composeApp commonMain)
@@ -54,6 +55,10 @@ bcpkix = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncyca
 mlkit-genai-prompt = { module = "com.google.mlkit:genai-prompt", version.ref = "mlkit-genai" }
 anthropic = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
 junit = { module = "junit:junit", version.ref = "junit" }
+
+# TV shell (tvShell): A2UI designs drawn with Compose for TV
+a2ui-engine = { module = "androidx.a2ui:a2ui-engine", version.ref = "a2ui" }
+a2ui-model = { module = "androidx.a2ui:a2ui-model", version.ref = "a2ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

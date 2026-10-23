@@ -21,4 +21,4 @@ rootProject.buildFileName = "project.gradle.kts"
 
 rootProject.name = "TVFreedom"
 
-include(":composeApp", ":androidCMP")
+include(":composeApp", ":androidCMP", ":tvShell")
