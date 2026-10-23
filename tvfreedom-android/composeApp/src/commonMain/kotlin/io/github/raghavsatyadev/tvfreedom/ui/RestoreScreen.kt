@@ -25,9 +25,19 @@ fun RestoreScreen(vm: TvFreedomViewModel) {
     var confirm by remember { mutableStateOf(false) }
     val choice = s.restoreChoice
     val nothing = choice == null || s.restorePreview.isEmpty()
-    Page("Restore", s, onBack = { vm.go(Screen.TV) }, bottomBar = choice?.let {
-        { MainAction(if (nothing) "Nothing to undo" else "Restore", Icons.History, enabled = !s.busy && !nothing) { confirm = true } }
+    val byChange = s.restoreTab == 1
+    val n = s.picked.size
+    Page("Restore", s, onBack = { vm.go(Screen.TV) }, bottomBar = when {
+        byChange -> s.changes?.takeIf { it.isNotEmpty() }?.let {
+            { MainAction(if (n == 0) "Pick what to undo" else "Undo $n change${if (n == 1) "" else "s"}", Icons.History,
+                enabled = !s.busy && n > 0) { confirm = true } }
+        }
+        else -> choice?.let {
+            { MainAction(if (nothing) "Nothing to undo" else "Restore", Icons.History, enabled = !s.busy && !nothing) { confirm = true } }
+        }
     }) {
+        item(key = "tabs") { RestoreTabs(s.restoreTab, enabled = !s.busy, onPick = vm::restoreTab) }
+        if (byChange) return@Page changeTab(s, vm::pickChange)
         if (s.restoreOptions.isEmpty()) item {
             Text("No runs, lists or backups for this TV yet.", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -51,7 +61,14 @@ fun RestoreScreen(vm: TvFreedomViewModel) {
             }
         }
     }
-    if (confirm && choice != null) TypedConfirm(
+    if (confirm && byChange) TypedConfirm(
+        title = "Undo $n change${if (n == 1) "" else "s"}?",
+        body = "The ticked changes on ${s.info?.model} are put back, then the TV gets 30 s to save.",
+        word = "RESTORE",
+        onConfirm = { confirm = false; vm.undoChanges() },
+        onDismiss = { confirm = false },
+    )
+    else if (confirm && choice != null) TypedConfirm(
         title = "Restore?",
         body = if (choice.kind == RestoreOption.Kind.FACTORY) "Every app on ${s.info?.model} comes back, TVFreedom's changes " +
             "are undone and its home screen is uninstalled. Then the TV restarts."

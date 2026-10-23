@@ -2,6 +2,7 @@ package io.github.raghavsatyadev.tvfreedom.ui
 
 import io.github.raghavsatyadev.tvfreedom.core.Plan
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
+import io.github.raghavsatyadev.tvfreedom.flow.ChangeGroup
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasChoice
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasDraft
 import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
@@ -44,6 +45,11 @@ data class UiState(
     val restoreOptions: List<RestoreOption> = emptyList(),
     val restoreChoice: RestoreOption? = null,
     val restorePreview: String = "",
+    /** Restore's tab: 0 by run, 1 by change. */
+    val restoreTab: Int = 0,
+    /** The single changes still in effect on the TV (null until read), and the ones ticked. */
+    val changes: List<ChangeGroup>? = null,
+    val picked: Set<String> = emptySet(),
     val aiStatus: String = "",
     /** The next thing to do to use Claude in Termux; null while checking. */
     val termuxStep: TermuxStep? = null,
