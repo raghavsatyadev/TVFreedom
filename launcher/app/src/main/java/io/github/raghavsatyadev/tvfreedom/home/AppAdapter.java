@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -50,6 +51,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Long press OK (or Menu) on a tile: show its menu. */
         void onTileMenu(int position, View card);
+
+        /** OK on the "+" tile at the end of the dock: pick an app to add to the favourites. */
+        void onAddTile(View card);
     }
 
     static final class Entry {
@@ -60,15 +64,22 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final Drawable icon;
         /** Opened with the Leanback launcher category; false for phone-only apps. */
         final boolean leanback;
+        /** The "+" tile at the end of the dock, not an app. */
+        final boolean add;
         int ambient;
 
         Entry(String label, ComponentName component, Drawable banner, Drawable icon, boolean leanback) {
+            this(label, component, banner, icon, leanback, false);
+        }
+
+        private Entry(String label, ComponentName component, Drawable banner, Drawable icon, boolean leanback, boolean add) {
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
             this.leanback = leanback;
+            this.add = add;
         }
     }
 
@@ -85,6 +96,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private final Set<String> hidden;
     private final List<Entry> items = new ArrayList<>();
     private final List<String> installedFavourites = new ArrayList<>();
+    private final Entry addTile;
 
     AppAdapter(Context ctx, TileListener listener, int columns) {
         this.ctx = ctx;
@@ -95,12 +107,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
+        addTile = new Entry(ctx.getString(R.string.add_app), new ComponentName(ctx, "add"), null,
+                ctx.getDrawable(R.drawable.ic_add), false, true);
     }
 
     /** Every app tile, favourites first, without the dock's spacers. */
     List<Entry> apps() {
         List<Entry> out = new ArrayList<>();
-        for (Entry e : items) if (e != null) out.add(e);
+        for (Entry e : items) if (e != null && !e.add) out.add(e);
         return out;
     }
 
@@ -123,9 +137,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         while (favCount < fresh.size() && favourites.contains(fresh.get(favCount).pkg)) favCount++;
         installedFavourites.clear();
         for (Entry e : fresh.subList(0, favCount)) installedFavourites.add(e.pkg);
-        dockSize = (favCount + columns - 1) / columns * columns;
+        // The "+" tile closes the dock while some app is not a favourite yet.
+        boolean canAdd = favCount < fresh.size();
+        dockSize = (favCount + (canAdd ? 1 : 0) + columns - 1) / columns * columns;
         items.clear();
         items.addAll(fresh.subList(0, favCount));
+        if (canAdd) items.add(addTile);
         while (items.size() < dockSize) items.add(null);
         items.addAll(fresh.subList(favCount, fresh.size()));
         notifyDataSetChanged();
@@ -220,6 +237,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             h.label.setText(e.label);
             h.label.setVisibility(View.VISIBLE);
         }
+        h.icon.setImageTintList(null);
+        if (e.add) {
+            h.icon.setImageTintList(ColorStateList.valueOf(0xB3FFFFFF));
+            h.card.setOnClickListener(v -> {
+                if (listener != null) listener.onAddTile(v);
+            });
+            h.card.setOnLongClickListener(View::performClick);
+            return;
+        }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
             int pos = h.getBindingAdapterPosition();
@@ -259,7 +285,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     /** Key of the tile for a package, or null when it has none. */
     String keyOfPackage(String pkg) {
-        for (Entry e : items) if (e != null && e.pkg.equals(pkg)) return e.component.flattenToShortString();
+        for (Entry e : items) if (e != null && !e.add && e.pkg.equals(pkg)) return e.component.flattenToShortString();
         return null;
     }
 

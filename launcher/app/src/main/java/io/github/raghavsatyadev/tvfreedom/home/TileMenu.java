@@ -60,4 +60,20 @@ final class TileMenu {
         });
         menu.showBelow(anchor);
     }
+
+    /** Picker behind the "+" tile: every app that is not a favourite yet, alphabetical. */
+    static void showAdd(Activity act, ViewGroup root, View anchor, AppAdapter adapter,
+                        java.util.function.Consumer<String> onChanged) {
+        Favourites favs = adapter.favourites();
+        float density = act.getResources().getDisplayMetrics().density;
+        GlassMenu menu = new GlassMenu(act, root, Math.max(anchor.getWidth(), (int) (280 * density)));
+        for (AppAdapter.Entry e : adapter.apps()) {
+            if (favs.contains(e.pkg)) continue;
+            menu.addAppRow(e.icon, e.label, () -> {
+                favs.add(e.pkg);
+                onChanged.accept(e.pkg);
+            });
+        }
+        if (!menu.isEmpty()) menu.showAbove(anchor, root);
+    }
 }

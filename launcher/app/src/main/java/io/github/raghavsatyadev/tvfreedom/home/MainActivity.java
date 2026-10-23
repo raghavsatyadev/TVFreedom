@@ -267,6 +267,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
     }
 
+    @Override
+    public void onAddTile(View card) {
+        TileMenu.showAdd(this, root, card, adapter, pkg -> {
+            adapter.reload();
+            grid.post(() -> focusTile(adapter.positionOf(adapter.keyOfPackage(pkg))));
+        });
+    }
+
     // ---- glass highlight -------------------------------------------------------------------------
 
     @Override

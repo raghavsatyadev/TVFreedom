@@ -3,6 +3,7 @@ package io.github.raghavsatyadev.tvfreedom.home;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.tv.TvInputManager;
 import android.view.Gravity;
 import android.view.View;
@@ -49,8 +50,16 @@ final class GlassMenu {
         rows.addView(line, lp);
     }
 
+    /** A row with an app's own icon (not tinted). */
+    void addAppRow(Drawable icon, String title, Runnable action) {
+        ImageView view = addRow(0, title, -1, action).findViewById(R.id.icon);
+        view.setImageTintList(null);
+        // A copy: the tile's ImageView shows the same drawable and would lose its bounds.
+        view.setImageDrawable(icon.getConstantState() != null ? icon.getConstantState().newDrawable() : icon);
+    }
+
     /** A row; state is a TvInputManager.INPUT_STATE_* value, or -1 for no status. */
-    void addRow(int iconRes, String title, int state, Runnable action) {
+    View addRow(int iconRes, String title, int state, Runnable action) {
         View row = act.getLayoutInflater().inflate(R.layout.item_input, rows, false);
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
@@ -73,6 +82,7 @@ final class GlassMenu {
             action.run();
         });
         rows.addView(row);
+        return row;
     }
 
     /** Drop in below anchor (above it when there is no room), focused on the first row. */
@@ -87,6 +97,28 @@ final class GlassMenu {
         panel.setScaleY(0.92f);
         panel.setTranslationY(-8 * density);
         popup.showAsDropDown(anchor, 0, (int) (10 * density), Gravity.START);
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
+                .setInterpolator(new DecelerateInterpolator(1.6f)).start();
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** Rise above anchor (the dock sits at the bottom of the screen); a long list scrolls in the room there. */
+    void showAbove(View anchor, ViewGroup root) {
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        int width = Math.max(minWidth, panel.getMeasuredWidth());
+        int[] at = new int[2];
+        anchor.getLocationInWindow(at);
+        int gap = (int) (10 * density), top = (int) (48 * density);
+        int height = Math.min(panel.getMeasuredHeight(), at[1] - gap - top);
+        popup.setWidth(width);
+        popup.setHeight(height);
+        int x = Math.min(at[0], root.getWidth() - width - top);
+
+        panel.setAlpha(0f);
+        panel.setPivotY(height);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY(8 * density);
+        popup.showAtLocation(root, Gravity.TOP | Gravity.START, x, at[1] - gap - height);
         panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                 .setInterpolator(new DecelerateInterpolator(1.6f)).start();
         rows.getChildAt(0).requestFocus();
