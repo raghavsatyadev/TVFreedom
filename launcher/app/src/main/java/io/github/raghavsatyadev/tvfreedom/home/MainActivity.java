@@ -146,6 +146,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         clock = new Flex.Clock(findViewById(R.id.clock));
         nowPlaying = new NowPlaying(root);
         tint.onPalette(nowPlaying::setPalette);
+        Pills pills = new Pills(findViewById(R.id.btnInputs), findViewById(R.id.btnWifi), findViewById(R.id.btnBluetooth),
+                findViewById(R.id.btnSettings));
+        tint.onPalette(pills::setPalette);
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {

@@ -21,7 +21,7 @@ import androidx.annotation.NonNull;
 import java.util.Calendar;
 import java.util.function.Consumer;
 
-/** The row above the dock: greeting, and the Inputs, network and Settings pills. */
+/** The row above the dock: greeting, and the Inputs, network, Bluetooth and Settings pills. */
 final class TopBar {
 
     private final Activity act;
@@ -46,9 +46,11 @@ final class TopBar {
         greeting = act.findViewById(R.id.greeting);
         btnWifi = act.findViewById(R.id.btnWifi);
         View btnInputs = act.findViewById(R.id.btnInputs);
+        View btnBluetooth = act.findViewById(R.id.btnBluetooth);
         View btnSettings = act.findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> InputsPopup.show(act, v, root, liveTvPkg, open));
         btnWifi.setOnClickListener(v -> open.accept(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+        btnBluetooth.setOnClickListener(v -> open.accept(bluetoothSettings()));
         btnSettings.setOnClickListener(v -> open.accept(new Intent(Settings.ACTION_SETTINGS)));
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
@@ -61,10 +63,17 @@ final class TopBar {
         };
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
+        btnBluetooth.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
 
         ConnectivityManager cm = act.getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
+    }
+
+    /** Bluetooth settings; a TV whose Settings has no such page gets its main Settings (remotes and accessories are there). */
+    private Intent bluetoothSettings() {
+        Intent bt = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+        return bt.resolveActivity(act.getPackageManager()) != null ? bt : new Intent(Settings.ACTION_SETTINGS);
     }
 
     /** Greeting and network label; called on resume and every minute. */

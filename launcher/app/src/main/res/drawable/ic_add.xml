@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The + tile: a soft disc with a round-capped plus, drawn in white so it needs no tint. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp" android:height="48dp"
+    android:width="52dp" android:height="52dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M11,4h2v7h7v2h-7v7h-2v-7H4v-2h7z" />
+    <path android:fillColor="#29FFFFFF"
+        android:pathData="M12,1a11,11 0 1,1 0,22a11,11 0 1,1 0,-22z" />
+    <path android:strokeColor="#F2FFFFFF" android:strokeWidth="1.6" android:strokeLineCap="round"
+        android:pathData="M12,7.5v9M7.5,12h9" />
 </vector>

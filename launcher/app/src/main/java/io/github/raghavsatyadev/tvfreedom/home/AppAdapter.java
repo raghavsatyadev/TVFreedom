@@ -6,12 +6,13 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -101,6 +102,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.columns = columns;
         this.favourites = new Favourites(ctx);
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
+        // The top bar's Settings pill opens it, so the Settings app gets no tile of its own.
+        ResolveInfo settings = ctx.getPackageManager().resolveActivity(new Intent(Settings.ACTION_SETTINGS), 0);
+        if (settings != null && settings.activityInfo != null) hidden.add(settings.activityInfo.packageName);
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
@@ -216,10 +220,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             return;
         }
         h.name.setText(e.label);
-        h.name.setVisibility(position < dockSize ? View.GONE : View.VISIBLE);   // the dock has no labels (nor room for them)
+        // The dock has no labels (nor room for them); an icon tile carries its own name inside.
+        h.name.setVisibility(position < dockSize || e.banner == null ? View.GONE : View.VISIBLE);
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
         h.name.setAlpha(focused ? 1f : 0f);
         h.motion.snap(focused);
+        h.style(e.add, e.banner != null || e.add ? 0 : ambientColorAt(position));
         if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
@@ -233,9 +239,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             h.label.setText(e.label);
             h.label.setVisibility(View.VISIBLE);
         }
-        h.icon.setImageTintList(null);
         if (e.add) {
-            h.icon.setImageTintList(ColorStateList.valueOf(0xB3FFFFFF));
             h.card.setOnClickListener(v -> {
                 if (listener != null) listener.onAddTile(v);
             });
@@ -355,6 +359,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final TextView label;
         final TextView name;
         final FocusMotion motion;
+        private final GradientDrawable bg = new GradientDrawable();
+        private final float density;
 
         Holder(View v, TileListener listener) {
             super(v);
@@ -364,9 +370,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             label = v.findViewById(R.id.label);
             name = v.findViewById(R.id.name);
 
-            final float density = v.getResources().getDisplayMetrics().density;
+            density = v.getResources().getDisplayMetrics().density;
+            bg.setCornerRadius(FocusMotion.RADIUS_DP * density);
+            card.setBackground(bg);
             motion = new FocusMotion(card);
             Flex.use(name, 560);
+            Flex.use(label, 600);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -381,12 +390,32 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 if (focused) Flex.settle(name);
                 name.animate().alpha(focused ? 1f : 0f)
                         .translationY(focused ? density * 4f : -density * 6f)
-                        .setDuration(220).start();
+                        .setDuration(Motion.DEFAULT_EFFECTS_MS).start();
                 int pos = getBindingAdapterPosition();
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) {
                     listener.onTileFocused(pos, view);
                 }
             });
+        }
+
+        /**
+         * The tile's backing: a banner sits on plain dark; an icon tile is tinted from its app's colour, so the icon
+         * reads as part of the tile; the + tile is a dashed outline that leaves the backdrop showing through.
+         */
+        void style(boolean add, int ambient) {
+            if (add) {
+                bg.setColor(0x14FFFFFF);
+                bg.setStroke(Math.round(2 * density), 0x4DFFFFFF, 6 * density, 5 * density);
+            } else {
+                bg.setColor(ambient == 0 ? 0xFF1C1C1E : blend(ambient, 0xFF1C1C1E, 0.30f));
+                bg.setStroke(0, 0);
+            }
+        }
+
+        private static int blend(int color, int base, float amount) {
+            return Color.rgb(Math.round(Color.red(base) + (Color.red(color) - Color.red(base)) * amount),
+                    Math.round(Color.green(base) + (Color.green(color) - Color.green(base)) * amount),
+                    Math.round(Color.blue(base) + (Color.blue(color) - Color.blue(base)) * amount));
         }
     }
 }
