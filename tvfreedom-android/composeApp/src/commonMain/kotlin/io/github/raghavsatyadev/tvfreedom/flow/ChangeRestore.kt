@@ -69,7 +69,8 @@ class ChangeRestore(private val storage: Storage, private val runner: Runner, pr
         var keptHome = false
         if (chosen.any { it.kind == ChangeKind.HOME }) {
             // Never leave the TV without a home screen: a stock one must be on before ours goes.
-            val stock = ops.homePackages() - ops.userDisabled() - HomeOps.LAUNCHER
+            // Settings' FallbackHome is only a stopgap screen, not a home screen.
+            val stock = ops.homePackages() - ops.userDisabled() - HomeOps.LAUNCHER - FALLBACK_HOMES
             if (stock.isEmpty()) {
                 keptHome = true
                 log("kept the TVFreedom home screen: the TV's own home screen is off")
@@ -106,5 +107,6 @@ class ChangeRestore(private val storage: Storage, private val runner: Runner, pr
 
     companion object {
         const val HOME_ID = "home"
+        private val FALLBACK_HOMES = setOf("com.android.settings", "com.android.tv.settings")
     }
 }
