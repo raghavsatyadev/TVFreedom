@@ -32,4 +32,12 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.coroutines.android)
     testImplementation(libs.junit)
+    // Its ready-made designs are checked against this shell.
+    testImplementation(projects.composeApp)
+}
+
+// ./gradlew :tvShell:testDebugUnitTest -Pdesigns.apps=a,b,c writes the ready-made designs for those apps to build/designs.
+tasks.withType<Test>().configureEach {
+    providers.gradleProperty("designs.apps").orNull?.let { systemProperty("designs.apps", it) }
+    outputs.upToDateWhen { false }
 }

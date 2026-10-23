@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.a2ui.engine.model.A2uiCoreSurfaceModel
 import kotlinx.coroutines.CoroutineScope
@@ -64,7 +65,14 @@ class ShellActivity : Activity() {
             val focused = currentFocus?.tag
             val bg = (s.componentRegistry as Components).byId["root"]?.properties?.get("background")
             root.setBackgroundColor(Renderer.color(bg, Renderer.BACKGROUND))
-            renderer.build(s, "root")?.let(::show)
+            // A tall design scrolls: the scroll view follows the focused tile down and up.
+            renderer.build(s, "root")?.let { show(ScrollView(this).apply {
+                isFillViewport = true
+                isVerticalScrollBarEnabled = false
+                clipChildren = false
+                clipToPadding = false
+                addView(it)
+            }) }
             val again = focused?.let { root.findViewWithTag<View>(it) }
             (again ?: firstTile(root))?.requestFocus()
         }
