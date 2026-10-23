@@ -1,0 +1,11 @@
+TVFreedom launcher
+
+Parts of the Material 3 Expressive look (Palette, Motion, CookieDrawable and the clock, title and focus behaviour)
+are ported from Material TV Launcher, https://github.com/0xRampey/material-tv-launcher (commit eccdc92),
+Copyright its authors, licensed under the Apache License 2.0 (see LICENSE-material-tv-launcher).
+
+app/src/thirdParty/java holds Google's material-color-utilities, Apache License 2.0
+(see app/src/thirdParty/java/LICENSE and README.md).
+
+app/src/main/assets/fonts/GoogleSansFlex.ttf is Google Sans Flex, SIL Open Font License 1.1
+(see GoogleSansFlex-OFL.txt and GoogleSansFlex-TRADEMARKS.md next to it).

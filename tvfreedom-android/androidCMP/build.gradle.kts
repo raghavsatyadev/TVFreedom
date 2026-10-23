@@ -62,12 +62,12 @@ val bundleTermuxSetup by tasks.registering(Sync::class) {
 // The home screen TVFreedom installs on the TV: launcher/ built without the personal local.properties values
 // (TVFreedom sends favourites, weather and calendars at runtime), into launcher/app/build-tvfreedom.
 val launcherDir = File(repoRoot, "launcher")
-val launcherApk = File(launcherDir, "app/build-tvfreedom/outputs/apk/debug/app-debug.apk")
+val launcherApk = File(launcherDir, "app/build-tvfreedom/outputs/apk/release/app-release.apk")
 val buildLauncher by tasks.registering(Exec::class) {
     workingDir = launcherDir
     val windows = System.getProperty("os.name").startsWith("Windows")
     commandLine(if (windows) listOf("cmd", "/c", File(launcherDir, "gradlew.bat").path) else listOf(File(launcherDir, "gradlew").path))
-    args("assembleDebug", "-q", "-Ptvfreedom.noLocal")
+    args("assembleRelease", "-q", "-Ptvfreedom.noLocal")
     inputs.dir(File(launcherDir, "app/src"))
     inputs.file(File(launcherDir, "app/build.gradle"))
     outputs.file(launcherApk)

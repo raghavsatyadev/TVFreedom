@@ -24,17 +24,24 @@ android {
         applicationId 'io.github.raghavsatyadev.tvfreedom.home'
         minSdk 26
         targetSdk 29
-        versionCode 7
-        versionName '2.5'
+        versionCode 8
+        versionName '2.6'
         resValue 'string', 'weather_place', local('tvfreedom.weather.place')
         resValue 'string', 'weather_latitude', local('tvfreedom.weather.latitude')
         resValue 'string', 'weather_longitude', local('tvfreedom.weather.longitude')
         resValue 'string', 'dream_calendars', local('tvfreedom.dream.calendars')
     }
 
+    // Google's material-color-utilities, vendored as-is (Apache-2.0, see src/thirdParty/java/README.md).
+    sourceSets.main.java.srcDirs += 'src/thirdParty/java'
     buildTypes {
+        // TVs get the release build (not debuggable, R8-optimised: faster on low-end boxes). It is signed with the
+        // debug key so it installs over the debug copies already on TVs; the launcher is never published.
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            signingConfig signingConfigs.debug
         }
     }
 
