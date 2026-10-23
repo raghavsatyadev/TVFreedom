@@ -32,6 +32,11 @@ if [ "$1" = "ollama" ]; then
   exit 0
 fi
 
+if [ "$(uname -m)" != "aarch64" ]; then
+  echo "Claude Code needs a 64-bit ARM phone; this one is $(uname -m). Use Gemini Nano in TVFreedom instead."
+  exit 1
+fi
+
 say "Installing Claude Code (Linux arm64 build, run through glibc-runner)"
 yes | pkg install glibc-repo
 yes | pkg install glibc-runner

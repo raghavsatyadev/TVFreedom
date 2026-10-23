@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.raghavsatyadev.tvfreedom.ai.TermuxClaude
 import io.github.raghavsatyadev.tvfreedom.ai.TermuxInstaller
+import io.github.raghavsatyadev.tvfreedom.store.Settings
 import kotlinx.coroutines.launch
 import io.github.raghavsatyadev.tvfreedom.ui.TermuxStep as Step
 
@@ -77,7 +78,11 @@ actual fun TermuxSetup(vm: TvFreedomViewModel) {
         when (step) {
             null -> AiStatusLine("Checking Termux…")
             Step.READY -> AiStatusLine("Claude is ready", ready = true)
-            Step.INSTALL_TERMUX -> when (val g = get) {
+            // Termux's base system is built for 4 KB memory pages; on a 16 KB phone it installs but never starts.
+            Step.INSTALL_TERMUX -> if (bigPages() && !TermuxClaude.installed(ctx)) StepCard(step, "Termux can't run on this phone yet",
+                "This phone uses a newer memory layout that Termux doesn't support yet. Use Gemini Nano instead.",
+                "Use Gemini Nano", Icons.Next) { vm.pickAi(Settings.Ai.NANO) }
+            else when (val g = get) {
                 Get.Idle -> StepCard(step, "Install Termux", "Claude runs inside a free app called Termux. TVFreedom gets it for you.",
                     "Install Termux", Icons.Next, note = PLAY_PROTECT) { getTermux() }
                 Get.Downloading -> StepCard(step, "Getting Termux", "Downloading, about 110 MB. Then tap Install when Android asks.",
@@ -132,6 +137,9 @@ private sealed interface Get {
 }
 
 private const val PLAY_PROTECT = "If Play Protect asks, tap More details, then Install anyway."
+
+/** True on phones with 16 KB memory pages, where the F-Droid Termux bootstrap fails. */
+private fun bigPages() = runCatching { android.system.Os.sysconf(android.system.OsConstants._SC_PAGESIZE) > 4096 }.getOrDefault(false)
 
 private fun openFdroid(ctx: Context) =
     ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(TermuxClaude.GET_TERMUX)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

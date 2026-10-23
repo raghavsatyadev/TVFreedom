@@ -50,7 +50,7 @@ private val TV_STEPS = listOf(
 fun SetupScreen(vm: TvFreedomViewModel) {
     val firstRun = !vm.settings.onboarded
     Page("Set up your TV", vm.state, onBack = if (firstRun) null else ({ vm.go(Screen.SETTINGS) }),
-        bottomBar = { MainAction(if (firstRun) "Find my TV" else "Done", Icons.Tv, onClick = vm::finishSetup) }) {
+        fab = if (firstRun) Fab("Find my TV", Icons.Search, vm::finishSetup) else Fab("Done", Icons.Done, vm::finishSetup)) {
         item { LocalNetworkPermission() }
         // The AI comes first, so the TV's first plan is made by the model the user wants.
         if (firstRun) aiSettings(vm)

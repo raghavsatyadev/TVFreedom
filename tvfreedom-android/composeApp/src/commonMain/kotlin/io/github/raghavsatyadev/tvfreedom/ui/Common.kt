@@ -30,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +48,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,8 +74,12 @@ fun Page(
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: (@Composable () -> Unit)? = null,
+    fab: Fab? = null,
     content: LazyListScope.() -> Unit,
 ) {
+    val list = rememberLazyListState()
+    // Full label at the top and bottom of the list; just the icon while scrolling through it, so it covers less.
+    val fabExpanded by remember { derivedStateOf { !list.canScrollBackward || !list.canScrollForward } }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     // The phone's back does what the arrow does; while a job runs it does nothing, so it can't close the app mid-job.
     SystemBack(enabled = onBack != null || state.busy) { if (!state.busy) onBack?.invoke() }
@@ -90,10 +96,16 @@ fun Page(
             )
         },
         bottomBar = { if (bottomBar != null) BottomBar(bottomBar) },
+        floatingActionButton = {
+            if (fab != null) ExtendedFloatingActionButton(onClick = fab.onClick, expanded = fabExpanded,
+                icon = { Icon(fab.icon, fab.text) }, text = { Text(fab.text) })
+        },
     ) { pad ->
         LazyColumn(
+            state = list,
+            // Room under the last item so the floating button never hides it.
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = pad.calculateTopPadding() + 4.dp,
-                bottom = pad.calculateBottomPadding() + 24.dp),
+                bottom = pad.calculateBottomPadding() + if (fab != null) 96.dp else 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (state.notice.isNotEmpty() && !state.busy) item(key = "notice") { Notice(state.notice) }
@@ -102,6 +114,9 @@ fun Page(
         }
     }
 }
+
+/** A screen's main action as a floating button, for screens where a fixed bar would cover too much. */
+class Fab(val text: String, val icon: ImageVector, val onClick: () -> Unit)
 
 @Composable
 private fun BottomBar(content: @Composable () -> Unit) {
