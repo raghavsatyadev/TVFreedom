@@ -89,12 +89,11 @@
                     android:orientation="horizontal"
                     android:baselineAligned="true">
 
-                    <TextClock
+                    <!-- Flex.Clock sets the time and its Google Sans Flex weight. -->
+                    <TextView
                         android:id="@+id/clock"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:format12Hour="h:mm"
-                        android:format24Hour="HH:mm"
                         android:textColor="#FFFFFFFF"
                         android:textSize="52sp"
                         android:fontFamily="@font/outfit"

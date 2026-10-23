@@ -377,6 +377,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
             card.setOnFocusChangeListener((view, focused) -> {
                 motion.set(focused);
+                if (focused) Flex.settle(name);
                 name.animate().alpha(focused ? 1f : 0f)
                         .translationY(focused ? density * 4f : -density * 6f)
                         .setDuration(220).start();
