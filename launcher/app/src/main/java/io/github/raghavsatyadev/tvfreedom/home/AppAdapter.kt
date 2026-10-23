@@ -10,7 +10,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
 import android.provider.Settings
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -20,7 +19,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.roundToInt
 
 /**
  * App tiles. The favourites (fixed order) come first and fill whole rows, padded with empty spacer slots
@@ -173,31 +171,17 @@ class AppAdapter(
         h.card.visibility = if (e == null) View.INVISIBLE else View.VISIBLE
         h.card.isFocusable = e != null
         if (e == null) {
-            h.name.visibility = if (position < dockSize) View.GONE else View.INVISIBLE
+            h.name.visibility = View.INVISIBLE
             h.card.setOnClickListener(null)
             h.card.setOnLongClickListener(null)
             return
         }
         h.name.text = e.label
-        // The dock has no labels (nor room for them); an icon tile carries its own name inside.
-        h.name.visibility = if (position < dockSize || e.banner == null) View.GONE else View.VISIBLE
+        h.name.visibility = if (e.add) View.INVISIBLE else View.VISIBLE
         val focused = h.card.isFocused   // a rebind after reload() can hit the focused tile
-        h.name.alpha = if (focused) 1f else 0f
-        h.motion.snap(focused)
-        h.style(e.add, if (e.banner != null || e.add) 0 else ambientColorAt(position))
-        if (e.banner != null) {
-            h.banner.setImageDrawable(e.banner)
-            h.banner.visibility = View.VISIBLE
-            h.icon.visibility = View.GONE
-            h.label.visibility = View.GONE
-        } else {
-            h.banner.setImageDrawable(null)
-            h.banner.visibility = View.GONE
-            h.icon.setImageDrawable(e.icon)
-            h.icon.visibility = View.VISIBLE
-            h.label.text = e.label
-            h.label.visibility = View.VISIBLE
-        }
+        h.name.alpha = if (focused) 1f else NAME_REST
+        h.tile.bind(e.pkg, e.add, focused)
+        h.show(e)
         if (e.add) {
             h.card.setOnClickListener { v -> listener?.onAddTile(v) }
             h.card.setOnLongClickListener { v -> v.performClick() }
@@ -254,20 +238,16 @@ class AppAdapter(
 
     class Holder(v: View, listener: TileListener?) : RecyclerView.ViewHolder(v) {
         val card: View = v.findViewById(R.id.card)
-        val banner: ImageView = v.findViewById(R.id.banner)
-        val icon: ImageView = v.findViewById(R.id.icon)
-        val label: TextView = v.findViewById(R.id.label)
+        private val icon: ImageView = v.findViewById(R.id.icon)
+        private val letter: TextView = v.findViewById(R.id.label)
         val name: TextView = v.findViewById(R.id.name)
-        val motion: FocusMotion
-        private val bg = GradientDrawable()
+        val tile = ShapeTile(card, icon, letter)
         private val density = v.resources.displayMetrics.density
+        private var pkg: String? = null
 
         init {
-            bg.cornerRadius = FocusMotion.RADIUS_DP * density
-            card.background = bg
-            motion = FocusMotion(card)
             Flex.use(name, 560)
-            Flex.use(label, 600)
+            Flex.use(letter, 600)
 
             card.setOnKeyListener { view, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
@@ -280,39 +260,42 @@ class AppAdapter(
             }
 
             card.setOnFocusChangeListener { view, focused ->
-                motion.set(focused)
+                tile.set(focused)
                 if (focused) Flex.settle(name)
-                name.animate().alpha(if (focused) 1f else 0f)
-                    .translationY(if (focused) density * 4f else -density * 6f)
+                name.animate().alpha(if (focused) 1f else NAME_REST)
+                    .translationY(if (focused) density * 6f else 0f)
                     .setDuration(Motion.DEFAULT_EFFECTS_MS).start()
                 val pos = bindingAdapterPosition
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) listener.onTileFocused(pos, view)
             }
         }
 
-        /**
-         * The tile's backing: a banner sits on plain dark; an icon tile is tinted from its app's colour, so the icon
-         * reads as part of the tile; the + tile is a dashed outline that leaves the backdrop showing through.
-         */
-        fun style(add: Boolean, ambient: Int) {
-            if (add) {
-                bg.setColor(0x14FFFFFF)
-                bg.setStroke((2 * density).roundToInt(), 0x4DFFFFFF, 6 * density, 5 * density)
-            } else {
-                bg.setColor(if (ambient == 0) TILE else blend(ambient, TILE, 0.30f))
-                bg.setStroke(0, 0)
-            }
+        /** The icon: the pack's glyph, else one made from the app's icon, else the app's first letter. */
+        fun show(e: Entry) {
+            pkg = e.pkg
+            val glyph = if (e.add) R.drawable.ic_add else IconPack.glyph(e.pkg)
+            if (glyph != 0) return icon(null, glyph)
+            val made = IconPack.made(e.pkg, e.icon) { d -> if (pkg == e.pkg) if (d != null) icon(d, 0) else letter(e) }
+            if (made != null) icon(made, 0) else letter(e)
         }
 
-        private fun blend(color: Int, base: Int, amount: Float): Int = Color.rgb(
-            (Color.red(base) + (Color.red(color) - Color.red(base)) * amount).roundToInt(),
-            (Color.green(base) + (Color.green(color) - Color.green(base)) * amount).roundToInt(),
-            (Color.blue(base) + (Color.blue(color) - Color.blue(base)) * amount).roundToInt(),
-        )
+        private fun icon(d: android.graphics.drawable.Drawable?, res: Int) {
+            if (res != 0) icon.setImageResource(res) else icon.setImageDrawable(d)
+            icon.visibility = View.VISIBLE
+            letter.visibility = View.GONE
+        }
+
+        private fun letter(e: Entry) {
+            icon.setImageDrawable(null)
+            icon.visibility = View.GONE
+            letter.text = e.label.trim().take(1).uppercase()
+            letter.visibility = View.VISIBLE
+        }
     }
 
     companion object {
-        const val FOCUS_SCALE = FocusMotion.SCALE
+        const val FOCUS_SCALE = ShapeTile.SCALE
+        private const val NAME_REST = 0.6f
         private const val GREY = 0xFF444444.toInt()
         private const val TILE = 0xFF1C1C1E.toInt()
 

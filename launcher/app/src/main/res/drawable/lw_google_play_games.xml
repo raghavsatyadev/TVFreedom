@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lawnicons (Apache-2.0), see launcher/NOTICE -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+    <path
+        android:pathData="M81.0,99.0a3.0,3.0 0 1,0 6.0,0a3.0,3.0 0 1,0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M66.0,84.0a3.0,3.0 0 1,0 6.0,0a3.0,3.0 0 1,0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M66.0,114.0a3.0,3.0 0 1,0 6.0,0a3.0,3.0 0 1,0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M51.0,99.0a3.0,3.0 0 1,0 6.0,0a3.0,3.0 0 1,0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M35 133h28l19 20M34 65h41.86c6.14 0 26.45.1 29.14 21l9 48"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M157.843 109.926 55.995 167.857A15.997 15.997 0 0 1 32 153.982V38.069A15.993 15.993 0 0 1 47.978 22c2.814-.003 5.58.736 8.017 2.143l101.878 57.931a15.994 15.994 0 0 1 0 27.852z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="12" />
+</vector>

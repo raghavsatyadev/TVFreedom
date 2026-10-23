@@ -68,6 +68,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
 
         root = findViewById(R.id.root)
         glass = findViewById(R.id.glass)
+        glass.visibility = View.GONE   // shaped tiles draw their own focus ring
         tint = Tint(root, density)
         ambient = findViewById(R.id.ambient)
         heroName = findViewById(R.id.heroName)
@@ -119,6 +120,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             findViewById(R.id.btnSettings),
         )
         tint.onPalette(pills::setPalette)
+        tint.onPalette(ShapeTile::setPalette)
 
         // Hide the glass when focus leaves the tiles.
         window.decorView.viewTreeObserver.addOnGlobalFocusChangeListener { _, newF ->
@@ -238,7 +240,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             lp.width = w.toInt()
             lp.height = h.toInt()
             glass.layoutParams = lp
-            glass.setRadius(FocusMotion.FOCUSED_RADIUS_DP * density * AppAdapter.FOCUS_SCALE + pad)
+            glass.setRadius(minOf(w, h) / 2f)   // tiles are circles when focused
         }
         glassTargetX = x
         glassTargetY = y

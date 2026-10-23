@@ -34,7 +34,7 @@ class Tint(private val root: FrameLayout, density: Float) {
     private var focusedPkg: String? = null
     private var colors: ValueAnimator? = null
     private var morph: ValueAnimator? = null
-    private var onPalette: ((Palette) -> Unit)? = null
+    private val onPalette = ArrayList<(Palette) -> Unit>()
 
     init {
         val shape = ImageView(root.context)
@@ -86,7 +86,7 @@ class Tint(private val root: FrameLayout, density: Float) {
 
     /** Told each new palette as the colors start to change (the Now Playing card follows them). */
     fun onPalette(c: (Palette) -> Unit) {
-        onPalette = c
+        onPalette.add(c)
         c(palette)
     }
 
@@ -123,7 +123,7 @@ class Tint(private val root: FrameLayout, density: Float) {
         if (next.seed == palette.seed) return
         val from = palette
         palette = next
-        onPalette?.invoke(next)
+        for (c in onPalette) c(next)
         colors?.cancel()
         val argb = ArgbEvaluator()
         fun mix(t: Float, a: Int, b: Int) = argb.evaluate(t, a, b) as Int
@@ -141,7 +141,7 @@ class Tint(private val root: FrameLayout, density: Float) {
         }
     }
 
-    private companion object {
+    companion object {
         // Material 3 Expressive shapes (MaterialShapes): Cookie 9, Cookie 12, Clover 4-leaf, Clover 8-leaf, Sunny,
         // Soft burst, Cookie 6, Cookie 7, Cookie 4.
         val LOBES = intArrayOf(9, 12, 4, 8, 14, 10, 6, 7, 4)

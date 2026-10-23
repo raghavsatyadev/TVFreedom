@@ -25,6 +25,7 @@ class Palette private constructor(val seed: Int) {
     val primary = ROLES.primary().getArgb(s)                    // accents
     val onPrimary = ROLES.onPrimary().getArgb(s)
     val primaryContainer = ROLES.primaryContainer().getArgb(s)  // the large background shape
+    val onPrimaryContainer = ROLES.onPrimaryContainer().getArgb(s) // icons on app tiles
     val onSurface = ROLES.onSurface().getArgb(s)
     val onSurfaceVariant = ROLES.onSurfaceVariant().getArgb(s)
     val inverseSurface = ROLES.inverseSurface().getArgb(s)      // focused fill

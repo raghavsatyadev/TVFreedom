@@ -9,3 +9,7 @@ app/src/thirdParty/java holds Google's material-color-utilities, Apache License 
 
 app/src/main/assets/fonts/GoogleSansFlex.ttf is Google Sans Flex, SIL Open Font License 1.1
 (see GoogleSansFlex-OFL.txt and GoogleSansFlex-TRADEMARKS.md next to it).
+
+app/src/main/res/drawable/lw_*.xml are app icons from Lawnicons, https://github.com/LawnchairLauncher/lawnicons
+(commit 8e25153), Copyright its authors, licensed under the Apache License 2.0 (see LICENSE-lawnicons).
+They were converted from SVG to Android vector drawables; the shapes are unchanged.
