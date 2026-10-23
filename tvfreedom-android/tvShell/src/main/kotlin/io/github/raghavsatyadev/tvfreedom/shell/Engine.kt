@@ -1,6 +1,7 @@
 package io.github.raghavsatyadev.tvfreedom.shell
 
 import androidx.a2ui.engine.catalog.A2uiCoreCatalog
+import androidx.a2ui.engine.model.A2uiCoreSurfaceModel
 import androidx.a2ui.engine.catalog.A2uiCoreComponentDefinition
 import androidx.a2ui.engine.catalog.A2uiCoreComponentDefinitionCollection
 import androidx.a2ui.engine.platform.A2uiCoreComponentRegistry
@@ -16,6 +17,8 @@ import androidx.a2ui.model.schema.A2uiObjectSchema
 import androidx.a2ui.model.schema.A2uiSchema
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** The components a TVFreedom design may use. Their properties are checked by the renderer, not by schema. */
 object TvCatalog : A2uiCoreCatalog {
@@ -27,12 +30,20 @@ object TvCatalog : A2uiCoreCatalog {
         override val propertySchema: A2uiSchema = A2uiObjectSchema()
     }
 
+    /** Every component the TV can draw; [Check] refuses a design that uses anything else. */
+    val NAMES = listOf("Column", "Row", "Panel", "Spacer", "Text", "Clock", "Date", "Greeting", "AppRow", "AppGrid")
+
     override val componentDefinitions = A2uiCoreComponentDefinitionCollection(listOf(
         Def("Column", "Children one under another"),
         Def("Row", "Children side by side"),
+        Def("Panel", "One child on a coloured, rounded card"),
+        Def("Spacer", "Empty space"),
         Def("Text", "A line of text"),
         Def("Clock", "The time"),
+        Def("Date", "Today's date"),
+        Def("Greeting", "Good morning, afternoon or evening"),
         Def("AppRow", "A row of app tiles the remote moves through"),
+        Def("AppGrid", "App tiles in rows of a set number"),
     ))
     override val functions = A2uiFunctionCollection(emptyList())
 }
@@ -92,6 +103,33 @@ class Engine {
         messages.forEach { processor.processMessage(it) }
     }
 
+    /** Wait until every message queued so far is handled (the queue is in order, so a marker shows when). */
+    suspend fun settle(surface: A2uiCoreSurfaceModel, timeoutMs: Long = 3_000): Boolean {
+        val data = surface.dataModel as Data
+        put(surface.id, SETTLED, true)
+        return withTimeoutOrNull(timeoutMs) { while (SETTLED !in data.byPath) delay(5) } != null
+    }
+
     fun put(surfaceId: String, path: String, value: Any?) =
         processor.processMessage(A2uiUpdateDataModelMessage(surfaceId, path, value))
+
+    companion object {
+        private const val SETTLED = "/_settled"
+    }
 }
+
+/** Property [name] of component [id], with data bindings ({"path": ...}) resolved. */
+fun A2uiCoreSurfaceModel.prop(id: String, name: String): Any? {
+    val c = (componentRegistry as Components).byId[id] ?: return null
+    val data = dataModel as Data
+    return evaluatePayload(id, { data[it] }, A2uiDataPath("/"), c.properties[name])
+}
+
+/** The packages an app list names: either the shell's /apps entries ({"pkg": ...}) or plain package names. */
+fun packagesOf(v: Any?): List<String> = (v as? List<*>).orEmpty().mapNotNull { a ->
+    when (a) {
+        is String -> a
+        is Map<*, *> -> a["pkg"] as? String
+        else -> null
+    }
+}.distinct()

@@ -32,5 +32,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Off until the user picks this as the TV's home screen (pm enable from the phone). -->
+        <activity-alias
+            android:name=".Home"
+            android:enabled="false"
+            android:exported="true"
+            android:targetActivity=".ShellActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <!-- The phone (adb shell, which holds DUMP) writes a design here and asks the TV to check it. -->
+        <provider
+            android:name=".DesignProvider"
+            android:authorities="io.github.raghavsatyadev.tvfreedom.shell.design"
+            android:exported="true"
+            android:readPermission="android.permission.DUMP"
+            android:writePermission="android.permission.DUMP" />
     </application>
 </manifest>

@@ -1,10 +1,12 @@
 [
   {"version": "v0.9", "createSurface": {"surfaceId": "home", "catalogId": "https://tvfreedom.app/a2ui/tv/v1"}},
   {"version": "v0.9", "updateComponents": {"surfaceId": "home", "components": [
-    {"id": "root", "component": "Column", "gap": 32, "children": ["top", "apps"]},
-    {"id": "top", "component": "Row", "gap": 32, "children": ["clock", "hello"]},
+    {"id": "root", "component": "Column", "gap": 40, "children": ["top", "apps"]},
+    {"id": "top", "component": "Row", "gap": 32, "children": ["clock", "when"]},
     {"id": "clock", "component": "Clock"},
-    {"id": "hello", "component": "Text", "style": "title", "text": "Your apps"},
-    {"id": "apps", "component": "AppRow", "apps": {"path": "/apps"}}
+    {"id": "when", "component": "Column", "gap": 4, "children": ["hello", "date"]},
+    {"id": "hello", "component": "Greeting", "style": "title"},
+    {"id": "date", "component": "Date", "style": "body", "color": "#C4C6CF"},
+    {"id": "apps", "component": "AppRow", "labels": true, "apps": {"path": "/apps"}}
   ]}}
 ]

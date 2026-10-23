@@ -1,20 +1,18 @@
 package io.github.raghavsatyadev.tvfreedom.shell
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.a2ui.engine.model.A2uiCoreSurfaceModel
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-/** Draws the saved design (files/design.json, else the built-in sample) with the TV's apps in it. */
+/** Draws the saved design (else the built-in one) with the TV's apps in it; redraws when the phone sends a new one. */
 class ShellActivity : Activity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -23,6 +21,7 @@ class ShellActivity : Activity() {
     private lateinit var root: FrameLayout
     private var surface: A2uiCoreSurfaceModel? = null
     private var redrawQueued = false
+    private var loaded = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,13 +42,13 @@ class ShellActivity : Activity() {
                 surface = s
                 (s.componentRegistry as Components).onChange = ::queueRedraw
                 (s.dataModel as Data).onChange = ::queueRedraw
-                engine.put(s.id, "/apps", tvApps())
+                engine.put(s.id, "/apps", tvApps(this@ShellActivity))
                 queueRedraw()
             }
         }
-        val saved = File(filesDir, "design.json")
-        val design = if (saved.exists()) saved.readText() else assets.open("sample.json").bufferedReader().readText()
-        runCatching { engine.load(design) }.exceptionOrNull()?.let { show(TextView(this).apply {
+        loaded = Designs.saved(this).lastModified()
+        Designs.listener = ::recreate
+        runCatching { engine.load(Designs.current(this)) }.exceptionOrNull()?.let { show(TextView(this).apply {
             text = "This design can't be shown: ${it.message}"
             setTextColor(Renderer.TEXT)
         }) }
@@ -63,6 +62,8 @@ class ShellActivity : Activity() {
             redrawQueued = false
             val s = surface ?: return@post
             val focused = currentFocus?.tag
+            val bg = (s.componentRegistry as Components).byId["root"]?.properties?.get("background")
+            root.setBackgroundColor(Renderer.color(bg, Renderer.BACKGROUND))
             renderer.build(s, "root")?.let(::show)
             val again = focused?.let { root.findViewWithTag<View>(it) }
             (again ?: firstTile(root))?.requestFocus()
@@ -80,23 +81,18 @@ class ShellActivity : Activity() {
         else -> null
     }
 
+    /** A design sent while this screen was away shows on return; apps added or removed show too. */
+    override fun onResume() {
+        super.onResume()
+        if (Designs.saved(this).lastModified() != loaded) return recreate()
+        surface?.let { engine.put(it.id, "/apps", tvApps(this)) }
+    }
+
     override fun onDestroy() {
+        if (Designs.listener == ::recreate) Designs.listener = null
         scope.cancel()
         renderer.close()
         super.onDestroy()
-    }
-
-    /** The TV's apps (those with a TV or phone launcher entry), this one left out. */
-    private fun tvApps(): List<Map<String, String>> {
-        val pm = packageManager
-        val seen = LinkedHashMap<String, String>()
-        for (cat in listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)) {
-            pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(cat), 0).forEach {
-                val pkg = it.activityInfo.packageName
-                if (pkg != packageName && pkg !in seen) seen[pkg] = it.loadLabel(pm).toString()
-            }
-        }
-        return seen.map { (pkg, label) -> mapOf("pkg" to pkg, "label" to label) }
     }
 
     private fun open(pkg: String) {
