@@ -69,6 +69,8 @@ class HomeOps(private val tv: Tv) {
      */
     suspend fun allowMediaListener(): String {
         val out = tv.sh("cmd notification allow_listener $MEDIA_LISTENER").trim()
+        // Silent means it worked; Android 14 keeps the grant outside the setting, so don't check that.
+        if (out.isEmpty()) return "ok"
         val now = tv.sh("settings get secure $LISTENERS").trim()
         if (MEDIA_LISTENER in now) return out.ifEmpty { "ok" }
         val list = if (now.isEmpty() || now == "null") MEDIA_LISTENER else "$now:$MEDIA_LISTENER"

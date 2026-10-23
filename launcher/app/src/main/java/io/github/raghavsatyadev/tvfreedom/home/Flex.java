@@ -2,7 +2,6 @@
 package io.github.raghavsatyadev.tvfreedom.home;
 
 import android.animation.ValueAnimator;
-import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,8 +10,6 @@ import android.widget.TextView;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Material 3 Expressive type with Google Sans Flex (OFL, assets/fonts): a home clock whose weight follows the time of
@@ -22,26 +19,31 @@ final class Flex {
 
     private static final String FONT = "fonts/GoogleSansFlex.ttf";
     private static final long TICK_MS = 15_000;
-    private static final Map<Integer, Typeface> FONTS = new HashMap<>();
+    private static Typeface base;
 
     private Flex() {
     }
 
-    /** Google Sans Flex at a weight (rounded to 10), cached; Outfit-like sans-serif if the font will not load. */
-    static Typeface font(Context ctx, int weight) {
-        int w = Math.max(100, Math.min(1000, Math.round(weight / 10f) * 10));
-        Typeface t = FONTS.get(w);
-        if (t == null) {
+    /**
+     * Put Google Sans Flex on a view, at a weight. The font is loaded once: each weight is a variation of it set on the
+     * view, and those share the one copy of the font data (a Typeface per weight would load the 4 MB font again).
+     */
+    static void use(TextView view, int weight) {
+        if (base == null) {
             try {
-                t = new Typeface.Builder(ctx.getAssets(), FONT)
-                        .setFontVariationSettings("'wght' " + w + ", 'opsz' 48, 'ROND' 0").build();
+                base = Typeface.createFromAsset(view.getContext().getAssets(), FONT);
             } catch (RuntimeException e) {
-                t = null;
+                base = Typeface.create("sans-serif-light", Typeface.NORMAL);
             }
-            if (t == null) t = Typeface.create("sans-serif-light", Typeface.NORMAL);
-            FONTS.put(w, t);
         }
-        return t;
+        view.setTypeface(base);
+        weight(view, weight);
+    }
+
+    /** Change the weight of a view already set up with {@link #use}. */
+    static void weight(TextView view, int weight) {
+        int w = Math.max(100, Math.min(1000, weight));
+        view.setFontVariationSettings("'wght' " + w + ", 'opsz' 48, 'ROND' 0");
     }
 
     /** Clock weight through the day: 250 at night, rising to 430 by mid-morning, easing back after sunset. */
@@ -62,7 +64,7 @@ final class Flex {
     static void settle(TextView name) {
         ValueAnimator a = ValueAnimator.ofInt(420, 560).setDuration(Motion.DEFAULT_SPATIAL_MS);
         a.setInterpolator(Motion.DEFAULT_EFFECTS);
-        a.addUpdateListener(an -> name.setTypeface(font(name.getContext(), (int) an.getAnimatedValue())));
+        a.addUpdateListener(an -> weight(name, (int) an.getAnimatedValue()));
         a.start();
     }
 
@@ -76,6 +78,7 @@ final class Flex {
         Clock(TextView view) {
             this.view = view;
             density = view.getResources().getDisplayMetrics().density;
+            use(view, clockWeight());
         }
 
         void start() {
@@ -92,11 +95,9 @@ final class Flex {
                     new Date()).toString();
             if (view.getText().length() == 0) {
                 view.setText(time);
-                view.setTypeface(font(view.getContext(), clockWeight()));
+                weight(view, clockWeight());
             } else if (!time.contentEquals(view.getText())) {
                 change(time);
-            } else {
-                view.setTypeface(font(view.getContext(), clockWeight()));
             }
             handler.postDelayed(tick, TICK_MS);
         }
@@ -113,7 +114,7 @@ final class Flex {
                                 .setDuration(Motion.DEFAULT_SPATIAL_MS).start();
                         ValueAnimator swell = ValueAnimator.ofInt(base + 320, base).setDuration(700);
                         swell.setInterpolator(Motion.DEFAULT_SPATIAL);
-                        swell.addUpdateListener(a -> view.setTypeface(font(view.getContext(), (int) a.getAnimatedValue())));
+                        swell.addUpdateListener(a -> weight(view, (int) a.getAnimatedValue()));
                         swell.start();
                     }).start();
         }

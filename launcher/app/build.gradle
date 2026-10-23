@@ -24,8 +24,8 @@ android {
         applicationId 'io.github.raghavsatyadev.tvfreedom.home'
         minSdk 26
         targetSdk 29
-        versionCode 11
-        versionName '2.9'
+        versionCode 12
+        versionName '2.10'
         resValue 'string', 'weather_place', local('tvfreedom.weather.place')
         resValue 'string', 'weather_latitude', local('tvfreedom.weather.latitude')
         resValue 'string', 'weather_longitude', local('tvfreedom.weather.longitude')

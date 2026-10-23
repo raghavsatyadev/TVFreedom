@@ -366,6 +366,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
             final float density = v.getResources().getDisplayMetrics().density;
             motion = new FocusMotion(card);
+            Flex.use(name, 560);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;

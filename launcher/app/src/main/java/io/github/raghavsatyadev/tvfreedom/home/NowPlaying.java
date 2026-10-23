@@ -247,7 +247,7 @@ final class NowPlaying {
     private TextView text(int sp, int weight) {
         TextView t = new TextView(ctx);
         t.setTextSize(sp);
-        t.setTypeface(Flex.font(ctx, weight));
+        Flex.use(t, weight);
         t.setSingleLine(true);
         t.setEllipsize(TextUtils.TruncateAt.END);
         t.setIncludeFontPadding(false);
