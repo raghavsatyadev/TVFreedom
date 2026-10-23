@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.raghavsatyadev.tvfreedom.core.Classifier
 import io.github.raghavsatyadev.tvfreedom.core.Text
+import io.github.raghavsatyadev.tvfreedom.flow.ChangeRestore
 import io.github.raghavsatyadev.tvfreedom.flow.Extras
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasChoice
 import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
@@ -73,6 +74,7 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
 
     private val rebloat by lazy { Rebloat(storage, runner, ::log) }
     private val runner by lazy { Runner(storage, link, ::log) { update { copy(headline = it) } } }
+    private val changeRestore by lazy { ChangeRestore(storage, runner, ::log) }
     private val homeSetup by lazy { HomeSetup(storage, runner, ::log) }
     private val extras by lazy { Extras(storage, platform.net, runner, ::log) }
     private val phaseRun by lazy { PhaseRun(runner, homeSetup, extras, ::log) }
@@ -296,7 +298,38 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
     fun openRestore() = job {
         val info = state.info ?: return@job
         val options = withContext(Dispatchers.IO) { storage.restoreOptions(info) }
-        update { copy(restoreOptions = options, restoreChoice = null, restorePreview = "", screen = Screen.RESTORE) }
+        update { copy(restoreOptions = options, restoreChoice = null, restorePreview = "", screen = Screen.RESTORE,
+            restoreTab = 0, changes = null, picked = emptySet()) }
+    }
+
+    fun restoreTab(tab: Int) {
+        update { copy(restoreTab = tab) }
+        if (tab == 1 && state.changes == null) readChanges()
+    }
+
+    private fun readChanges() = job("Checking what is still changed") {
+        val t = tv ?: return@job
+        val info = state.info ?: return@job
+        val groups = changeRestore.list(t, info)
+        update { copy(changes = groups, picked = picked.filterTo(mutableSetOf()) { id -> groups.any { g -> g.changes.any { it.id == id } } }) }
+    }
+
+    fun pickChange(id: String) = update { copy(picked = if (id in picked) picked - id else picked + id) }
+
+    /** Only called after the user typed RESTORE. */
+    fun undoChanges() = job("Restoring") {
+        val t = tv ?: return@job
+        val info = state.info ?: return@job
+        val picked = state.picked.takeIf { it.isNotEmpty() } ?: return@job
+        update { copy(screen = Screen.RUN, log = emptyList(), outcome = null, runSteps = emptyList(), changes = null) }
+        val r = changeRestore.undo(t, info, picked)
+        val home = if (r.keptHome) "The TVFreedom home screen stayed, because the TV's own home screen is off. " +
+            "Turn it back on first (it is in the list), then remove ours." else ""
+        update {
+            copy(outcome = if (r.left.isEmpty()) Outcome(true, "Undone", "Restart the TV and check the home screen if you like.")
+            else Outcome(false, "Some changes stayed", (listOf(home) + r.left.filter { it.id != ChangeRestore.HOME_ID }
+                .map { "Still changed: ${it.title}" }).filter { it.isNotEmpty() }.joinToString("\n")))
+        }
     }
 
     fun previewRestore(option: RestoreOption) = job {

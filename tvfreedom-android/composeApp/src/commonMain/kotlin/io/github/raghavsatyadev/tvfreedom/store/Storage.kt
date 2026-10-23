@@ -24,6 +24,9 @@ data class RestoreOption(val label: String, val kind: Kind, val text: String = "
     val entries: List<ListEntry> get() = ListFiles.readEntries(text)
 }
 
+/** A TVFreedom run's three record files as text (empty when a file is missing). */
+data class RunRecord(val dir: Path, val applied: String, val extras: String = "", val settings: String = "")
+
 /**
  * App-private files, in the repo's layout: backups/<date>-tvfreedom-<model>-<serial>/ and runs/<model>/ai-<stamp>/
  * (phaseN.txt, plan.json, applied.txt, verified). The repo's lists/ ship as assets.
@@ -145,6 +148,21 @@ class Storage(
     /** Every TVFreedom run on this model, newest first. */
     fun allRuns(info: TvInfo): List<Path> = fs.dirs(runs / safe(info.model)).sortedByDescending { it.name.substringAfter('-') }
 
+    private fun isRun(p: Path) = p.name.startsWith("ai-") || p.name.startsWith("home-") || p.name.startsWith("extra-")
+
+    private fun textOf(p: Path) = if (fs.exists(p)) fs.readText(p) else ""
+
+    /** Every run on this model with what it recorded, for Restore's "By change" list. */
+    fun runRecords(info: TvInfo): List<RunRecord> = fs.dirs(runs / safe(info.model)).filter(::isRun)
+        .map { RunRecord(it, textOf(it / "applied.txt"), textOf(it / EXTRAS), textOf(it / SETTINGS)) }
+
+    /** Write back a run's files after some of its changes were undone (only the files it has). */
+    fun rewriteRun(r: RunRecord) {
+        listOf("applied.txt" to r.applied, EXTRAS to r.extras, SETTINGS to r.settings).forEach { (name, text) ->
+            if (fs.exists(r.dir / name)) fs.writeText(r.dir / name, text)
+        }
+    }
+
     /** A run that was put back at once: empty its files so Restore doesn't offer it again. */
     fun clearRun(runDir: Path) {
         fs.writeText(runDir / EXTRAS, "")
@@ -189,10 +207,11 @@ class Storage(
     /** What restore can undo on this TV: TVFreedom runs (newest first), the repo's phase lists, then backups. */
     fun restoreOptions(info: TvInfo): List<RestoreOption> {
         val out = mutableListOf<RestoreOption>()
-        fs.listOrNull(runs / safe(info.model)).orEmpty().filter { it.name.startsWith("ai-") || it.name.startsWith("home-") || it.name.startsWith("extra-") }
+        fs.listOrNull(runs / safe(info.model)).orEmpty().filter(::isRun)
             .sortedByDescending { it.name.substringAfter('-') }.forEach { run ->
+                // A run with nothing left to undo (all of it put back) is not offered.
                 (run / "applied.txt").takeIf { fs.exists(it) }?.let { fs.readText(it) }
-                    ?.takeIf { !run.name.startsWith("extra-") || undoLines(run).isNotEmpty() || ListFiles.readEntries(it).isNotEmpty() }?.let {
+                    ?.takeIf { ListFiles.readEntries(it).isNotEmpty() || undoLines(run).isNotEmpty() || savedSettings(run).isNotEmpty() }?.let {
                     val label = if (run.name.startsWith("home-")) "Home screen setup ${run.name.removePrefix("home-")}: the old home screen back"
                     else if (run.name.startsWith("extra-")) "Extras ${run.name.removePrefix("extra-")}: background, settings, DNS and YouTube as they were"
                     else "Run ${run.name.removePrefix("ai-")}: everything it applied"
