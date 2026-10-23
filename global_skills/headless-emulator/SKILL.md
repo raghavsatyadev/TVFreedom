@@ -13,7 +13,7 @@ emu up Pixel_10_Pro           # headless start, or resume one already running; p
 emu ls                        # serial, AVD, running/paused, idle minutes
 emu shot emulator-5554 a.png  # screenshot to look at (Read the PNG)
 emu adb emulator-5554 shell input keyevent 20   # any adb command; resumes a paused one first
-emu web emulator-5554 8790    # browser view: click = tap, drag = swipe, arrows/Enter = D-pad, Esc = back
+emu web emulator-5554 8790    # browser view: click = tap (TV: focus moves to the item, then Enter), drag = swipe, arrows/Enter = D-pad, Esc = back
 emu down emulator-5554        # stop; quick boot saves the state
 emu idle 5 30                 # (background) pause after 5 idle minutes, stop after 30
 ```
@@ -25,6 +25,9 @@ emu idle 5 30                 # (background) pause after 5 idle minutes, stop af
   does not pause it under you, and a paused one is resumed first. Plain `adb` on a paused emulator hangs.
 - **To show the user the screen**, run `emu web <serial>` in the background and open
   `http://127.0.0.1:8790` in the built-in browser. While the page is open the emulator counts as used.
+  One viewer serves one emulator: after that emulator stops, the page shows "No picture" with the reason. Then
+  restart the viewer on the running serial (`emu ls`). On Windows, stopping the background shell can leave its
+  `node` holding the port: find it with `netstat -ano | grep :8790` and end it before starting a new one.
 - **Stop it when done** (`emu down`) unless the user still uses it. A paused emulator still holds its RAM;
   only a stopped one gives it back.
 - Use one GPU mode per AVD. A snapshot saved in another mode does not load, and that start is a cold boot
