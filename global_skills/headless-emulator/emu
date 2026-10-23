@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Headless Android emulators: no window, paused when idle, stopped (snapshot saved) when idle longer,
+# seen and driven from a browser tab (emu web). Each emu call marks the emulator as used.
+#   emu up <avd> [port]        start headless (quick-boot snapshot: a few seconds), or resume; prints the serial
+#   emu ls                     running emulators, paused or not, and idle minutes
+#   emu adb <serial> <args>    adb on that emulator (resumes it first, marks it used)
+#   emu shot <serial> [file]   screenshot PNG (default: emu-<serial>.png in the current folder)
+#   emu web <serial> [port]    browser view with taps, swipes and keys on http://127.0.0.1:<port> (default 8790)
+#   emu pause|resume <serial>  freeze or unfreeze the emulator (paused: near 0% CPU, RAM kept)
+#   emu down <serial>          stop it; quick boot saves its state, so the next up restores it
+#   emu idle [pause] [stop]    keep running: pause after <pause> idle minutes (5), stop after <stop> (30)
+set -eu
+dir="$HOME/.headless-emu"
+mkdir -p "$dir"
+here="$(cd "$(dirname "$0")" && pwd)"
+
+touch_used() { date +%s >"$dir/$1.last"; }
+running() { adb devices | awk '/^emulator-[0-9]+\t/ {print $1}'; }
+paused() { [ -f "$dir/$1.paused" ]; }
+
+resume() {
+  if paused "$1"; then adb -s "$1" emu avd start >/dev/null; rm -f "$dir/$1.paused"; fi
+  touch_used "$1"
+}
+
+need() { [ -n "${1:-}" ] || { echo "emu: give the emulator serial (emu ls)" >&2; exit 2; }; }
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  up)
+    avd="${1:?emu up <avd> [port]; avds: $(emulator -list-avds | tr '\n' ' ')}"
+    for s in $(running); do
+      if [ "$(adb -s "$s" emu avd name 2>/dev/null | head -1 | tr -d '\r')" = "$avd" ]; then
+        resume "$s"; echo "$s"; exit 0
+      fi
+    done
+    port="${2:-5554}"
+    while adb devices | grep -q "^emulator-$port"; do port=$((port + 2)); done
+    serial="emulator-$port"
+    # swiftshader: works with no GPU window; set EMU_GPU=host for speed on a PC with a GPU.
+    nohup emulator -avd "$avd" -port "$port" -no-window -no-audio -no-boot-anim \
+      -gpu "${EMU_GPU:-swiftshader_indirect}" ${EMU_ARGS:-} >"$dir/$serial.log" 2>&1 &
+    adb -s "$serial" wait-for-device
+    for _ in $(seq 1 180); do
+      [ "$(adb -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
+      sleep 1
+    done
+    rm -f "$dir/$serial.paused"; touch_used "$serial"; echo "$serial" ;;
+  ls)
+    now=$(date +%s)
+    for s in $(running); do
+      last=$(cat "$dir/$s.last" 2>/dev/null || echo "$now")
+      state=running; paused "$s" && state=paused
+      printf '%s  %s  %s  idle %d min\n' "$s" "$(adb -s "$s" emu avd name 2>/dev/null | head -1 | tr -d '\r')" \
+        "$state" $(((now - last) / 60))
+    done ;;
+  adb) need "${1:-}"; s="$1"; shift; resume "$s"; exec adb -s "$s" "$@" ;;
+  shot)
+    need "${1:-}"; resume "$1"; out="${2:-emu-$1.png}"
+    adb -s "$1" exec-out screencap -p >"$out"; echo "$out" ;;
+  web) need "${1:-}"; resume "$1"; exec node "$here/emu-web.mjs" "$1" "${2:-8790}" "$dir" ;;
+  pause) need "${1:-}"; adb -s "$1" emu avd stop >/dev/null; touch "$dir/$1.paused"; echo "paused $1" ;;
+  resume) need "${1:-}"; resume "$1"; echo "resumed $1" ;;
+  down)
+    need "${1:-}"; resume "$1"; adb -s "$1" emu kill >/dev/null || true
+    # Saving the snapshot takes a few seconds; wait until it is gone so a next up does not find it.
+    for _ in $(seq 1 60); do running | grep -qx "$1" || break; sleep 1; done
+    rm -f "$dir/$1.last" "$dir/$1.paused"; echo "stopped $1" ;;
+  idle)
+    pause_min="${1:-5}"; stop_min="${2:-30}"
+    echo "emu idle: pause after $pause_min min, stop after $stop_min min (Ctrl+C ends)"
+    while true; do
+      now=$(date +%s)
+      for s in $(running); do
+        [ -f "$dir/$s.last" ] || touch_used "$s"
+        idle=$(((now - $(cat "$dir/$s.last")) / 60))
+        if [ "$idle" -ge "$stop_min" ]; then "$0" down "$s"
+        elif [ "$idle" -ge "$pause_min" ] && ! paused "$s"; then "$0" pause "$s"; fi
+      done
+      sleep 60
+    done ;;
+  *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; [ -z "$cmd" ] || exit 2 ;;
+esac
