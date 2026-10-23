@@ -32,55 +32,73 @@ object Defaults {
         return list
     }
 
-    private fun simple(apps: List<String>) = design("Simple", "Clock, greeting and a row of your apps",
-        part("root", "Column", "gap" to 40, "children" to ids("top", "apps")),
-        part("top", "Row", "gap" to 32, "children" to ids("clock", "when")),
-        part("clock", "Clock"),
-        part("when", "Column", "gap" to 4, "children" to ids("hello", "date")),
-        part("hello", "Greeting", "style" to "title"),
-        part("date", "Date", "style" to "body", "color" to "#C4C6CF"),
+    // Each design is Material 3 Expressive: a seed colour and scheme give its tones; tiles are M3E shapes with
+    // one-colour icons that round into a circle on focus.
+
+    private fun simple(apps: List<String>) = design("Simple", "The time in a soft shape, a greeting and your apps",
+        part("root", "Column", "gap" to 40, "seed" to "#6750A4", "scheme" to "tonalSpot", "children" to ids("top", "apps")),
+        part("top", "Row", "gap" to 36, "children" to ids("badge", "when")),
+        part("badge", "Panel", "shape" to "cookie", "color" to "primaryContainer", "padding" to 32, "child" to "clock"),
+        part("clock", "Clock", "style" to "headline", "color" to "onPrimaryContainer"),
+        part("when", "Column", "gap" to 6, "children" to ids("hello", "date")),
+        part("hello", "Greeting", "style" to "headline"),
+        part("date", "Date", "style" to "title", "color" to "onSurfaceVariant", "weight" to 400),
         part("apps", "AppRow", "labels" to true, "apps" to apps(apps)),
     )
 
-    private fun bigTiles(apps: List<String>) = design("Big tiles", "Large, easy-to-see app tiles in a grid",
-        part("root", "Column", "gap" to 24, "children" to ids("hello", "grid")),
+    private fun bigTiles(apps: List<String>) = design("Big tiles", "Large, easy-to-see app shapes in a grid",
+        part("root", "Column", "gap" to 20, "seed" to "#006A6A", "scheme" to "vibrant", "children" to ids("top", "grid")),
+        part("top", "Row", "gap" to 20, "children" to ids("hello", "clock")),
         part("hello", "Greeting", "style" to "title"),
+        part("clock", "Clock", "style" to "title", "color" to "primary"),
         part("grid", "AppGrid", "columns" to 4, "size" to "large", "labels" to true, "apps" to apps(apps)),
     )
 
-    private fun liveTv(live: List<String>, rest: List<String>) = design("Live TV", "Live TV first, then your apps",
-        part("root", "Column", "gap" to 32, "children" to ids("top", "watch", "more", "apps")),
+    private fun liveTv(live: List<String>, rest: List<String>) = design("Live TV", "Live TV on its own card, your apps beside it",
+        part("root", "Column", "gap" to 28, "seed" to "#0B57D0", "scheme" to "vibrant", "children" to ids("top", "main")),
         part("top", "Row", "gap" to 24, "children" to ids("clock", "date")),
         part("clock", "Clock", "style" to "headline"),
-        part("date", "Date", "style" to "title", "color" to "#C4C6CF"),
-        part("watch", "Panel", "color" to "#1F2A44", "child" to "tv"),
-        part("tv", "AppRow", "size" to "large", "labels" to true, "focusColor" to "#A8C7FA", "apps" to apps(live)),
-        part("more", "Text", "style" to "title", "text" to "Apps"),
-        part("apps", "AppRow", "size" to "small", "labels" to true, "apps" to apps(rest)),
+        part("date", "Date", "style" to "title", "color" to "onSurfaceVariant", "weight" to 400),
+        part("main", "Row", "gap" to 40, "children" to ids("watch", "apps")),
+        part("watch", "Panel", "color" to "secondaryContainer", "radius" to 48, "child" to "watchCol"),
+        part("watchCol", "Column", "gap" to 4, "align" to "center", "children" to ids("watchTitle", "tv")),
+        part("watchTitle", "Text", "style" to "title", "text" to "Watch TV", "color" to "onSecondaryContainer"),
+        part("tv", "AppRow", "shape" to "burst", "labels" to true, "tileColor" to "tertiaryContainer",
+            "iconColor" to "onTertiaryContainer", "focusColor" to "tertiary", "focusIconColor" to "onTertiary",
+            "labelColor" to "onSecondaryContainer", "focusLabelColor" to "onSecondaryContainer", "apps" to apps(live)),
+        part("apps", "AppGrid", "columns" to 4, "size" to "small", "labels" to true, "apps" to apps(rest)),
     )
 
     private fun streamingFirst(watch: List<String>, rest: List<String>) =
-        design("Streaming", "Your streaming apps up front, the rest below",
-            part("root", "Column", "gap" to 28, "background" to "#0E1117", "children" to ids("hello", "watch", "more", "apps")),
-            part("hello", "Greeting", "style" to "headline"),
-            part("watch", "Panel", "color" to "#1A1F2B", "child" to "stream"),
-            part("stream", "AppRow", "size" to "large", "shape" to "square", "apps" to apps(watch)),
-            part("more", "Text", "style" to "title", "text" to "More apps", "color" to "#C4C6CF"),
-            part("apps", "AppRow", "size" to "small", "shape" to "square", "labels" to true, "apps" to apps(rest)),
+        design("Streaming", "Your streaming apps on a big card, the rest below",
+            part("root", "Column", "gap" to 24, "seed" to "#B3261E", "scheme" to "fidelity",
+                "children" to ids("hello", "watch", "apps")),
+            part("hello", "Greeting", "style" to "title"),
+            part("watch", "Panel", "color" to "surfaceContainerHigh", "radius" to 40, "padding" to 20, "child" to "stream"),
+            part("stream", "AppRow", "shape" to "square", "labels" to true, "apps" to apps(watch)),
+            part("apps", "AppRow", "size" to "small", "shape" to "pillow", "labels" to true, "tileColor" to "secondaryContainer",
+                "iconColor" to "onSecondaryContainer", "apps" to apps(rest)),
         )
 
-    private fun kids(apps: List<String>) = design("Bright", "Colourful round tiles with names",
-        part("root", "Column", "gap" to 28, "background" to "#1B1446", "children" to ids("hi", "panel")),
-        part("hi", "Text", "style" to "headline", "text" to "Hello!", "color" to "#FFD166"),
-        part("panel", "Panel", "color" to "#2D2266", "radius" to 40, "child" to "grid"),
-        part("grid", "AppGrid", "columns" to 5, "shape" to "circle", "labels" to true,
-            "tileColor" to "#3A2D7A", "focusColor" to "#FFD166", "apps" to apps(apps)),
+    private fun kids(apps: List<String>) = design("Bright", "Big, playful flower shapes in sunny colours",
+        part("root", "Column", "gap" to 24, "seed" to "#FF8A00", "scheme" to "vibrant", "children" to ids("top", "grid")),
+        part("top", "Row", "gap" to 28, "children" to ids("sun", "hi")),
+        part("sun", "Panel", "shape" to "burst", "color" to "tertiary", "padding" to 28, "child" to "clock"),
+        part("clock", "Clock", "style" to "title", "color" to "onTertiary"),
+        part("hi", "Text", "style" to "headline", "text" to "Hello!", "color" to "primary", "weight" to 800),
+        part("grid", "AppGrid", "columns" to 5, "shape" to "flower", "labels" to true,
+            "tileColor" to "primary", "iconColor" to "onPrimary", "labelColor" to "onSurface",
+            "focusColor" to "tertiary", "focusIconColor" to "onTertiary", "apps" to apps(apps)),
     )
 
-    private fun minimal(apps: List<String>) = design("Minimal", "Just the time and small app icons",
-        part("root", "Column", "gap" to 48, "align" to "center", "background" to "#000000", "children" to ids("clock", "apps")),
-        part("clock", "Clock", "color" to "#FFFFFF"),
-        part("apps", "AppRow", "size" to "small", "shape" to "circle", "tileColor" to "#16181C", "apps" to apps(apps)),
+    private fun minimal(apps: List<String>) = design("Minimal", "A big, light clock and small round apps",
+        part("root", "Column", "gap" to 48, "align" to "center", "seed" to "#5F6368", "scheme" to "monochrome",
+            "background" to "surfaceContainerLowest", "children" to ids("time", "apps")),
+        part("time", "Column", "align" to "center", "gap" to 0, "children" to ids("clock", "date")),
+        part("clock", "Clock", "style" to "display"),
+        part("date", "Date", "style" to "body"),
+        part("apps", "AppRow", "size" to "small", "shape" to "circle", "tileColor" to "surfaceContainerHigh",
+            "iconColor" to "onSurfaceVariant", "focusColor" to "onSurface", "focusIconColor" to "surface", "apps" to apps(apps)),
     )
 
     /** A literal app list, or the TV's own list when the phone could not read it. */

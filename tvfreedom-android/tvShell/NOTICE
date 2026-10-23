@@ -1,0 +1,14 @@
+TVFreedom TV shell
+
+Shape (CookieDrawable) and Motion are ported from Material TV Launcher, https://github.com/0xRampey/material-tv-launcher
+(commit eccdc92), Copyright its authors, Apache License 2.0 (see LICENSE-material-tv-launcher), through the TVFreedom
+launcher.
+
+Google's material-color-utilities (Apache License 2.0) is built from launcher/app/src/thirdParty/java
+(see its LICENSE and README.md).
+
+src/main/assets/fonts/GoogleSansFlex.ttf is Google Sans Flex, SIL Open Font License 1.1
+(see GoogleSansFlex-OFL.txt and GoogleSansFlex-TRADEMARKS.md next to it).
+
+src/main/res/drawable/lw_*.xml are app icons from Lawnicons, https://github.com/LawnchairLauncher/lawnicons
+(commit 8e25153), Copyright its authors, Apache License 2.0 (see LICENSE-lawnicons).

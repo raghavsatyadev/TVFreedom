@@ -12,8 +12,15 @@ android {
         applicationId = "io.github.raghavsatyadev.tvfreedom.shell"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.compileSdk.get().toInt()
-        versionCode = 1
+        versionCode = 2
         versionName = "0.1"
+    }
+    // Google's material-color-utilities, shared with the launcher (vendored there, Apache-2.0).
+    sourceSets["main"].java.directories.add("../../launcher/app/src/thirdParty/java")
+    // The colour library uses Java 17 switch expressions.
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildTypes {
         // Shrunk release build for TV boxes. Debug key until it ships in the phone app.

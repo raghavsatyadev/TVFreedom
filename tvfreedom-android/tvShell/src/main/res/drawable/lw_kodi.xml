@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lawnicons (Apache-2.0), see launcher/NOTICE -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+    <path
+        android:pathData="m59 133 74-74m0 74L96 96m-37 37V58m32.73-34.231a6.04 6.04 0 0 1 8.541 0l67.96 67.96a6.04 6.04 0 0 1 0 8.542l-67.96 67.96a6.04 6.04 0 0 1-8.542 0l-67.96-67.96a6.04 6.04 0 0 1 0-8.542l67.96-67.96Z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

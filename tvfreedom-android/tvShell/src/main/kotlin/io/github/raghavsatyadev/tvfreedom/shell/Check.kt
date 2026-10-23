@@ -58,12 +58,41 @@ object Check {
             val c = reg.byId[id] ?: return "Part \"$from\" lists \"$id\", but no part has that id."
             if (!seen.add(id)) return "Part \"$id\" is used twice or inside itself."
             if (c.type !in TvCatalog.NAMES) return "Part \"$id\" is a ${c.type}; the TV only knows ${TvCatalog.NAMES.joinToString()}."
+            style(id, c.type, c.properties)?.let { return it }
             if (c.type == "AppRow" || c.type == "AppGrid") tiles += packagesOf(surface.prop(id, "apps")).count { it in installed }
             for (child in children(c.properties)) walk(child, id)?.let { return it }
             return null
         }
         walk("root", "root")?.let { return it }
         if (tiles == 0) return "Nothing to pick with the remote: add an AppRow or AppGrid with apps the TV has."
+        return null
+    }
+
+    private val COLOURS = listOf("background", "color", "tileColor", "iconColor", "focusColor", "focusIconColor",
+        "labelColor", "focusLabelColor")
+
+    /** The look properties of part [id]: colours, shapes, text styles and the root's seed and scheme. */
+    fun style(id: String, type: String, p: Map<String, Any?>): String? {
+        fun bad(name: String, why: String) = "Part \"$id\": $name $why"
+        fun oneOf(name: String, allowed: Collection<String>): String? {
+            val v = p[name] ?: return null
+            return if (v is String && v in allowed) null else bad(name, "must be one of ${allowed.joinToString()}.")
+        }
+        for (name in COLOURS) p[name]?.let { v -> Tone.problem(v)?.let { return bad(name, it) } }
+        if (id == "root") {
+            p["seed"]?.let { v -> if (v !is String || !v.startsWith("#") || Tone.problem(v) != null) return bad("seed", "must be a colour like #6750A4.") }
+            oneOf("scheme", Tone.SCHEMES)?.let { return it }
+        }
+        when (type) {
+            "AppRow", "AppGrid" -> {
+                oneOf("shape", Shapes.NAMES)?.let { return it }
+                oneOf("size", listOf("small", "medium", "large"))?.let { return it }
+                oneOf("icons", listOf("mono", "color"))?.let { return it }
+            }
+            "Panel" -> oneOf("shape", listOf("rounded") + Shapes.NAMED.keys)?.let { return it }
+            "Text", "Clock", "Date", "Greeting" -> oneOf("style", Renderer.TYPE.keys)?.let { return it }
+            "Column", "Row" -> oneOf("align", listOf("start", "center", "end"))?.let { return it }
+        }
         return null
     }
 

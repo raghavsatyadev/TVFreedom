@@ -28,7 +28,7 @@ class ShellActivity : Activity() {
         super.onCreate(savedInstanceState)
         renderer = Renderer(this, ::open)
         root = FrameLayout(this).apply {
-            setBackgroundColor(Renderer.BACKGROUND)
+            setBackgroundColor(Tone(Tone.SEED, null).role("surfaceDim"))
             val pad = (48 * resources.displayMetrics.density).toInt()
             setPadding(pad, pad, pad, pad)
             clipChildren = false
@@ -51,7 +51,7 @@ class ShellActivity : Activity() {
         Designs.listener = ::recreate
         runCatching { engine.load(Designs.current(this)) }.exceptionOrNull()?.let { show(TextView(this).apply {
             text = "This design can't be shown: ${it.message}"
-            setTextColor(Renderer.TEXT)
+            setTextColor(android.graphics.Color.WHITE)
         }) }
     }
 
@@ -63,10 +63,10 @@ class ShellActivity : Activity() {
             redrawQueued = false
             val s = surface ?: return@post
             val focused = currentFocus?.tag
-            val bg = (s.componentRegistry as Components).byId["root"]?.properties?.get("background")
-            root.setBackgroundColor(Renderer.color(bg, Renderer.BACKGROUND))
+            val drawn = renderer.draw(s)
+            root.setBackgroundColor(renderer.background(s))
             // A tall design scrolls: the scroll view follows the focused tile down and up.
-            renderer.build(s, "root")?.let { show(ScrollView(this).apply {
+            drawn?.let { show(ScrollView(this).apply {
                 isFillViewport = true
                 isVerticalScrollBarEnabled = false
                 clipChildren = false
