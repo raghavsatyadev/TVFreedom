@@ -50,6 +50,17 @@
         </service>
 
         <!-- Settings from TVFreedom over adb (see ConfigReceiver). DUMP: only the adb shell and the system can send it. -->
+        <!-- Lets Home see which app is playing media (Now Playing card). Reads no notifications. TVFreedom grants it. -->
+        <service
+            android:name=".MediaListener"
+            android:exported="true"
+            android:label="@string/now_playing"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".ConfigReceiver"
             android:exported="true"

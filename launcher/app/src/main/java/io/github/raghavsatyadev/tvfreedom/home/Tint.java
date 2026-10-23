@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * Material 3 Expressive backdrop (after material-tv-launcher): the screen takes a dark scheme seeded from the focused
@@ -42,6 +43,7 @@ final class Tint {
     private String focusedPkg;
     private ValueAnimator colors;
     private ValueAnimator morph;
+    private Consumer<Palette> onPalette;
 
     Tint(FrameLayout root, float density) {
         this.root = root;
@@ -99,6 +101,12 @@ final class Tint {
         });
     }
 
+    /** Told each new palette as the colors start to change (the Now Playing card follows them). */
+    void onPalette(Consumer<Palette> c) {
+        onPalette = c;
+        c.accept(palette);
+    }
+
     /** Focus left the tiles (top bar, menus): back to the idle colors. */
     void blur() {
         if (focusedPkg == null) return;
@@ -143,6 +151,7 @@ final class Tint {
         if (next.seed == palette.seed) return;
         final Palette from = palette;
         palette = next;
+        if (onPalette != null) onPalette.accept(next);
         if (colors != null) colors.cancel();
         ArgbEvaluator argb = new ArgbEvaluator();
         colors = ValueAnimator.ofFloat(0f, 1f).setDuration(Motion.DEFAULT_EFFECTS_MS * 2);

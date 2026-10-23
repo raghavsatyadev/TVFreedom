@@ -62,6 +62,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView greeting;
     private TopBar topBar;
     private Flex.Clock clock;
+    private NowPlaying nowPlaying;
     private SpringAnimation springX, springY;
     private float glassTargetX, glassTargetY;
     private boolean glassShown;
@@ -143,6 +144,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         topBar = new TopBar(this, root, liveTvPkg, this::open);
         clock = new Flex.Clock(findViewById(R.id.clock));
+        nowPlaying = new NowPlaying(root);
+        tint.onPalette(nowPlaying::setPalette);
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -182,6 +185,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }, 900);
         topBar.update();
         clock.start();
+        nowPlaying.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
 
         // Return to the app we left from, or the same slot if that app is gone. Always refocus: after
@@ -214,6 +218,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onPause();
         handler.removeCallbacks(minuteTick);
         clock.stop();
+        nowPlaying.stop();
     }
 
     @Override

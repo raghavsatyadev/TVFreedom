@@ -63,6 +63,18 @@ class HomeOps(private val tv: Tv) {
         // exec: can't close the TV's stdin, so content would wait for more forever: head stops it after the logo's bytes.
         else tv.exec("head -c ${png.size} | content write --uri $LOGO_URI", png, 60_000).decodeToString().trim()
 
+    /**
+     * Let the launcher see which app plays media (its Now Playing card) by enabling its notification listener, which
+     * reads no notifications. `cmd notification allow_listener` where the TV has it, else the secure setting.
+     */
+    suspend fun allowMediaListener(): String {
+        val out = tv.sh("cmd notification allow_listener $MEDIA_LISTENER").trim()
+        val now = tv.sh("settings get secure $LISTENERS").trim()
+        if (MEDIA_LISTENER in now) return out.ifEmpty { "ok" }
+        val list = if (now.isEmpty() || now == "null") MEDIA_LISTENER else "$now:$MEDIA_LISTENER"
+        return tv.sh("settings put secure $LISTENERS ${quote(list)}").trim().ifEmpty { "ok (setting)" }
+    }
+
     /** Close the launcher so it reads its settings again when it next opens. */
     suspend fun stopLauncher() = tv.sh("am force-stop $LAUNCHER")
 
@@ -99,6 +111,8 @@ class HomeOps(private val tv: Tv) {
         const val LAUNCHER = "io.github.raghavsatyadev.tvfreedom.home"
         const val CLOCK_DREAM = "$LAUNCHER/.ClockDream"
         const val SCREENSAVER = "screensaver_components"
+        const val MEDIA_LISTENER = "$LAUNCHER/$LAUNCHER.MediaListener"
+        const val LISTENERS = "enabled_notification_listeners"
         const val LOGO_URI = "content://$LAUNCHER.logo/logo"
         /** Wi-Fi name on the home screen (Android 10 needs location for it), and holidays on the screensaver. */
         val PERMISSIONS = listOf("android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CALENDAR")

@@ -183,6 +183,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
             if (!out.contains("Success")) error("the TV did not install the home screen ($out)")
         }
         HomeOps.PERMISSIONS.forEach { log("grant $it: ${home.grant(it).ifEmpty { "ok" }}") }
+        log("now playing access: ${home.allowMediaListener()}")
 
         runner.begin(tv, "Setting up the home screen")
         val c = choice.config
