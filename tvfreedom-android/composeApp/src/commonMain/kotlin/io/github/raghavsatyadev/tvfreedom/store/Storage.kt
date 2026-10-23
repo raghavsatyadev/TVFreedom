@@ -190,6 +190,9 @@ class Storage(
     /** The launcher APK bundled at build time (launcher/, without personal settings). */
     fun launcherApk(): ByteArray = assets.read("launcher/launcher.apk")
 
+    /** The designs screen APK bundled at build time (tvShell). */
+    fun shellApk(): ByteArray = assets.read("shell/shell.apk")
+
     fun markVerified(runDir: Path, ok: Boolean) {
         val marker = runDir / VERIFIED
         if (ok) fs.writeText(marker, "") else fs.delete(marker, mustExist = false)

@@ -2,6 +2,7 @@ package io.github.raghavsatyadev.tvfreedom.shell
 
 import androidx.a2ui.engine.model.A2uiCoreSurfaceModel
 import androidx.a2ui.model.protocol.A2uiClientErrorMessage
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -17,9 +18,9 @@ object Check {
     suspend fun problem(design: String, apps: List<Map<String, String>> = emptyList()): String? = coroutineScope {
         val engine = Engine()
         val sent = ArrayList<String>()
+        // Listen for errors before messages flow, so the engine's own reason is never missed.
         val jobs = listOf(
-            launch { engine.processor.collectMessages() },
-            launch {
+            launch(start = CoroutineStart.UNDISPATCHED) {
                 engine.processor.outboundEvents.collect {
                     sent += if (it is A2uiClientErrorMessage) {
                         val at = (it.context["path"] as? String)?.let { p -> " (at $p)" }.orEmpty()
@@ -27,6 +28,7 @@ object Check {
                     } else it.toString()
                 }
             },
+            launch { engine.processor.collectMessages() },
         )
         try {
             runCatching { engine.load(design) }.exceptionOrNull()?.let {

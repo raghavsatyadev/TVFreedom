@@ -19,7 +19,8 @@ import kotlinx.coroutines.runBlocking
  *   head -c N | content write --uri content://io.github.raghavsatyadev.tvfreedom.shell.design/design
  *   content call --uri content://io.github.raghavsatyadev.tvfreedom.shell.design --method apply
  * "apply" tries the sent design and keeps it only if it works; the answer's "result" is "ok" or what is
- * wrong. "reset" goes back to the built-in design. Only adb (which holds DUMP) may do either.
+ * wrong. "reset" goes back to the built-in design; "catalog" describes the blocks a design may use.
+ * Only adb (which holds DUMP) may call.
  */
 class DesignProvider : ContentProvider() {
 
@@ -41,7 +42,8 @@ class DesignProvider : ContentProvider() {
         val result = when (method) {
             "apply" -> Designs.apply(ctx)
             "reset" -> { Designs.saved(ctx).delete(); Designs.changed(); "ok" }
-            else -> "Unknown method $method; use apply or reset."
+            "catalog" -> Guide.TEXT
+            else -> "Unknown method $method; use apply, reset or catalog."
         }
         return Bundle().apply { putString("result", result) }
     }

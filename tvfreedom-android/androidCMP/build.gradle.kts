@@ -78,7 +78,14 @@ val bundleLauncher by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("generated/tvfreedomAssets/launcher"))
 }
 
-tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup, bundleLauncher) }
+// The designs screen TVFreedom puts on the TV (tvShell, plain views so weak TV boxes stay smooth).
+val bundleShell by tasks.registering(Sync::class) {
+    dependsOn(":tvShell:assembleRelease")
+    from(rootProject.layout.projectDirectory.file("tvShell/build/outputs/apk/release/tvShell-release.apk")) { rename { "shell.apk" } }
+    into(layout.buildDirectory.dir("generated/tvfreedomAssets/shell"))
+}
+
+tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup, bundleLauncher, bundleShell) }
 
 dependencies {
     implementation(projects.composeApp)
