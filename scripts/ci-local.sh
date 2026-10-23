@@ -213,8 +213,8 @@ if [ -f "$REPO/scripts/check-common.sh" ]; then
   else say "  ${RED}FAIL${RST}  commonMain uses platform APIs:"; printf '%s
 ' "$out" | sed 's/^/           /'; fail=1; fi
 fi
-# Every tracked source file stays at or under 500 lines (lockfiles, data and generated files exempt).
-long=$(git ls-files -- '*.kt' '*.kts' '*.py' '*.sh' '*.ps1' '*.mjs' '*.js' '*.java' \n  | while IFS= read -r f; do [ -f "$f" ] && n=$(wc -l < "$f") && [ "$n" -gt 500 ] && echo "$n $f"; done)
+# Every tracked source file stays at or under 500 lines (lockfiles, data, generated and vendored thirdParty/ files exempt).
+long=$(git ls-files -- '*.kt' '*.kts' '*.py' '*.sh' '*.ps1' '*.mjs' '*.js' '*.java' ':!:**/thirdParty/**' | while IFS= read -r f; do [ -f "$f" ] && n=$(wc -l < "$f") && [ "$n" -gt 500 ] && echo "$n $f"; done)
 if [ -z "$long" ]; then say "  ${GREEN}PASS${RST}  every source file is 500 lines or less"
 else say "  ${RED}FAIL${RST}  over 500 lines (split them):"; printf '%s
 ' "$long" | sed 's/^/           /'; fail=1; fi

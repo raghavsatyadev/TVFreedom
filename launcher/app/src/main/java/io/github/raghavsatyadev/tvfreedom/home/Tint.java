@@ -153,6 +153,7 @@ final class Tint {
                     (int) argb.evaluate(t, from.surfaceBright, next.surfaceBright),
                     (int) argb.evaluate(t, from.surface, next.surface)});
             cookie.setColor((int) argb.evaluate(t, from.primaryContainer, next.primaryContainer));
+            FocusMotion.setRingColor((int) argb.evaluate(t, from.primary, next.primary));
         });
         colors.start();
     }
