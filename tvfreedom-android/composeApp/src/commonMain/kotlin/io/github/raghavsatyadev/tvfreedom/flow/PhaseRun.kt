@@ -28,7 +28,7 @@ class PhaseRun(private val runner: Runner, private val home: HomeSetup, private 
                     extrasDraft: ExtrasDraft? = null, extrasChoice: ExtrasChoice? = null,
                     progress: (now: Int?, done: List<Int>) -> Unit = { _, _ -> }): PhaseOutcome {
         home.reset()
-        val before = runner.freeRam(tv)
+        val before = runner.usedRam(tv)
         // The check expects the new launcher if phase 4 makes it, or phase 5 runs on a TV that already has it.
         val newHome = 4 in phases || draft?.currentHome?.startsWith(HomeOps.LAUNCHER) == true
         val applied = mutableListOf<Removal>()

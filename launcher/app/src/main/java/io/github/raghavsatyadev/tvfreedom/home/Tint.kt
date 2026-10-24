@@ -63,8 +63,10 @@ class Tint(private val root: FrameLayout, density: Float) {
             else -> brandColor
         }
         black = trueBlack
-        shape.visibility = if (black) View.GONE else View.VISIBLE
-        backdrop.colors = if (black) intArrayOf(BLACK, BLACK) else intArrayOf(palette.surfaceBright, palette.surface)
+        shape.visibility = if (black || Look.background.isNotEmpty()) View.GONE else View.VISIBLE
+        backdrop.orientation = if (Look.background == "glow") GradientDrawable.Orientation.TOP_BOTTOM
+        else GradientDrawable.Orientation.TL_BR
+        backdrop.colors = if (black) intArrayOf(BLACK, BLACK) else backOf(palette, palette, 1f)
         root.background = backdrop
         if (focusedPkg == null) retint(paletteOf(idleSeed))
     }
@@ -73,7 +75,7 @@ class Tint(private val root: FrameLayout, density: Float) {
     fun warm(apps: List<AppAdapter.Entry>) {
         for (e in apps) {
             if (seeds.containsKey(e.pkg)) continue
-            val art = e.banner ?: e.icon
+            val art = e.art
             worker.execute { seedOf(e.pkg, art) }
         }
     }
@@ -142,13 +144,22 @@ class Tint(private val root: FrameLayout, density: Float) {
             interpolator = Motion.DEFAULT_EFFECTS
             addUpdateListener {
                 val t = it.animatedValue as Float
-                if (!black) backdrop.colors = intArrayOf(
-                    mix(t, from.surfaceBright, next.surfaceBright), mix(t, from.surface, next.surface),
-                )
+                if (!black) backdrop.colors = backOf(from, next, t)
                 cookie.setColor(mix(t, from.primaryContainer, next.primaryContainer))
                 FocusMotion.setRingColor(mix(t, from.primary, next.primary))
             }
             start()
+        }
+    }
+
+    /** The background between two palettes: the stock two-tone, a colour wash fading to black, or one flat colour. */
+    private fun backOf(from: Palette, next: Palette, t: Float): IntArray {
+        val argb = ArgbEvaluator()
+        fun mix(a: Int, b: Int) = argb.evaluate(t, a, b) as Int
+        return when (Look.background) {
+            "glow" -> intArrayOf(mix(from.primaryContainer, next.primaryContainer), mix(from.surface, next.surface), BLACK)
+            "plain" -> mix(from.surfaceBright, next.surfaceBright).let { intArrayOf(it, it) }
+            else -> intArrayOf(mix(from.surfaceBright, next.surfaceBright), mix(from.surface, next.surface))
         }
     }
 

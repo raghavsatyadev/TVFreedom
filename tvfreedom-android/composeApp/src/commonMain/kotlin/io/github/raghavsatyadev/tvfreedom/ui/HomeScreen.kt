@@ -167,7 +167,9 @@ private fun HomeForm(vm: TvFreedomViewModel, draft: HomeDraft) {
         BrandCard(vm)
 
         MainAction("Use these settings", Icons.Done) {
-            vm.saveHome(LauncherConfig(favourites.toList(), columns, place.trim(), lat.trim(), lon.trim(), calendars.trim(),
+            // copy(): the design the TV has (tile shape, layout, clock...) stays.
+            vm.saveHome(c.copy(favourites = favourites.toList(), columns = columns, place = place.trim(),
+                    latitude = lat.trim(), longitude = lon.trim(), calendars = calendars.trim(),
                     trueBlack = black, continueWatching = watching),
                 keepTvFavourites = old && favourites.toList() == draft.config.favourites)
         }

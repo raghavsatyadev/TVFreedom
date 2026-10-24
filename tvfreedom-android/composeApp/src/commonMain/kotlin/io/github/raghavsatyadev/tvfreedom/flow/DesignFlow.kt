@@ -102,8 +102,8 @@ class DesignFlow(private val storage: Storage, private val log: (String) -> Unit
         const val TRIES = 3
         const val BEFORE = "Before"
 
-        /** The launcher versionCode with every look working (2.18: bigger tiles for three a row). */
-        const val LOOKS = 20L
+        /** The launcher versionCode with every look working (2.19: layouts, clocks and backgrounds). */
+        const val LOOKS = 21L
         const val NO_HOME = "the TVFreedom home screen isn't on this TV yet. Set up the TV first; it puts the home screen on"
         private const val NO_ANSWER = "the home screen on the TV did not answer"
         private const val SHELL = "io.github.raghavsatyadev.tvfreedom.shell"

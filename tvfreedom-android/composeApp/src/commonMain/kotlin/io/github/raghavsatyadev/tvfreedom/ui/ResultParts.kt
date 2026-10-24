@@ -17,15 +17,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import io.github.raghavsatyadev.tvfreedom.core.Text as Fmt
 
-/** Free RAM on the TV before the run and after its restart. */
+/** Memory in use on the TV before the run and after its restart. */
 @Composable
 fun RamCard(before: Int?, after: Int) {
     Card(shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Free memory on the TV", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text("Memory used on the TV", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(if (before != null) "${mb(before)}  →  ${mb(after)}" else mb(after), style = MaterialTheme.typography.headlineSmall)
-            Text(if (before != null) "Before the changes, and after the restart" else "After the restart",
+            val less = if (before != null) before - after else 0
+            Text(if (less > 0) "${mb(less)} less in use after the restart" else if (before != null) "Before the changes, and after the restart" else "After the restart",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

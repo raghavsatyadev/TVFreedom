@@ -13,12 +13,29 @@ object Look {
     const val SHAPE = "tile_shape"     // "" mixed shapes, "circle", "square" (soft square), "flower"
     const val NAMES = "names"          // "" always shown, "focus" only on the focused tile, "off"
     const val ACCENT = "accent"        // "" colours follow the focused app, "#RRGGBB" one fixed colour
+    const val LAYOUT = "layout"        // "" favourites docked at the bottom, "wall" every app from the top, "banner" wide app banners
+    const val CLOCK = "clock"          // "" small clock in the corner, "big" a huge one, "analog" a clock face
+    const val BACKGROUND = "background" // "" a shape that follows the app, "glow" a soft colour wash, "plain" one flat colour
 
     const val NAMES_SHOWN = 0
     const val NAMES_FOCUS = 1
     const val NAMES_OFF = 2
 
     private var shape = ""
+
+    /** "", "wall" or "banner": see [LAYOUT]. */
+    var layout = ""
+        private set
+    var clock = ""
+        private set
+    var background = ""
+        private set
+
+    /** Favourites sit at the bottom of the screen with the other apps below them (the stock layout). */
+    val docked get() = layout.isEmpty()
+
+    /** Tiles are wide app banners. */
+    val banners get() = layout == "banner"
     var names = NAMES_SHOWN
         private set
 
@@ -29,6 +46,9 @@ object Look {
     fun load(ctx: Context) {
         val p = Config.prefs(ctx)
         shape = p.getString(SHAPE, "").orEmpty()
+        layout = p.getString(LAYOUT, "").orEmpty().takeIf { it == "wall" || it == "banner" }.orEmpty()
+        clock = p.getString(CLOCK, "").orEmpty().takeIf { it == "big" || it == "analog" }.orEmpty()
+        background = p.getString(BACKGROUND, "").orEmpty().takeIf { it == "glow" || it == "plain" }.orEmpty()
         names = when (p.getString(NAMES, "")) {
             "focus" -> NAMES_FOCUS
             "off" -> NAMES_OFF
@@ -64,6 +84,9 @@ object Look {
         val p = Config.prefs(ctx)
         return "&" + SHAPE + "=" + p.getString(SHAPE, "").orEmpty() +
             "&" + NAMES + "=" + p.getString(NAMES, "").orEmpty() +
-            "&" + ACCENT + "=" + java.net.URLEncoder.encode(p.getString(ACCENT, "").orEmpty(), "UTF-8")
+            "&" + ACCENT + "=" + java.net.URLEncoder.encode(p.getString(ACCENT, "").orEmpty(), "UTF-8") +
+            "&" + LAYOUT + "=" + p.getString(LAYOUT, "").orEmpty() +
+            "&" + CLOCK + "=" + p.getString(CLOCK, "").orEmpty() +
+            "&" + BACKGROUND + "=" + p.getString(BACKGROUND, "").orEmpty()
     }
 }

@@ -28,7 +28,13 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
         shape = GradientDrawable.OVAL
         setColor(0x14FFFFFF)
     }
+    /** Banner tiles ([Look.banners]): a rounded rectangle instead of a shape. */
+    private val wide = Look.banners
+    private val plate = GradientDrawable().apply { cornerRadius = WIDE_RADIUS_DP * density }
     private val argb = ArgbEvaluator()
+
+    /** The tile shows the app's own banner in its colours: no tint on it. */
+    var photo = false
     private var k = 0
     private var add = false
     private var on = false
@@ -39,6 +45,8 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
 
     init {
         // Drawn just outside the tile, with a small gap (the grid does not clip its tiles).
+        if (wide) ring.shape = GradientDrawable.RECTANGLE
+        if (wide) ring.cornerRadius = (WIDE_RADIUS_DP + RING_GAP_DP) * density
         card.foreground = InsetDrawable(ring, -(RING_GAP_DP * density).roundToInt())
         card.outlineProvider = null
         all[this] = true
@@ -49,11 +57,15 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
     fun bind(pkg: String, isAdd: Boolean, focused: Boolean) {
         add = isAdd
         k = Look.shapeOf(pkg)
-        card.background = if (add) dashed else shape
+        if (wide) dashed.shape = GradientDrawable.RECTANGLE
+        if (wide) dashed.cornerRadius = WIDE_RADIUS_DP * density
+        card.background = if (add) dashed else if (wide) plate else shape
         anim?.cancel()
         on = focused
-        shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
-        shape.setProgress(1f)
+        if (!wide) {
+            shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
+            shape.setProgress(1f)
+        }
         fill = if (focused) pal.primary else pal.primaryContainer
         ink = if (add) 0xCCFFFFFF.toInt() else if (focused) pal.onPrimary else pal.onPrimaryContainer
         draw(if (focused) 1f else 0f)
@@ -63,7 +75,7 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
     fun set(focused: Boolean) {
         if (focused == on) return
         on = focused
-        if (!add) shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
+        if (!add && !wide) shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
         val from = level
         val fill0 = fill
         val ink0 = ink
@@ -74,7 +86,7 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
             addUpdateListener {
                 val f = it.animatedValue as Float
                 val c = f.coerceIn(0f, 1f)
-                if (!add) shape.setProgress(c)
+                if (!add && !wide) shape.setProgress(c)
                 fill = mix(c, fill0, if (on) pal.primary else pal.primaryContainer)
                 ink = if (add) ink0 else mix(c, ink0, if (on) pal.onPrimary else pal.onPrimaryContainer)
                 draw(from + ((if (focused) 1f else 0f) - from) * f)
@@ -87,11 +99,11 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
 
     private fun draw(t: Float) {
         level = t
-        val scale = 1f + (SCALE - 1f) * t
+        val scale = 1f + ((if (wide) WIDE_SCALE else SCALE) - 1f) * t
         card.scaleX = scale
         card.scaleY = scale
-        if (!add) shape.setColor(fill)
-        glyph.setColorFilter(ink, PorterDuff.Mode.SRC_IN)
+        if (!add) if (wide) plate.setColor(fill) else shape.setColor(fill)
+        if (photo) glyph.clearColorFilter() else glyph.setColorFilter(ink, PorterDuff.Mode.SRC_IN)
         letter.setTextColor(ink)
         ring.setStroke((RING_DP * density).roundToInt(), pal.primary)
         ring.alpha = (255 * t.coerceIn(0f, 1f)).roundToInt()
@@ -116,6 +128,8 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
 
     companion object {
         const val SCALE = 1.12f
+        private const val WIDE_SCALE = 1.08f
+        private const val WIDE_RADIUS_DP = 14f
         private const val RING_DP = 3f
         private const val RING_GAP_DP = 4f
 

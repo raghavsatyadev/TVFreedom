@@ -12,7 +12,7 @@ import java.net.URLEncoder
  * am broadcast -f 0x20 -n io.github.raghavsatyadev.tvfreedom.home/.ConfigReceiver --es favourites com.a,com.b --ei columns 4 \
  *     --es weather_place 'Your City' --es weather_latitude 12.34 --es weather_longitude 56.78 \
  *     --es dream_calendars 'Holidays|Family' --es brand_color '#123456' \
- *     --es true_black 1 --es continue_watching 1 --es tile_shape circle --es names focus --es accent '#5B8DEF'
+ *     --es true_black 1 --es continue_watching 1 --es tile_shape circle --es names focus --es accent '#5B8DEF' \n *     --es layout banner --es clock big --es background glow
  * ```
  * Only extras that are present are changed; an empty string clears a setting back to "none". The result data is
  * "ok", then every setting now in effect as a URL query (favourites=…&columns=…), so with no extras it only reports.
@@ -44,6 +44,7 @@ class ConfigReceiver : BroadcastReceiver() {
         val STRINGS = arrayOf(
             Favourites.KEY, Config.PLACE, Config.LATITUDE, Config.LONGITUDE, Config.CALENDARS, Config.BRAND_COLOR,
             Config.TRUE_BLACK, Config.CONTINUE_WATCHING, Look.SHAPE, Look.NAMES, Look.ACCENT,
+            Look.LAYOUT, Look.CLOCK, Look.BACKGROUND,
         )
 
         fun current(ctx: Context): String =

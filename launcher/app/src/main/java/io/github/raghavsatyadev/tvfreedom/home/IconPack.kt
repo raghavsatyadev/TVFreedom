@@ -77,11 +77,11 @@ object IconPack {
      * The made icon for an app not in the pack: given at once when known, else worked out on a background thread
      * and handed to [ready] on the main thread (null = show the letter).
      */
-    fun made(pkg: String, icon: Drawable, ready: (Drawable?) -> Unit): Drawable? {
+    fun made(pkg: String, icon: () -> Drawable, ready: (Drawable?) -> Unit): Drawable? {
         val known = made[pkg]
         if (known != null) return known as? Drawable
         worker.execute {
-            val d = made.getOrPut(pkg) { make(icon) ?: NONE } as? Drawable
+            val d = made.getOrPut(pkg) { runCatching(icon).getOrNull()?.let { make(it) } ?: NONE } as? Drawable
             main.post { ready(d) }
         }
         return null

@@ -2,6 +2,7 @@ package io.github.raghavsatyadev.tvfreedom.store
 
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
+import io.github.raghavsatyadev.tvfreedom.flow.DesignFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -11,7 +12,8 @@ import java.net.URL
 
 /**
  * The TVFreedom home screen for the TV, from the newest GitHub release. Kept on the phone, and fetched again when
- * older than [FRESH_MS], so a run without internet still has the last one.
+ * older than [FRESH_MS] or than [DesignFlow.LOOKS] (this TVFreedom's designs need it), so a run without internet still
+ * has the last one.
  */
 class LauncherDownload(private val ctx: Context) {
     private val file get() = File(ctx.filesDir, "launcher/launcher.apk")
@@ -19,7 +21,8 @@ class LauncherDownload(private val ctx: Context) {
     /** The APK and its versionCode. */
     suspend fun get(log: (String) -> Unit): Pair<ByteArray, Long> = withContext(Dispatchers.IO) {
         val have = file.takeIf { it.isFile }
-        if (have == null || System.currentTimeMillis() - have.lastModified() > FRESH_MS) {
+        val stale = have == null || System.currentTimeMillis() - have.lastModified() > FRESH_MS || version(have) < DesignFlow.LOOKS
+        if (stale) {
             try {
                 fetch()
                 log("downloaded the home screen ${version(file)} from GitHub")

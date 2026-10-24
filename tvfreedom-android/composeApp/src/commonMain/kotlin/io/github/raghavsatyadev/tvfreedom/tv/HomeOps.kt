@@ -23,6 +23,10 @@ data class LauncherConfig(
     val tileShape: String = "",
     val names: String = "",
     val accent: String = "",
+    /** Layout, clock and background of a design. Launcher 2.19+. */
+    val layout: String = "",
+    val clock: String = "",
+    val background: String = "",
     /** Size in bytes of the logo on the TV (0: none). Only reported; the logo goes through [HomeOps.setLogo]. */
     val logoBytes: Long = 0,
 )
@@ -61,7 +65,7 @@ class HomeOps(private val tv: Tv) {
                 append(" --es brand_color ").append(quote(Parse.hexColor(c.brandColor)))
                 append(" --es true_black ").append(quote(if (c.trueBlack) "1" else ""))
                 append(" --es continue_watching ").append(quote(if (c.continueWatching) "1" else ""))
-                appendLook(c.tileShape, c.names, c.accent)
+                appendLook(c.look())
             }
         }
         return Parse.launcherConfig(tv.sh(cmd))
@@ -76,15 +80,18 @@ class HomeOps(private val tv: Tv) {
             append("am broadcast -f 0x20 -n $LAUNCHER/.ConfigReceiver")
             append(" --ei columns ").append((l.columns ?: columns).coerceIn(1, 8))
             append(" --es true_black ").append(quote(if (l.trueBlack) "1" else ""))
-            appendLook(l.shape, l.names, l.accent)
+            appendLook(l)
         }
         return Parse.launcherConfig(tv.sh(cmd))
     }
 
-    private fun StringBuilder.appendLook(shape: String, names: String, accent: String) {
-        append(" --es tile_shape ").append(quote(shape.takeIf { it in Looks.SHAPES }.orEmpty()))
-        append(" --es names ").append(quote(names.takeIf { it in Looks.NAMES }.orEmpty()))
-        append(" --es accent ").append(quote(Parse.hexColor(accent)))
+    private fun StringBuilder.appendLook(l: TvLook) {
+        append(" --es tile_shape ").append(quote(l.shape.takeIf { it in Looks.SHAPES }.orEmpty()))
+        append(" --es names ").append(quote(l.names.takeIf { it in Looks.NAMES }.orEmpty()))
+        append(" --es accent ").append(quote(Parse.hexColor(l.accent)))
+        append(" --es layout ").append(quote(l.layout.takeIf { it in Looks.LAYOUTS }.orEmpty()))
+        append(" --es clock ").append(quote(l.clock.takeIf { it in Looks.CLOCKS }.orEmpty()))
+        append(" --es background ").append(quote(l.background.takeIf { it in Looks.BACKGROUNDS }.orEmpty()))
     }
 
     /**
@@ -128,8 +135,8 @@ class HomeOps(private val tv: Tv) {
 
     suspend fun dreaming(): String = tv.sh("dumpsys dreams")
 
-    /** MemAvailable in MB, or null if /proc/meminfo can't be read. */
-    suspend fun freeRamMb(): Int? = Parse.memAvailableMb(tv.sh("cat /proc/meminfo"))
+    /** Memory in use (MemTotal - MemAvailable) in MB, or null if /proc/meminfo can't be read. */
+    suspend fun usedRamMb(): Int? = Parse.memUsedMb(tv.sh("cat /proc/meminfo"))
 
     /** A PNG of the TV's screen, or null. */
     suspend fun screenshot(): ByteArray? = Parse.png(tv.exec("screencap -p", timeoutMs = 60_000))
@@ -192,6 +199,9 @@ fun Parse.launcherConfig(out: String): LauncherConfig? {
         tileShape = v["tile_shape"].orEmpty(),
         names = v["names"].orEmpty(),
         accent = v["accent"].orEmpty(),
+        layout = v["layout"].orEmpty(),
+        clock = v["clock"].orEmpty(),
+        background = v["background"].orEmpty(),
         logoBytes = v["logo"]?.toLongOrNull() ?: 0,
     )
 }
@@ -218,8 +228,12 @@ fun Parse.formDecode(s: String): String {
 /** #RRGGBB in upper case, or "" if [s] isn't one (the value goes into a shell command). */
 fun Parse.hexColor(s: String): String = s.trim().takeIf { Regex("^#[0-9A-Fa-f]{6}$").matches(it) }?.uppercase() ?: ""
 
-fun Parse.memAvailableMb(meminfo: String): Int? =
-    Regex("^MemAvailable:\\s+(\\d+) kB", RegexOption.MULTILINE).find(meminfo)?.groupValues?.get(1)?.toInt()?.div(1024)
+fun Parse.memUsedMb(meminfo: String): Int? {
+    fun kb(k: String) = Regex("^$k:\\s+(\\d+) kB", RegexOption.MULTILINE).find(meminfo)?.groupValues?.get(1)?.toLongOrNull()
+    val total = kb("MemTotal") ?: return null
+    val free = kb("MemAvailable") ?: return null
+    return ((total - free) / 1024).toInt()
+}
 
 private val PNG = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
 
@@ -243,4 +257,4 @@ fun Parse.columns(wmSize: String, wmDensity: String): Int {
 }
 
 /** The look the launcher in [c] shows. */
-fun LauncherConfig.look() = TvLook(columns, trueBlack, tileShape, names, accent)
+fun LauncherConfig.look() = TvLook(columns, trueBlack, tileShape, names, accent, layout, clock, background)

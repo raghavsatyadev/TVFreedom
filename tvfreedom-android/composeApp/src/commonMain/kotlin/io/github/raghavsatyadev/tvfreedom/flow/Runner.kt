@@ -23,7 +23,7 @@ import kotlin.time.TimeSource
 
 /**
  * How a run that restarts the TV ended. [tv] is the connection to use afterwards (the port can move after a
- * reboot), null if the TV never came back. RAM is MemAvailable in MB; [screen] is a PNG taken after the restart.
+ * reboot), null if the TV never came back. RAM is memory in use in MB; [screen] is a PNG taken after the restart.
  */
 data class RunResult(
     val tv: Tv?,
@@ -150,7 +150,7 @@ class Runner(
         delay(30_000)
     }
 
-    suspend fun freeRam(tv: Tv): Int? = runCatching { HomeOps(tv).freeRamMb() }.getOrNull()?.also { log("free RAM $it MB") }
+    suspend fun usedRam(tv: Tv): Int? = runCatching { HomeOps(tv).usedRamMb() }.getOrNull()?.also { log("RAM in use $it MB") }
 
     /**
      * Reboot, wait for sys.boot_completed, press Home and check the focused window is the HOME package
@@ -168,7 +168,7 @@ class Runner(
         begin(back, "Checking the home screen")
         val ok = homeOk(back, expectHome)
         log(if (ok) "home screen OK" else "home screen NOT reached")
-        val ram = freeRam(back)
+        val ram = usedRam(back)
         val shot = shotDir?.let { screenshot(back, it) }
         return RunResult(back, ok, ramAfter = ram, screen = shot)
     }

@@ -16,6 +16,8 @@ class LooksTest {
         val answer = "Sure! ```json\n{\"columns\": 5, \"true_black\": true, \"tile_shape\": \"flower\", \"names\": \"off\", \"accent\": \"#f2a65a\"}\n```"
         assertEquals(TvLook(5, true, "flower", "off", "#F2A65A"), Looks.extract(answer).getOrThrow())
         assertEquals(TvLook(), Looks.extract("{}").getOrThrow())
+        assertEquals(TvLook(layout = "wall", clock = "big", background = "plain"),
+            Looks.extract("{\"layout\": \"wall\", \"clock\": \"big\", \"background\": \"plain\"}").getOrThrow())
     }
 
     @Test
@@ -27,5 +29,8 @@ class LooksTest {
         assertTrue("tile_shape" in why("{\"tile_shape\": \"star\"}"))
         assertTrue("names" in why("{\"names\": \"big\"}"))
         assertTrue("accent" in why("{\"accent\": \"red\"}"))
+        assertTrue("layout" in why("{\"layout\": \"list\"}"))
+        assertTrue("clock" in why("{\"clock\": \"digital\"}"))
+        assertTrue("background" in why("{\"background\": \"photo\"}"))
     }
 }

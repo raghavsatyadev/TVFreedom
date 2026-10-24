@@ -48,8 +48,11 @@ class AppAdapter(
     class Entry internal constructor(
         val label: String,
         val component: ComponentName,
+        /** The TV banner, kept only for the banner layout ([Look.banners]): a banner costs about 230 KB. */
         val banner: Drawable?,
-        val icon: Drawable,
+        /** A tiny copy of the banner (or icon) to pick the app's colours from. */
+        val art: Drawable?,
+        private val loadIcon: () -> Drawable,
         /** Opened with the Leanback launcher category; false for phone-only apps. */
         val leanback: Boolean,
         /** The "+" tile at the end of the dock, not an app. */
@@ -57,6 +60,10 @@ class AppAdapter(
     ) {
         val pkg: String = component.packageName
         var ambient = 0
+
+        /** The app's icon, loaded each time it is asked for and not kept (an adaptive icon is about 370 KB). Only
+         * the made icon (once per app) and the tile menu need it. */
+        val icon: Drawable get() = loadIcon()
     }
 
     /** Favourite slots including spacers: a multiple of columns. Set by reload(). */
@@ -70,7 +77,7 @@ class AppAdapter(
     private val items = ArrayList<Entry?>()
     private val installedFavourites = ArrayList<String>()
     private val addTile = Entry(
-        ctx.getString(R.string.add_app), ComponentName(ctx, "add"), null, ctx.getDrawable(R.drawable.ic_add)!!,
+        ctx.getString(R.string.add_app), ComponentName(ctx, "add"), null, null, { ctx.getDrawable(R.drawable.ic_add)!! },
         leanback = false, add = true,
     )
 
@@ -131,9 +138,9 @@ class AppAdapter(
             if (byPkg.containsKey(pkg) || pkg == ctx.packageName || hidden.contains(pkg)) continue
             if (!leanback && ai.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0) continue
             val banner = ai.loadBanner(pm) ?: ai.applicationInfo.loadBanner(pm)
-            val icon = ri.loadIcon(pm)
+            val art = small(banner ?: ri.loadIcon(pm))
             val label = ri.loadLabel(pm).toString()
-            byPkg[pkg] = Entry(label, ComponentName(pkg, ai.name), banner, icon, leanback)
+            byPkg[pkg] = Entry(label, ComponentName(pkg, ai.name), banner.takeIf { Look.banners }, art, { ri.loadIcon(pm) }, leanback)
         }
     }
 
@@ -180,6 +187,7 @@ class AppAdapter(
         h.name.visibility = if (e.add) View.INVISIBLE else View.VISIBLE
         val focused = h.card.isFocused   // a rebind after reload() can hit the focused tile
         h.name.alpha = Look.nameAlpha(focused, NAME_REST)
+        h.tile.photo = Look.banners && e.banner != null && !e.add
         h.tile.bind(e.pkg, e.add, focused)
         h.show(e)
         if (e.add) {
@@ -232,7 +240,7 @@ class AppAdapter(
     /** A vivid colour sampled from the app's banner (or icon), cached per entry. */
     fun ambientColorAt(position: Int): Int {
         val e = items.getOrNull(position) ?: return GREY
-        if (e.ambient == 0) e.ambient = vividColor(e.banner ?: e.icon)
+        if (e.ambient == 0) e.ambient = vividColor(e.art)
         return e.ambient
     }
 
@@ -258,10 +266,25 @@ class AppAdapter(
             }
         }
 
+        /** A wide banner tile ([Look.banners]): the card takes the TV banner's shape and the picture fills it. */
+        private fun widen() {
+            fun View.size(w: Float, h: Float) = layoutParams.let { it.width = (w * density).toInt(); it.height = (h * density).toInt(); layoutParams = it }
+            card.size(BANNER_W, BANNER_H)
+            val r = 14 * density
+            icon.outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(v: View, o: android.graphics.Outline) = o.setRoundRect(0, 0, v.width, v.height, r)
+            }
+            icon.clipToOutline = true
+            name.layoutParams = (name.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+                width = (BANNER_W * density).toInt()
+                topMargin = ((BANNER_H + 12) * density).toInt()
+            }
+        }
+
         init {
             Flex.use(name, 560)
             Flex.use(letter, 600)
-            grow(MainActivity.TILE_SCALE)
+            if (Look.banners) widen() else grow(MainActivity.TILE_SCALE)
 
             card.setOnKeyListener { view, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
@@ -287,13 +310,26 @@ class AppAdapter(
         /** The icon: the pack's glyph, else one made from the app's icon, else the app's first letter. */
         fun show(e: Entry) {
             pkg = e.pkg
+            if (tile.photo) return banner(e.banner!!)
             val glyph = if (e.add) R.drawable.ic_add else IconPack.glyph(e.pkg)
             if (glyph != 0) return icon(null, glyph)
-            val made = IconPack.made(e.pkg, e.icon) { d -> if (pkg == e.pkg) if (d != null) icon(d, 0) else letter(e) }
+            val made = IconPack.made(e.pkg, { e.icon }) { d -> if (pkg == e.pkg) if (d != null) icon(d, 0) else letter(e) }
             if (made != null) icon(made, 0) else letter(e)
         }
 
+        private fun banner(d: Drawable) {
+            icon.scaleType = ImageView.ScaleType.CENTER_CROP
+            icon.layoutParams = icon.layoutParams.apply { width = card.layoutParams.width; height = card.layoutParams.height }
+            icon(d, 0)
+            icon.clearColorFilter()
+        }
+
         private fun icon(d: android.graphics.drawable.Drawable?, res: Int) {
+            if (Look.banners && !tile.photo && icon.scaleType != ImageView.ScaleType.FIT_CENTER) {
+                // A banner tile without a banner: the app's icon, small, on the tile's colour.
+                icon.scaleType = ImageView.ScaleType.FIT_CENTER
+                icon.layoutParams = icon.layoutParams.apply { width = (56 * density).toInt(); height = width }
+            }
             if (res != 0) icon.setImageResource(res) else icon.setImageDrawable(d)
             icon.visibility = View.VISIBLE
             letter.visibility = View.GONE
@@ -309,9 +345,22 @@ class AppAdapter(
 
     companion object {
         const val FOCUS_SCALE = ShapeTile.SCALE
+        private const val BANNER_W = 192f
+        private const val BANNER_H = 108f
         private const val NAME_REST = 0.6f
         private const val GREY = 0xFF444444.toInt()
         private const val TILE = 0xFF1C1C1E.toInt()
+
+        /** [d] drawn into a 64x36 bitmap (9 KB): enough to pick colours from, so the big picture can go. */
+        private fun small(d: Drawable): Drawable? = try {
+            val copy = d.constantState?.newDrawable()?.mutate() ?: d
+            val bmp = Bitmap.createBitmap(64, 36, Bitmap.Config.ARGB_8888)
+            copy.setBounds(0, 0, 64, 36)
+            copy.draw(Canvas(bmp))
+            android.graphics.drawable.BitmapDrawable(null, bmp)
+        } catch (e: RuntimeException) {
+            null
+        }
 
         private fun vividColor(live: Drawable?): Int {
             if (live == null) return GREY

@@ -21,6 +21,12 @@ data class TvLook(
     val names: String = "",
     /** "" colours follow the chosen app, or one colour as #RRGGBB. */
     val accent: String = "",
+    /** "" favourites docked at the bottom, "wall" every app from the top, "banner" wide app pictures. Launcher 2.19+. */
+    val layout: String = "",
+    /** "" a small clock in the corner, "big" a huge one, "analog" a clock face. */
+    val clock: String = "",
+    /** "" a shape that follows the app, "glow" a colour wash from the top, "plain" one flat colour. */
+    val background: String = "",
 )
 
 /** A look with a name and one line about it. */
@@ -30,6 +36,9 @@ object Looks {
 
     val SHAPES = listOf("", "circle", "square", "flower")
     val NAMES = listOf("", "focus", "off")
+    val LAYOUTS = listOf("", "wall", "banner")
+    val CLOCKS = listOf("", "big", "analog")
+    val BACKGROUNDS = listOf("", "glow", "plain")
 
     /** The home screen as TVFreedom puts it on the TV. */
     val DEFAULT = Design("Default", "The TVFreedom home screen as it comes", TvLook())
@@ -37,13 +46,18 @@ object Looks {
     /** The ready-made looks, the default first. */
     val ALL = listOf(
         DEFAULT,
-        Design("Round", "Round tiles, colours follow the app you pick", TvLook(shape = "circle")),
-        Design("Soft squares", "Rounded square tiles", TvLook(shape = "square")),
-        Design("Flowers", "Flower-shaped tiles", TvLook(shape = "flower")),
-        Design("Calm", "One soft blue, names only under the app you pick", TvLook(shape = "circle", names = "focus", accent = "#7FA7E0")),
-        Design("Big tiles", "Three large tiles a row, easy to see from far away", TvLook(columns = 3, shape = "square")),
-        Design("Pure black", "Black background for OLED TVs, no names", TvLook(trueBlack = true, shape = "circle", names = "off")),
-        Design("Warm", "One warm orange for everything", TvLook(shape = "flower", accent = "#F2A65A")),
+        Design("Big clock", "A huge clock, your apps below it",
+            TvLook(shape = "circle", names = "focus", clock = "big", background = "glow")),
+        Design("Banners", "Wide app pictures, like Google TV",
+            TvLook(columns = 4, layout = "banner", background = "plain")),
+        Design("App wall", "Every app at once, from the top",
+            TvLook(columns = 6, shape = "square", names = "focus", layout = "wall", background = "glow")),
+        Design("Watch", "A clock face on pure black",
+            TvLook(trueBlack = true, shape = "circle", names = "off", clock = "analog")),
+        Design("Calm", "One soft blue, flat and quiet",
+            TvLook(shape = "circle", names = "focus", accent = "#7FA7E0", background = "plain")),
+        Design("Warm", "Orange glow, flower tiles, big clock",
+            TvLook(shape = "flower", accent = "#F2A65A", clock = "big", background = "glow")),
     )
 
     fun toJson(l: TvLook): String = buildJsonObject {
@@ -52,6 +66,9 @@ object Looks {
         put("tile_shape", l.shape)
         put("names", l.names)
         put("accent", l.accent)
+        put("layout", l.layout)
+        put("clock", l.clock)
+        put("background", l.background)
     }.toString()
 
     /** A look from JSON like [toJson]'s; fails with what is wrong, in words the AI can fix. */
@@ -67,7 +84,11 @@ object Looks {
         require(names in NAMES) { "names must be one of ${NAMES.joinToString { "\"$it\"" }}" }
         val accent = str("accent")
         require(accent.isEmpty() || Regex("^#[0-9A-Fa-f]{6}$").matches(accent)) { "accent must be \"\" or a colour like \"#7FA7E0\"" }
-        TvLook(columns, (o["true_black"] as? JsonPrimitive)?.booleanOrNull ?: false, shape, names, accent.uppercase())
+        fun pick(k: String, from: List<String>) = str(k).also { require(it in from) { "$k must be one of ${from.joinToString { "\"$it\"" }}" } }
+        val layout = pick("layout", LAYOUTS)
+        val clock = pick("clock", CLOCKS)
+        val background = pick("background", BACKGROUNDS)
+        TvLook(columns, (o["true_black"] as? JsonPrimitive)?.booleanOrNull ?: false, shape, names, accent.uppercase(), layout, clock, background)
     }
 
     /** The JSON object in an AI [answer]: from its first { to its last }. */

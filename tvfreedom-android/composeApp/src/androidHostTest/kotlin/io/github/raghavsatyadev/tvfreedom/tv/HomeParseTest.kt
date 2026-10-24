@@ -32,6 +32,9 @@ class HomeParseTest {
         val v19 = "Broadcast completed: result=0, data=\"ok favourites=&columns=3&true_black=1&tile_shape=square&names=focus&accent=%237FA7E0\""
         val c = Parse.launcherConfig(v19)!!
         assertEquals(TvLook(3, true, "square", "focus", "#7FA7E0"), c.look())
+        val v21 = "Broadcast completed: result=0, data=\"ok favourites=&columns=4&tile_shape=&names=&accent=" +
+            "&layout=banner&clock=analog&background=glow\""
+        assertEquals(TvLook(4, false, layout = "banner", clock = "analog", background = "glow"), Parse.launcherConfig(v21)!!.look())
     }
 
     @Test
@@ -57,8 +60,8 @@ class HomeParseTest {
 
     @Test
     fun ramAndVersion() {
-        assertEquals(1024, Parse.memAvailableMb("MemTotal:  2000000 kB\nMemAvailable:    1048576 kB\n"))
-        assertNull(Parse.memAvailableMb("permission denied"))
+        assertEquals(1024, Parse.memUsedMb("MemTotal:  2097152 kB\nMemAvailable:    1048576 kB\n"))
+        assertNull(Parse.memUsedMb("permission denied"))
         assertEquals(3L, Parse.versionCode("    versionCode=3 minSdk=26 targetSdk=29"))
     }
 

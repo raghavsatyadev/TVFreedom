@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Rect
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -35,11 +34,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
     private lateinit var root: FrameLayout
     private lateinit var glass: GlassView
     private lateinit var tint: Tint
-    private lateinit var ambient: View
-    private lateinit var heroName: TextView
-    private val ambientGlow = GradientDrawable()
-    private var ambientColor = 0
-    private var heroShown = false
+    private lateinit var hero: Hero
     private lateinit var greeting: TextView
     private lateinit var topBar: TopBar
     private lateinit var clock: Flex.Clock
@@ -72,12 +67,6 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         glass = findViewById(R.id.glass)
         glass.visibility = View.GONE   // shaped tiles draw their own focus ring
         tint = Tint(root, density)
-        ambient = findViewById(R.id.ambient)
-        heroName = findViewById(R.id.heroName)
-        ambientGlow.gradientType = GradientDrawable.RADIAL_GRADIENT
-        ambientGlow.setGradientCenter(0.32f, 0.42f)
-        ambient.background = ambientGlow
-        ambient.addOnLayoutChangeListener { _, l, _, r, _, _, _, _, _ -> ambientGlow.gradientRadius = (r - l) * 0.62f }
         greeting = findViewById(R.id.greeting)
 
         grid = findViewById(R.id.grid)
@@ -91,11 +80,13 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         grid.itemAnimator = null
         grid.layoutAnimation = LayoutAnimationController(AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f)
         adapter = AppAdapter(this, this, COLUMNS)
-        grid.addItemDecoration(DockDecoration(adapter, COLUMNS, density))
+        if (Look.docked) grid.addItemDecoration(DockDecoration(adapter, COLUMNS, density))
         grid.adapter = adapter
+        hero = Hero(root, adapter, tint)
 
         // tvOS layout: push the favourite rows to the bottom of the screen; the grid hides below until you press Down.
-        grid.addOnLayoutChangeListener { _, _, t, _, b, _, _, _, _ ->
+        // The wall and banner layouts start at the top instead.
+        if (Look.docked) grid.addOnLayoutChangeListener { _, _, t, _, b, _, _, _, _ ->
             val h = b - t
             val rows = maxOf(1, adapter.dockSize() / COLUMNS)
             // label-less items plus DockDecoration offsets
@@ -122,6 +113,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
 
         topBar = TopBar(this, root, liveTvPkg, ::open)
         clock = Flex.Clock(findViewById(R.id.clock))
+        Face.clock(findViewById(R.id.clock), findViewById(R.id.ampm), tint)
         nowPlaying = NowPlaying(root)
         tint.onPalette(nowPlaying::setPalette)
         val pills = Pills(
@@ -154,9 +146,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         )
         glassShown = false
         glass.alpha = 0f
-        heroShown = false
-        heroName.alpha = 0f
-        ambient.alpha = 0f
+        hero.reset()
         // Read these before reload(): rebinding can move focus to the first tile and overwrite them.
         val returnKey = lastFocusedKey
         val returnSlot = lastFocused
@@ -238,7 +228,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         lastFocused = position
         lastFocusedKey = adapter.keyAt(position)
         val entry = adapter.entryAt(position)
-        if (entry != null && !entry.add) tint.focus(entry.pkg, entry.banner ?: entry.icon)
+        if (entry != null && !entry.add) tint.focus(entry.pkg, entry.art)
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         val r = Rect(0, 0, card.width, card.height)
         root.offsetDescendantRectToMyCoords(card, r)
@@ -269,15 +259,15 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             springY.animateToFinalPosition(y)
         }
         val item = card.parent as View
-        if (position < adapter.dockSize()) {
+        if (Look.docked && position < adapter.dockSize()) {
             // Favourites: park their first row at the bottom of the screen and show the top shelf for this app.
             val rowAbove = (position / COLUMNS) * (item.height + (DockDecoration.ROW_GAP_DP * density).toInt())
             val decoratedTop = item.top - rowAbove - (6 * density).toInt()
             val dy = decoratedTop - grid.paddingTop
             if (abs(dy) > 1) grid.smoothScrollBy(0, dy)
-            showHero(position, (r.top - rowAbove - dy).toFloat())
+            hero.show(position, (r.top - rowAbove - dy).toFloat())
         } else {
-            hideHero()
+            hero.hide()
             // Scroll just enough that the whole glass and the name under it are on screen.
             val top = item.top - 2 * pad.toInt()
             val bottom = item.bottom + pad.toInt()
@@ -291,76 +281,12 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         }
     }
 
-    // ---- top shelf -------------------------------------------------------------------------------
-
-    private fun showHero(position: Int, dockTopInRoot: Float) {
-        val color = adapter.ambientColorAt(position)
-        val y = dockTopInRoot - (DockDecoration.PAD_DP + 26) * density - heroName.height
-        // A logo or two rows of favourites can leave less room under the top bar: shrink the name to fit, or skip it.
-        val room = dockTopInRoot - (DockDecoration.PAD_DP + 26) * density - topBarBottom() - 8 * density
-        val scale = if (heroName.height == 0) 1f else minOf(1f, room / heroName.height)
-        heroName.pivotX = 0f
-        heroName.pivotY = heroName.height.toFloat()
-        heroName.scaleX = maxOf(scale, 0f)
-        heroName.scaleY = maxOf(scale, 0f)
-        val label = if (scale < 0.55f) "" else adapter.labelAt(position)
-        val changed = !label.contentEquals(heroName.text)
-
-        if (!heroShown) {
-            heroName.text = label
-            heroName.y = y
-            heroName.translationX = 0f
-            heroName.animate().alpha(1f).setDuration(260).start()
-            setAmbient(color)
-            ambient.animate().alpha(1f).setDuration(600).start()
-            heroShown = true
-        } else if (changed) {
-            heroName.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction {
-                heroName.text = label
-                heroName.y = y
-                heroName.translationX = 12 * density
-                heroName.animate().alpha(1f).translationX(0f).setDuration(200).start()
-            }.start()
-            if (color != ambientColor) {
-                ambient.animate().alpha(0.35f).setDuration(200).withEndAction {
-                    setAmbient(color)
-                    ambient.animate().alpha(1f).setDuration(500).start()
-                }.start()
-            }
-        } else {
-            heroName.y = y
-        }
-    }
-
     /** Down from the top bar goes to the Continue watching row while it shows, else to the tiles. */
     private fun pointTopBarDown(row: Boolean) {
         val down = if (row) R.id.watchList else R.id.grid
         for (id in intArrayOf(R.id.btnInputs, R.id.btnWifi, R.id.btnBluetooth, R.id.btnSettings)) {
             findViewById<View>(id).nextFocusDownId = down
         }
-    }
-
-    /** The bottom of the clock and buttons row (or of Continue watching under it), in root coordinates. */
-    private fun topBarBottom(): Float {
-        val row = findViewById<View>(R.id.watchRow)
-        val bar = if (row.visibility == View.VISIBLE) row else findViewById<View>(R.id.leftBlock).parent as View
-        val r = Rect(0, 0, bar.width, bar.height)
-        root.offsetDescendantRectToMyCoords(bar, r)
-        return r.bottom.toFloat()
-    }
-
-    private fun setAmbient(color: Int) {
-        ambientColor = color
-        // True black: no glow lights up the screen.
-        val c = if (tint.black) 0 else color and 0x00FFFFFF
-        ambientGlow.colors = intArrayOf(0x5C000000 or c, 0x26000000 or c, c)
-    }
-
-    private fun hideHero() {
-        if (!heroShown) return
-        heroShown = false
-        heroName.animate().alpha(0f).setDuration(160).start()
-        ambient.animate().alpha(0f).setDuration(300).start()
     }
 
     private fun hideGlass() {

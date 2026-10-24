@@ -8,8 +8,8 @@ lifecycle-mp = "2.11.0"
 
 compileSdk = "37"
 minSdk = "26"
-versionCode = "6"
-versionName = "0.3.0"
+versionCode = "7"
+versionName = "0.4.0"
 
 activity-compose = "1.14.0-alpha03"
 compose-ui = "1.12.0"
