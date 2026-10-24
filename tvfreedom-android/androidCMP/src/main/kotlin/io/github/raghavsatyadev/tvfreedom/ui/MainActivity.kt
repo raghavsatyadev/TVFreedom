@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
                         Screen.RESTORE -> RestoreScreen(vm)
                         Screen.SETTINGS -> SettingsScreen(vm)
                         Screen.HOME -> HomeScreen(vm)
+                        Screen.DESIGNS -> DesignsScreen(vm)
                     }
                 }
             }

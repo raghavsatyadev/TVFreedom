@@ -32,24 +32,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
-    private val storage = platform.storage
+class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
+    internal val storage = platform.storage
     val settings: Settings = storage.settings
     val brand = platform.brand
     private val link: TvLink = platform.link
-    private var tv: Tv? = null
+    internal var tv: Tv? = null
 
     var state by mutableStateOf(UiState(screen = if (settings.onboarded) Screen.CONNECT else Screen.SETUP))
         private set
 
-    private fun update(f: UiState.() -> UiState) {
+    internal fun update(f: UiState.() -> UiState) {
         state = state.f()
     }
 
-    private fun log(line: String) = update { copy(log = (log + line).takeLast(400), status = line) }
+    internal fun log(line: String) = update { copy(log = (log + line).takeLast(400), status = line) }
 
     /** Log a line the user must see once the step ends. */
-    private fun tell(line: String) {
+    internal fun tell(line: String) {
         log(line)
         update { copy(notice = line) }
     }
@@ -57,7 +57,7 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
     /** Gemini Nano (or Termux) is waiting for TVFreedom to be on screen again. */
     private var askOpen by mutableStateOf(false)
 
-    private suspend fun waitOpen() {
+    internal suspend fun waitOpen() {
         if (platform.open.value > 0) return
         askOpen = true
         try {
@@ -80,7 +80,7 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
     private val phaseRun by lazy { PhaseRun(runner, homeSetup, extras, ::log) }
 
     /** One job at a time: nothing starts while another step runs. [headline] names it on screen; empty = silent. */
-    private fun job(headline: String = "", block: suspend () -> Unit) {
+    internal fun job(headline: String = "", block: suspend () -> Unit) {
         if (state.busy) return
         update { copy(busy = true, headline = headline, status = "", notice = "") }
         // Named jobs talk to the TV for a while: keep TVFreedom alive and show their progress if the user leaves the app.
@@ -204,7 +204,7 @@ class TvFreedomViewModel(private val platform: AppPlatform) : ViewModel() {
         update { copy(info = null, plan = null, notice = "", screen = Screen.CONNECT) }
     }
 
-    private fun classifier(): Classifier? = platform.classifier(settings.ai, settings, ::waitOpen, ::log)
+    internal fun classifier(): Classifier? = platform.classifier(settings.ai, settings, ::waitOpen, ::log)
 
     /** Backup, then plan. Changes nothing on the TV. */
     fun makePlan() = job("Making a plan") {

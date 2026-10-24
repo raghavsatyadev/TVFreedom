@@ -102,4 +102,18 @@ class ClaudeClassifier(private val apiKey: String, private val model: String) : 
             client.close()
         }
     }
+
+    override val writes = true
+
+    override suspend fun ask(prompt: String, log: (String) -> Unit): String = withContext(Dispatchers.IO) {
+        val client = AnthropicOkHttpClient.builder().apiKey(apiKey).build()
+        try {
+            val msg = client.messages().create(MessageCreateParams.builder().model(model).maxTokens(16000L)
+                .addUserMessage(prompt).build())
+            msg.content().mapNotNull { b -> b.text().map { it.text() }.orElse(null) }.joinToString("")
+                .ifEmpty { error("Claude gave no text (stop: ${msg.stopReason().orElse(null)})") }
+        } finally {
+            client.close()
+        }
+    }
 }

@@ -43,6 +43,7 @@ class Storage(
     private val backups = root / "backups"
     private val runs = root / "runs"
     val settings = Settings(prefs)
+    val designs = DesignStore(fs, root / "designs")
 
     private fun asset(path: String) = assets.read(path).decodeToString()
 

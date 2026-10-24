@@ -169,12 +169,17 @@ fun TvScreen(vm: TvFreedomViewModel) {
         }
         item { GroupLabel("More") }
         item {
-            SegmentedListItem(onClick = vm::openRestore, shapes = seg(0, 2), colors = segColors(), enabled = !s.busy,
+            SegmentedListItem(onClick = vm::openDesigns, shapes = seg(0, 3), colors = segColors(), enabled = !s.busy,
+                leadingContent = { Icon(Icons.Home, null) },
+                supportingContent = { Text("Pick a look for the TV, or ask the AI for one") }) { Text("Designs") }
+        }
+        item {
+            SegmentedListItem(onClick = vm::openRestore, shapes = seg(1, 3), colors = segColors(), enabled = !s.busy,
                 leadingContent = { Icon(Icons.History, null) },
                 supportingContent = { Text("Undo a run, or go back to a backup") }) { Text("Restore") }
         }
         item {
-            SegmentedListItem(onClick = vm::rebootAndCheck, shapes = seg(1, 2), colors = segColors(), enabled = !s.busy,
+            SegmentedListItem(onClick = vm::rebootAndCheck, shapes = seg(2, 3), colors = segColors(), enabled = !s.busy,
                 leadingContent = { Icon(Icons.Power, null) },
                 supportingContent = { Text("Restart the TV and check its home screen") }) { Text("Restart and check") }
         }

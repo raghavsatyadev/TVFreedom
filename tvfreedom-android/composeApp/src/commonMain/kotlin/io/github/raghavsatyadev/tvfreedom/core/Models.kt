@@ -61,6 +61,12 @@ interface Classifier {
         log: (String) -> Unit,
     ): Map<String, Verdict>
 
+    /** True when [ask] can write free text such as a TV design (Claude); the model on the phone is too small. */
+    val writes: Boolean get() = false
+
+    /** The AI's answer to [prompt]. Throws with the AI's own error when it fails. */
+    suspend fun ask(prompt: String, log: (String) -> Unit): String = error("$name can't write designs")
+
     /** Free what the classifier holds (an on-device model). */
     fun close() {}
 }

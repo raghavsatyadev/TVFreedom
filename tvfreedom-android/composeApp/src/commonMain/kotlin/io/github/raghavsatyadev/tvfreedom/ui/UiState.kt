@@ -2,16 +2,18 @@ package io.github.raghavsatyadev.tvfreedom.ui
 
 import io.github.raghavsatyadev.tvfreedom.core.Plan
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
+import io.github.raghavsatyadev.tvfreedom.design.Design
 import io.github.raghavsatyadev.tvfreedom.flow.ChangeGroup
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasChoice
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasDraft
 import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
 import io.github.raghavsatyadev.tvfreedom.store.RestoreOption
+import io.github.raghavsatyadev.tvfreedom.store.Take
 import io.github.raghavsatyadev.tvfreedom.tv.Candidate
 import io.github.raghavsatyadev.tvfreedom.tv.LauncherConfig
 import okio.Path
 
-enum class Screen { SETUP, CONNECT, TV, PLAN, RUN, RESTORE, SETTINGS, HOME }
+enum class Screen { SETUP, CONNECT, TV, PLAN, RUN, RESTORE, SETTINGS, HOME, DESIGNS }
 
 /** How a run ended, for the result screen: free RAM in MB before and after, and the TV's screen after the restart. */
 data class Outcome(
@@ -70,4 +72,13 @@ data class UiState(
     /** What phase 6 (lockdown, settings, DNS, SmartTube) finds on this TV, and what the user switched on. */
     val extrasDraft: ExtrasDraft? = null,
     val extras: ExtrasChoice = ExtrasChoice(),
+    val designs: DesignsUi = DesignsUi(),
+)
+
+/** The designs screen: ready-made designs for this TV's apps, the designs it took (oldest first), and its picture. */
+data class DesignsUi(
+    val apps: List<String> = emptyList(),
+    val ready: List<Design> = emptyList(),
+    val takes: List<Take> = emptyList(),
+    val shot: ByteArray? = null,
 )

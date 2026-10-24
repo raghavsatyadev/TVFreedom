@@ -98,6 +98,17 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
         }
     }
 
+    override val writes = true
+
+    /** One prompt, one answer. No test prompt first (a check would cost a second call); Claude's own error if it fails. */
+    override suspend fun ask(prompt: String, log: (String) -> Unit): String {
+        val step = probe(log)
+        if (step != Step.READY && step != Step.LOGIN) error("Claude in Termux is not set up yet (${step.name.lowercase()}). Open Settings.")
+        val r = exec("$PREFIX/bin/claude", claudeArgs(), prompt, 900_000)
+        if (r.exit != 0 || r.out.isBlank()) error(failure(r))
+        return r.out
+    }
+
     /** Install Claude Code with the bundled scripts/termux-setup.sh, then log in, in a Termux window the user watches. */
     fun startInstall() = openSession("$PREFIX/bin/sh", arrayOf("-c", script(), "sh", "app", appScreen()))
 
