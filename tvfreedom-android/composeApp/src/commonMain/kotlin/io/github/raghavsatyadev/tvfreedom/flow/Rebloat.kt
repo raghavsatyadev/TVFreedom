@@ -80,7 +80,7 @@ class Rebloat(private val storage: Storage, private val runner: Runner, private 
         storage.allRuns(info).forEach { run ->
             Undo.run(tv, storage.undoLines(run)).forEach(log)
             storage.markVerified(run, false) // nothing on the TV is learned from any more
-            if (run.name.startsWith("extra-")) storage.clearRun(run)
+            storage.clearRun(run) // the TV is back to how it came: nothing in it is left to undo
         }
         Undo.run(tv, p.reset).forEach(log)
         runner.begin(tv, "Turning ${p.reinstall.size + p.enable.size} apps back on")

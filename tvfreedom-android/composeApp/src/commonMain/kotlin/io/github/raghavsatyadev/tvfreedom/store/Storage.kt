@@ -170,9 +170,11 @@ class Storage(
     }
 
     /** A run that was put back at once: empty its files so Restore doesn't offer it again. */
+    /** Nothing left to undo in this run: Restore stops offering it. */
     fun clearRun(runDir: Path) {
         fs.writeText(runDir / EXTRAS, "")
         fs.writeText(runDir / "applied.txt", "")
+        if (fs.exists(runDir / SETTINGS)) fs.writeText(runDir / SETTINGS, "")
     }
 
     fun readCache(name: String): ByteArray? = (cache / name).takeIf { fs.isFile(it) }?.let { fs.readBytes(it) }
