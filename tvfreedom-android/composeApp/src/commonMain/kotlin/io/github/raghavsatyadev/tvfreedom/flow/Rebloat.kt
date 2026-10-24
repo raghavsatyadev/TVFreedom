@@ -26,7 +26,7 @@ data class RebloatPlan(
     val isEmpty get() = undo.isEmpty() && reset.isEmpty() && screensaver == null && enable.isEmpty() && reinstall.isEmpty() && !launcher
 
     fun describe(): String = if (isEmpty) "" else listOfNotNull(
-        undo.takeIf { it.isNotEmpty() }?.let { "Undo TVFreedom's other changes:\n" + it.joinToString("\n") { l -> Undo.describe(l) } },
+        (undo + reset).takeIf { it.isNotEmpty() }?.let { "Undo TVFreedom's other changes:\n" + it.joinToString("\n") { l -> Undo.describe(l) } },
         screensaver?.let { "Screensaver back to ${it.ifEmpty { "the TV's own" }}" },
         enable.takeIf { it.isNotEmpty() }?.let { "Turn back on (${it.size}): ${it.joinToString(", ")}" },
         reinstall.takeIf { it.isNotEmpty() }?.let { "Reinstall (${it.size}): ${it.joinToString(", ")}" },
