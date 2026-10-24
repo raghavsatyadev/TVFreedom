@@ -245,9 +245,23 @@ class AppAdapter(
         private val density = v.resources.displayMetrics.density
         private var pkg: String? = null
 
+        /** Scale the tile from item_app.xml's 104dp card (its icon, letter and the name below follow). */
+        private fun grow(k: Float) {
+            if (k == 1f) return
+            fun View.size(w: Float, h: Float = w) = layoutParams.let { it.width = (w * k * density).toInt(); it.height = (h * k * density).toInt(); layoutParams = it }
+            card.size(104f)
+            icon.size(50f)
+            letter.textSize = 40f * k
+            name.layoutParams = (name.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+                width = (180 * k * density).toInt()
+                topMargin = ((104 * k + 12) * density).toInt()
+            }
+        }
+
         init {
             Flex.use(name, 560)
             Flex.use(letter, 600)
+            grow(MainActivity.TILE_SCALE)
 
             card.setOnKeyListener { view, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false

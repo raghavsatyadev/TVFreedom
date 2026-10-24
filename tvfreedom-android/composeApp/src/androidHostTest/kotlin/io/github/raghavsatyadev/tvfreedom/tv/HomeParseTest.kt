@@ -1,5 +1,6 @@
 package io.github.raghavsatyadev.tvfreedom.tv
 
+import io.github.raghavsatyadev.tvfreedom.design.TvLook
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -28,6 +29,9 @@ class HomeParseTest {
         assertEquals(LauncherConfig(emptyList(), 4, brandColor = "#123ABC", logoBytes = 20480), Parse.launcherConfig(v4))
         val v16 = "Broadcast completed: result=0, data=\"ok favourites=&columns=4&true_black=1&continue_watching=&logo=0\""
         assertEquals(LauncherConfig(emptyList(), 4, trueBlack = true), Parse.launcherConfig(v16))
+        val v19 = "Broadcast completed: result=0, data=\"ok favourites=&columns=3&true_black=1&tile_shape=square&names=focus&accent=%237FA7E0\""
+        val c = Parse.launcherConfig(v19)!!
+        assertEquals(TvLook(3, true, "square", "focus", "#7FA7E0"), c.look())
     }
 
     @Test

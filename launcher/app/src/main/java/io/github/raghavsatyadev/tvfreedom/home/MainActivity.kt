@@ -99,7 +99,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             val h = b - t
             val rows = maxOf(1, adapter.dockSize() / COLUMNS)
             // label-less items plus DockDecoration offsets
-            val dockRow = ((117 * rows + DockDecoration.ROW_GAP_DP * (rows - 1) + 6 + 12) * density).toInt()
+            val dockRow = (((104 * TILE_SCALE + 13) * rows + DockDecoration.ROW_GAP_DP * (rows - 1) + 6 + 12) * density).toInt()
             // The band reaches 20dp lower when it holds the names (DockDecoration).
             val below = if (Look.names == Look.NAMES_OFF) 30 else 50
             val want = maxOf(0, h - dockRow - (below * density).toInt())
@@ -422,6 +422,9 @@ class MainActivity : Activity(), AppAdapter.TileListener {
     companion object {
         /** Tiles per row and dock slots (config.xml columns, or set by TVFreedom). Set in onCreate. */
         var COLUMNS = 4
+
+        /** Tiles grow when a row holds fewer than four: three a row are a third bigger. */
+        val TILE_SCALE get() = (4f / COLUMNS).coerceIn(1f, 1.3f)
         private const val MINUTE_MS = 60_000L
 
         // Static so they survive the activity being destroyed while another app is open (low-memory TVs,

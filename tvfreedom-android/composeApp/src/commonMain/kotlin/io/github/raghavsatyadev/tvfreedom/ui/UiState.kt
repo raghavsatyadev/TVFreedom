@@ -3,6 +3,7 @@ package io.github.raghavsatyadev.tvfreedom.ui
 import io.github.raghavsatyadev.tvfreedom.core.Plan
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
 import io.github.raghavsatyadev.tvfreedom.design.Design
+import io.github.raghavsatyadev.tvfreedom.design.Looks
 import io.github.raghavsatyadev.tvfreedom.flow.ChangeGroup
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasChoice
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasDraft
@@ -75,10 +76,17 @@ data class UiState(
     val designs: DesignsUi = DesignsUi(),
 )
 
-/** The designs screen: ready-made designs for this TV's apps, the designs it took (oldest first), and its picture. */
+/**
+ * The designs screen: the looks to pick from (the AI's first, when it made one), drawn with this TV's [apps]
+ * (favourites first) and [columns]; the one [picked]; the looks the TV took (oldest first); and its picture.
+ */
 data class DesignsUi(
     val apps: List<String> = emptyList(),
-    val ready: List<Design> = emptyList(),
+    val columns: Int = 4,
+    val ai: Design? = null,
+    val picked: Design? = null,
     val takes: List<Take> = emptyList(),
     val shot: ByteArray? = null,
-)
+) {
+    val choices: List<Design> get() = listOfNotNull(ai) + Looks.ALL
+}

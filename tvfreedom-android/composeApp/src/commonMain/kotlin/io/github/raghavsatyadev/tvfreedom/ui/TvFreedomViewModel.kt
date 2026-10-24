@@ -221,7 +221,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
             ai?.close()
         }
         // Phases 4 and 5 come from the launcher and screensaver on the TV, not from the package lists.
-        val draft = runCatching { homeSetup.draft(t, info, bundledLauncher().second) }
+        val draft = runCatching { homeSetup.draft(t, info, launcher().second) }
             .onFailure { log("could not read the home screen: ${Text.why(it)}") }.getOrNull()
         val extra = runCatching { extras.draft(t, info, plan) }
             .onFailure { log("could not read the extras: ${Text.why(it)}") }.getOrNull()
@@ -271,7 +271,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
         if (phases.isEmpty()) return@job tell("Nothing chosen.")
         val choice = if (phases.any { it in 4..5 }) HomeSetup.Choice(
             (state.homeConfig ?: draft!!.config).copy(brandColor = brand.color), state.keepTvFavourites,
-            bundledLauncher().first, withContext(Dispatchers.IO) { brand.logo }) else null
+            launcher().first, withContext(Dispatchers.IO) { brand.logo }) else null
         update {
             copy(screen = Screen.RUN, log = emptyList(), outcome = null, runPhase = null, runDone = emptyList(),
                 runSteps = plainSteps(plan, draft, phases, brand.hasLogo, state.extrasDraft?.let { it to state.extras }))
@@ -406,11 +406,8 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
     private fun outcome(r: RunResult, ok: Boolean, headline: String, body: String) =
         Outcome(ok, headline, body, r.ramBefore, r.ramAfter, r.screen)
 
-    /** The launcher APK in TVFreedom and its versionCode. */
-    private suspend fun bundledLauncher(): Pair<ByteArray, Long> = withContext(Dispatchers.IO) {
-        val apk = storage.launcherApk()
-        apk to platform.apkVersion(apk)
-    }
+    /** The home screen APK for the TV, from the newest GitHub release, and its versionCode. */
+    internal suspend fun launcher(): Pair<ByteArray, Long> = platform.launcherApk(::log)
 
     /** This phone's town for the weather, when Android allows it. */
     suspend fun phonePlace(): Place? = withContext(Dispatchers.IO) { platform.phonePlace() }

@@ -2,6 +2,8 @@ package io.github.raghavsatyadev.tvfreedom.store
 
 import io.github.raghavsatyadev.tvfreedom.core.ListFiles
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
+import io.github.raghavsatyadev.tvfreedom.design.Looks
+import io.github.raghavsatyadev.tvfreedom.design.TvLook
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
@@ -12,24 +14,25 @@ import kotlinx.serialization.json.put
 import okio.FileSystem
 import okio.Path
 
-/** A design the TV took: its name, when, and the JSON. Empty [json] is the design built into the TV's designs screen. */
+/** A look the TV's home screen took: its name, when, and the look as JSON ([Looks.toJson]). */
 data class Take(val name: String, val stamp: String, val json: String) {
-    val builtIn get() = json.isEmpty()
+    /** The look, or null for a take from before looks (a design for the old designs app). */
+    val look: TvLook? get() = Looks.fromJson(json).getOrNull()
 }
 
-/** The designs each TV took, oldest first, so Undo can go back one. One file per TV (model and serial, like backups). */
+/** The looks each TV took, oldest first, so Undo can go back one. One file per TV (model and serial, like backups). */
 class DesignStore(private val fs: FileSystem, private val dir: Path) {
 
     fun takes(info: TvInfo): List<Take> = runCatching {
         Json.parseToJsonElement(fs.readText(file(info))).jsonArray.map {
             val o = it as JsonObject
             Take(o.str("name"), o.str("stamp"), o.str("json"))
-        }
+        }.filter { it.look != null }
     }.getOrDefault(emptyList())
 
     fun add(info: TvInfo, take: Take) = write(info, pushed(takes(info), take))
 
-    /** Drop the newest take and return the one the TV should show now (null: none left, show the built-in one). */
+    /** Drop the newest take and return the one the TV should show now (null: none left). */
     fun undo(info: TvInfo): Take? {
         val left = takes(info).dropLast(1)
         write(info, left)

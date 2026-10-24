@@ -1,5 +1,7 @@
 package io.github.raghavsatyadev.tvfreedom.tv
 
+import io.github.raghavsatyadev.tvfreedom.design.Looks
+import io.github.raghavsatyadev.tvfreedom.design.TvLook
 import kotlin.math.roundToInt
 
 /** The launcher's settings, as its ConfigReceiver reports and takes them. */
@@ -17,6 +19,10 @@ data class LauncherConfig(
     val trueBlack: Boolean = false,
     /** A "Continue watching" row from the TV's Watch Next list. */
     val continueWatching: Boolean = false,
+    /** The look a design set ([TvLook]): tile shape, names and one colour; "" is the stock look. Launcher 2.17+. */
+    val tileShape: String = "",
+    val names: String = "",
+    val accent: String = "",
     /** Size in bytes of the logo on the TV (0: none). Only reported; the logo goes through [HomeOps.setLogo]. */
     val logoBytes: Long = 0,
 )
@@ -55,9 +61,30 @@ class HomeOps(private val tv: Tv) {
                 append(" --es brand_color ").append(quote(Parse.hexColor(c.brandColor)))
                 append(" --es true_black ").append(quote(if (c.trueBlack) "1" else ""))
                 append(" --es continue_watching ").append(quote(if (c.continueWatching) "1" else ""))
+                appendLook(c.tileShape, c.names, c.accent)
             }
         }
         return Parse.launcherConfig(tv.sh(cmd))
+    }
+
+    /**
+     * Send only a design's look (weather, calendars and favourites stay as they are), [columns] when the look keeps
+     * the TV's own. Returns what the launcher uses now, or null if it didn't answer.
+     */
+    suspend fun look(l: TvLook, columns: Int): LauncherConfig? {
+        val cmd = buildString {
+            append("am broadcast -f 0x20 -n $LAUNCHER/.ConfigReceiver")
+            append(" --ei columns ").append((l.columns ?: columns).coerceIn(1, 8))
+            append(" --es true_black ").append(quote(if (l.trueBlack) "1" else ""))
+            appendLook(l.shape, l.names, l.accent)
+        }
+        return Parse.launcherConfig(tv.sh(cmd))
+    }
+
+    private fun StringBuilder.appendLook(shape: String, names: String, accent: String) {
+        append(" --es tile_shape ").append(quote(shape.takeIf { it in Looks.SHAPES }.orEmpty()))
+        append(" --es names ").append(quote(names.takeIf { it in Looks.NAMES }.orEmpty()))
+        append(" --es accent ").append(quote(Parse.hexColor(accent)))
     }
 
     /**
@@ -162,6 +189,9 @@ fun Parse.launcherConfig(out: String): LauncherConfig? {
         brandColor = v["brand_color"].orEmpty(),
         trueBlack = v["true_black"] == "1",
         continueWatching = v["continue_watching"] == "1",
+        tileShape = v["tile_shape"].orEmpty(),
+        names = v["names"].orEmpty(),
+        accent = v["accent"].orEmpty(),
         logoBytes = v["logo"]?.toLongOrNull() ?: 0,
     )
 }
@@ -211,3 +241,6 @@ fun Parse.columns(wmSize: String, wmDensity: String): Int {
     val widthPx = maxOf(size.groupValues[1].toInt(), size.groupValues[2].toInt())
     return (widthPx * 160.0 / density / 240.0).roundToInt().coerceIn(3, 6)
 }
+
+/** The look the launcher in [c] shows. */
+fun LauncherConfig.look() = TvLook(columns, trueBlack, tileShape, names, accent)

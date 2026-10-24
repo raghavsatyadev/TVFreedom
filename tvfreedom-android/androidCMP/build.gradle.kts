@@ -59,33 +59,7 @@ val bundleTermuxSetup by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("generated/tvfreedomAssets/termux"))
 }
 
-// The home screen TVFreedom installs on the TV: launcher/ built without the personal local.properties values
-// (TVFreedom sends favourites, weather and calendars at runtime), into launcher/app/build-tvfreedom.
-val launcherDir = File(repoRoot, "launcher")
-val launcherApk = File(launcherDir, "app/build-tvfreedom/outputs/apk/release/app-release.apk")
-val buildLauncher by tasks.registering(Exec::class) {
-    workingDir = launcherDir
-    val windows = System.getProperty("os.name").startsWith("Windows")
-    commandLine(if (windows) listOf("cmd", "/c", File(launcherDir, "gradlew.bat").path) else listOf(File(launcherDir, "gradlew").path))
-    args("assembleRelease", "-q", "-Ptvfreedom.noLocal")
-    inputs.dir(File(launcherDir, "app/src"))
-    inputs.file(File(launcherDir, "app/build.gradle"))
-    outputs.file(launcherApk)
-}
-val bundleLauncher by tasks.registering(Sync::class) {
-    dependsOn(buildLauncher)
-    from(launcherApk) { rename { "launcher.apk" } }
-    into(layout.buildDirectory.dir("generated/tvfreedomAssets/launcher"))
-}
-
-// The designs screen TVFreedom puts on the TV (tvShell, plain views so weak TV boxes stay smooth).
-val bundleShell by tasks.registering(Sync::class) {
-    dependsOn(":tvShell:assembleRelease")
-    from(rootProject.layout.projectDirectory.file("tvShell/build/outputs/apk/release/tvShell-release.apk")) { rename { "shell.apk" } }
-    into(layout.buildDirectory.dir("generated/tvfreedomAssets/shell"))
-}
-
-tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup, bundleLauncher, bundleShell) }
+tasks.named("preBuild") { dependsOn(bundleLists, bundleTermuxSetup) }
 
 dependencies {
     implementation(projects.composeApp)

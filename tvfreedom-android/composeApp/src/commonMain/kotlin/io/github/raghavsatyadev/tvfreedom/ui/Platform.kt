@@ -47,6 +47,6 @@ interface AppPlatform {
     fun locationGranted(): Boolean
     suspend fun phonePlace(): Place?
 
-    /** The versionCode inside an APK, 0 if it can't be read. */
-    fun apkVersion(apk: ByteArray): Long
+    /** The TVFreedom home screen APK for the TV (from the newest GitHub release) and its versionCode. */
+    suspend fun launcherApk(log: (String) -> Unit): Pair<ByteArray, Long>
 }

@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
-import androidx.core.content.pm.PackageInfoCompat
 import io.github.raghavsatyadev.tvfreedom.ai.ClaudeClassifier
 import io.github.raghavsatyadev.tvfreedom.ai.NanoClassifier
 import io.github.raghavsatyadev.tvfreedom.ai.TermuxClaude
@@ -15,6 +14,7 @@ import io.github.raghavsatyadev.tvfreedom.flow.RunService
 import io.github.raghavsatyadev.tvfreedom.store.Assets
 import io.github.raghavsatyadev.tvfreedom.store.Brand
 import io.github.raghavsatyadev.tvfreedom.store.Images
+import io.github.raghavsatyadev.tvfreedom.store.LauncherDownload
 import io.github.raghavsatyadev.tvfreedom.store.Net
 import io.github.raghavsatyadev.tvfreedom.store.PhoneLocation
 import io.github.raghavsatyadev.tvfreedom.store.Prefs
@@ -73,14 +73,9 @@ class AndroidPlatform(private val ctx: Context, override val open: StateFlow<Int
 
     override suspend fun phonePlace(): Place? = PhoneLocation.find(ctx)
 
-    override fun apkVersion(apk: ByteArray): Long {
-        val file = File(ctx.cacheDir, "version-check.apk").apply { writeBytes(apk) }
-        return try {
-            ctx.packageManager.getPackageArchiveInfo(file.path, 0)?.let { PackageInfoCompat.getLongVersionCode(it) } ?: 0L
-        } finally {
-            file.delete()
-        }
-    }
+    private val launcher = LauncherDownload(ctx)
+
+    override suspend fun launcherApk(log: (String) -> Unit) = launcher.get(log)
 }
 
 private class SharedPrefs(private val p: SharedPreferences) : Prefs {

@@ -1,53 +1,32 @@
 package io.github.raghavsatyadev.tvfreedom.design
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-
-/**
- * What the AI gets to write or fix a TV design, and how its answer is read. The phone only checks that the answer is
- * a JSON array; the TV checks the design itself and says what is wrong, which goes into the next try.
- */
+/** What the AI gets to pick a look for the TV's home screen. The phone checks its answer ([Looks.extract]). */
 object DesignPrompt {
 
-    fun build(catalog: String, apps: List<String>, request: String, current: String?, bad: String?, why: String?) =
-        buildString {
-            appendLine("You design the home screen of an Android TV. Answer with only the design: one JSON array,")
-            appendLine("no words or code fences before or after it.")
+    fun build(request: String, current: TvLook, bad: String?, why: String?) = buildString {
+        appendLine("You pick the look of an Android TV home screen. Answer with only one JSON object,")
+        appendLine("no words or code fences before or after it. Its keys:")
+        appendLine("- \"columns\": apps per row, 3 to 6 (fewer means bigger tiles)")
+        appendLine("- \"true_black\": true for a pure black background (good on OLED TVs), false for a soft tinted one")
+        appendLine("- \"tile_shape\": \"\" mixed playful shapes, \"circle\", \"square\" (rounded square) or \"flower\"")
+        appendLine("- \"names\": \"\" app names always shown, \"focus\" only under the chosen app, \"off\" never")
+        appendLine("- \"accent\": \"\" colours follow the chosen app, or one colour for everything like \"#7FA7E0\"")
+        appendLine()
+        appendLine("The look on the TV now (change it as asked, keep the rest):")
+        appendLine(Looks.toJson(current))
+        appendLine()
+        appendLine("What the user wants:")
+        appendLine(request.trim())
+        if (bad != null && why != null) {
             appendLine()
-            appendLine("How to write a design for this TV:")
-            appendLine(catalog.trim())
-            appendLine()
-            appendLine("The TV's apps (package names, favourites first):")
-            appendLine(apps.joinToString(", ").ifEmpty { "unknown: bind {\"path\":\"/apps\"}" })
-            appendLine()
-            appendLine("What the user wants:")
-            appendLine(request.trim())
-            if (!current.isNullOrEmpty()) {
-                appendLine()
-                appendLine("The design on the TV now (change it as asked, keep the rest):")
-                appendLine(current)
-            }
-            if (bad != null && why != null) {
-                appendLine()
-                appendLine("Your last answer did not work: $why")
-                appendLine("It was:")
-                appendLine(bad)
-                appendLine("Fix that and answer with the whole design again.")
-            }
+            appendLine("Your last answer did not work: $why")
+            appendLine("It was:")
+            appendLine(bad)
+            appendLine("Fix that and answer with the whole JSON object again.")
         }
-
-    /** The design in [answer]: from its first [ to its last ], as compact JSON. Fails with why it isn't one. */
-    fun extract(answer: String): Result<String> = runCatching {
-        val start = answer.indexOf('[')
-        val end = answer.lastIndexOf(']')
-        require(start in 0..<end) { "the answer has no JSON array" }
-        val parsed = runCatching { Json.parseToJsonElement(answer.substring(start, end + 1)) }
-            .getOrElse { throw IllegalArgumentException("the JSON does not parse: ${it.message?.lineSequence()?.first()}") }
-        require(parsed is JsonArray && parsed.isNotEmpty()) { "the design must be a non-empty JSON array" }
-        parsed.toString()
     }
 
-    /** A short name for a take, from what the user asked. */
+    /** A short name for a look, from what the user asked. */
     fun title(request: String): String {
         val line = request.trim().lineSequence().first().trim()
         return if (line.length <= 40) line else line.take(39).trimEnd() + "…"

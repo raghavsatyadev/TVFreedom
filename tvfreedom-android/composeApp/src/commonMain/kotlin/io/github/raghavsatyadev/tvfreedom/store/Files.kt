@@ -14,7 +14,7 @@ interface Prefs {
     fun putBool(key: String, value: Boolean)
 }
 
-/** Files bundled with the app at build time: lists/, termux-setup.sh and the launcher APK. */
+/** Files bundled with the app at build time: lists/ and termux-setup.sh. */
 interface Assets {
     fun read(path: String): ByteArray
     fun list(dir: String): List<String>

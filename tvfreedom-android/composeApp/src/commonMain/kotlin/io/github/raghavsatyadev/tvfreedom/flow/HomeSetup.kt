@@ -70,7 +70,7 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
             favourites = DEFAULT_FAVOURITES.filter { it in apps },
             columns = home.columns(),
         )
-        log("launcher on the TV: ${installed ?: "not installed"}, in TVFreedom: $bundled; ${apps.size} TV apps")
+        log("launcher on the TV: ${installed ?: "not installed"}, newest: $bundled; ${apps.size} TV apps")
         log("would turn off: ${(homeOff + dreamOff).joinToString { it.pkg }.ifEmpty { "nothing" }}; screensaver now $oldScreensaver")
         return HomeDraft(apps, config, homeOff, dreamOff, oldScreensaver, installed, bundled,
             fromLists = fromModel4 != null && fromModel5 != null, reported = reported != null,

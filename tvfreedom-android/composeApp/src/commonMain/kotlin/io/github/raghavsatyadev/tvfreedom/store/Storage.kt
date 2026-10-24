@@ -188,11 +188,7 @@ class Storage(
     /** A new folder for a screenshot taken outside a run. */
     fun shotDir(): Path = newDir(root / "shots", stampNow())
 
-    /** The launcher APK bundled at build time (launcher/, without personal settings). */
-    fun launcherApk(): ByteArray = assets.read("launcher/launcher.apk")
 
-    /** The designs screen APK bundled at build time (tvShell). */
-    fun shellApk(): ByteArray = assets.read("shell/shell.apk")
 
     fun markVerified(runDir: Path, ok: Boolean) {
         val marker = runDir / VERIFIED
