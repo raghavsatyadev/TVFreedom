@@ -19,7 +19,7 @@
     <application
         android:label="TVFreedom Designs"
         android:banner="@drawable/banner"
-        android:icon="@drawable/banner"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <!-- No HOME filter: TVFreedom opens it with am start, so the TV's home screen stays as it is. -->
         <activity

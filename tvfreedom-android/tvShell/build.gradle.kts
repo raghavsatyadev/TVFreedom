@@ -12,7 +12,7 @@ android {
         applicationId = "io.github.raghavsatyadev.tvfreedom.shell"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.compileSdk.get().toInt()
-        versionCode = 2
+        versionCode = 3
         versionName = "0.1"
     }
     // Google's material-color-utilities, shared with the launcher (vendored there, Apache-2.0).
