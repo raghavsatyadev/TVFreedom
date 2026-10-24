@@ -17,6 +17,8 @@ object Config {
     const val LONGITUDE = "weather_longitude"
     const val CALENDARS = "dream_calendars"
     const val BRAND_COLOR = "brand_color"
+    const val TRUE_BLACK = "true_black"
+    const val CONTINUE_WATCHING = "continue_watching"
 
     private const val BLACK = 0xFF000000.toInt()
 
@@ -41,6 +43,12 @@ object Config {
             BLACK
         }
     }
+
+    /** A pure black background, for OLED TVs: "1" is on, anything else off. */
+    fun trueBlack(ctx: Context): Boolean = prefs(ctx).getString(TRUE_BLACK, "") == "1"
+
+    /** A row of what the user was watching (Android TV's Watch Next list): "1" is on, anything else off. */
+    fun continueWatching(ctx: Context): Boolean = prefs(ctx).getString(CONTINUE_WATCHING, "") == "1"
 
     fun prefs(ctx: Context): SharedPreferences = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

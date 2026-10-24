@@ -26,6 +26,8 @@ class HomeParseTest {
         assertNull(Parse.launcherConfig("Broadcast completed: result=0"))
         val v4 = "Broadcast completed: result=0, data=\"ok favourites=&columns=4&brand_color=%23123ABC&logo=20480\""
         assertEquals(LauncherConfig(emptyList(), 4, brandColor = "#123ABC", logoBytes = 20480), Parse.launcherConfig(v4))
+        val v16 = "Broadcast completed: result=0, data=\"ok favourites=&columns=4&true_black=1&continue_watching=&logo=0\""
+        assertEquals(LauncherConfig(emptyList(), 4, trueBlack = true), Parse.launcherConfig(v16))
     }
 
     @Test

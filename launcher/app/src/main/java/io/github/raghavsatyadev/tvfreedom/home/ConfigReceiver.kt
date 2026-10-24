@@ -11,7 +11,8 @@ import java.net.URLEncoder
  * ```
  * am broadcast -f 0x20 -n io.github.raghavsatyadev.tvfreedom.home/.ConfigReceiver --es favourites com.a,com.b --ei columns 4 \
  *     --es weather_place 'Your City' --es weather_latitude 12.34 --es weather_longitude 56.78 \
- *     --es dream_calendars 'Holidays|Family' --es brand_color '#123456'
+ *     --es dream_calendars 'Holidays|Family' --es brand_color '#123456' \
+ *     --es true_black 1 --es continue_watching 1
  * ```
  * Only extras that are present are changed; an empty string clears a setting back to "none". The result data is
  * "ok", then every setting now in effect as a URL query (favourites=…&columns=…), so with no extras it only reports.
@@ -42,6 +43,7 @@ class ConfigReceiver : BroadcastReceiver() {
     private companion object {
         val STRINGS = arrayOf(
             Favourites.KEY, Config.PLACE, Config.LATITUDE, Config.LONGITUDE, Config.CALENDARS, Config.BRAND_COLOR,
+            Config.TRUE_BLACK, Config.CONTINUE_WATCHING,
         )
 
         fun current(ctx: Context): String =
@@ -52,6 +54,8 @@ class ConfigReceiver : BroadcastReceiver() {
                 "&" + Config.LONGITUDE + "=" + enc(Config.longitude(ctx)) +
                 "&" + Config.CALENDARS + "=" + enc(Config.calendars(ctx)) +
                 "&" + Config.BRAND_COLOR + "=" + enc(Config.prefs(ctx).getString(Config.BRAND_COLOR, "").orEmpty()) +
+                "&" + Config.TRUE_BLACK + "=" + (if (Config.trueBlack(ctx)) "1" else "") +
+                "&" + Config.CONTINUE_WATCHING + "=" + (if (Config.continueWatching(ctx)) "1" else "") +
                 "&logo=" + LogoProvider.file(ctx).length()
 
         fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")

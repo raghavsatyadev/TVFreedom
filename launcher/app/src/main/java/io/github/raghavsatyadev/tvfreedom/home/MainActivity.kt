@@ -44,6 +44,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
     private lateinit var topBar: TopBar
     private lateinit var clock: Flex.Clock
     private lateinit var nowPlaying: NowPlaying
+    private lateinit var watching: ContinueWatching
     private lateinit var springX: SpringAnimation
     private lateinit var springY: SpringAnimation
     private var glassTargetX = 0f
@@ -121,6 +122,8 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         )
         tint.onPalette(pills::setPalette)
         tint.onPalette(ShapeTile::setPalette)
+        watching = ContinueWatching(this, findViewById(R.id.watchRow), findViewById(R.id.watchList), ::open)
+        watching.onShown = ::pointTopBarDown
 
         // Hide the glass when focus leaves the tiles.
         window.decorView.viewTreeObserver.addOnGlobalFocusChangeListener { _, newF ->
@@ -135,7 +138,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         super.onResume()
         forceOpaque()
         Branding.apply(this, root, findViewById(R.id.brandSquare), findViewById(R.id.brandWide), greeting)
-        tint.attach(Config.brandColor(this))
+        tint.attach(Config.brandColor(this), Config.trueBlack(this))
         Branding.fitTopBar(
             findViewById(R.id.leftBlock), findViewById(R.id.topButtons),
             findViewById(R.id.date), findViewById(R.id.dateDivider),
@@ -160,6 +163,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         topBar.update()
         clock.start()
         nowPlaying.start()
+        watching.refresh()
         handler.postDelayed(minuteTick, MINUTE_MS)
 
         // Return to the app we left from, or the same slot if that app is gone. Always refocus: after
@@ -312,9 +316,18 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         }
     }
 
-    /** The bottom of the clock and buttons row, in root coordinates. */
+    /** Down from the top bar goes to the Continue watching row while it shows, else to the tiles. */
+    private fun pointTopBarDown(row: Boolean) {
+        val down = if (row) R.id.watchList else R.id.grid
+        for (id in intArrayOf(R.id.btnInputs, R.id.btnWifi, R.id.btnBluetooth, R.id.btnSettings)) {
+            findViewById<View>(id).nextFocusDownId = down
+        }
+    }
+
+    /** The bottom of the clock and buttons row (or of Continue watching under it), in root coordinates. */
     private fun topBarBottom(): Float {
-        val bar = findViewById<View>(R.id.leftBlock).parent as View
+        val row = findViewById<View>(R.id.watchRow)
+        val bar = if (row.visibility == View.VISIBLE) row else findViewById<View>(R.id.leftBlock).parent as View
         val r = Rect(0, 0, bar.width, bar.height)
         root.offsetDescendantRectToMyCoords(bar, r)
         return r.bottom.toFloat()
@@ -322,7 +335,8 @@ class MainActivity : Activity(), AppAdapter.TileListener {
 
     private fun setAmbient(color: Int) {
         ambientColor = color
-        val c = color and 0x00FFFFFF
+        // True black: no glow lights up the screen.
+        val c = if (tint.black) 0 else color and 0x00FFFFFF
         ambientGlow.colors = intArrayOf(0x5C000000 or c, 0x26000000 or c, c)
     }
 

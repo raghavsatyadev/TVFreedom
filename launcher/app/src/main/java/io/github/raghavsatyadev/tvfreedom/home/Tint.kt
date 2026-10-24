@@ -35,9 +35,13 @@ class Tint(private val root: FrameLayout, density: Float) {
     private var colors: ValueAnimator? = null
     private var morph: ValueAnimator? = null
     private val onPalette = ArrayList<(Palette) -> Unit>()
+    private val shape = ImageView(root.context)
+
+    /** True black (OLED TVs): the background stays black and the corner shape is hidden; accents still follow apps. */
+    var black = false
+        private set
 
     init {
-        val shape = ImageView(root.context)
         shape.setImageDrawable(cookie)
         shape.alpha = 0.55f
         shape.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -53,8 +57,11 @@ class Tint(private val root: FrameLayout, density: Float) {
      * The colors with no app focused. A brand color from TVFreedom seeds them; black (no brand) keeps the Material
      * baseline. Call after [Branding.apply], which paints the root with the plain brand color.
      */
-    fun attach(brandColor: Int) {
+    fun attach(brandColor: Int, trueBlack: Boolean) {
         idleSeed = if (brandColor and 0x00FFFFFF == 0) Palette.DEFAULT_SEED else brandColor
+        black = trueBlack
+        shape.visibility = if (black) View.GONE else View.VISIBLE
+        backdrop.colors = if (black) intArrayOf(BLACK, BLACK) else intArrayOf(palette.surfaceBright, palette.surface)
         root.background = backdrop
         if (focusedPkg == null) retint(paletteOf(idleSeed))
     }
@@ -131,7 +138,7 @@ class Tint(private val root: FrameLayout, density: Float) {
             interpolator = Motion.DEFAULT_EFFECTS
             addUpdateListener {
                 val t = it.animatedValue as Float
-                backdrop.colors = intArrayOf(
+                if (!black) backdrop.colors = intArrayOf(
                     mix(t, from.surfaceBright, next.surfaceBright), mix(t, from.surface, next.surface),
                 )
                 cookie.setColor(mix(t, from.primaryContainer, next.primaryContainer))
@@ -142,6 +149,8 @@ class Tint(private val root: FrameLayout, density: Float) {
     }
 
     companion object {
+        private const val BLACK = 0xFF000000.toInt()
+
         // Material 3 Expressive shapes (MaterialShapes): Cookie 9, Cookie 12, Clover 4-leaf, Clover 8-leaf, Sunny,
         // Soft burst, Cookie 6, Cookie 7, Cookie 4.
         val LOBES = intArrayOf(9, 12, 4, 8, 14, 10, 6, 7, 4)

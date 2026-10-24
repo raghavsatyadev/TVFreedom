@@ -16,6 +16,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,6 +59,8 @@ private fun HomeForm(vm: TvFreedomViewModel, draft: HomeDraft) {
     var lat by remember { mutableStateOf(c.latitude) }
     var lon by remember { mutableStateOf(c.longitude) }
     var calendars by remember { mutableStateOf(c.calendars) }
+    var black by remember { mutableStateOf(c.trueBlack) }
+    var watching by remember { mutableStateOf(c.continueWatching) }
     var locating by remember { mutableStateOf("") }
     // An older home screen on the TV can't say what it uses: its favourites are kept unless changed here.
     val old = draft.olderLauncher
@@ -122,6 +125,16 @@ private fun HomeForm(vm: TvFreedomViewModel, draft: HomeDraft) {
                 }
             }) { Text("$columns per row") }
 
+        GroupLabel("Extras, off unless you turn them on")
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SegmentedListItem(checked = black, onCheckedChange = { black = it }, shapes = seg(0, 2), colors = segColors(),
+                supportingContent = { Text("Best on OLED TVs. App colours still show on the tiles.") },
+                trailingContent = { Switch(black, null) }) { Text("Pure black background") }
+            SegmentedListItem(checked = watching, onCheckedChange = { watching = it }, shapes = seg(1, 2), colors = segColors(),
+                supportingContent = { Text("A row of shows you started, from apps that share them with the TV.") },
+                trailingContent = { Switch(watching, null) }) { Text("Continue watching") }
+        }
+
         GroupLabel("Screensaver")
         Card(shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
@@ -154,7 +167,8 @@ private fun HomeForm(vm: TvFreedomViewModel, draft: HomeDraft) {
         BrandCard(vm)
 
         MainAction("Use these settings", Icons.Done) {
-            vm.saveHome(LauncherConfig(favourites.toList(), columns, place.trim(), lat.trim(), lon.trim(), calendars.trim()),
+            vm.saveHome(LauncherConfig(favourites.toList(), columns, place.trim(), lat.trim(), lon.trim(), calendars.trim(),
+                    trueBlack = black, continueWatching = watching),
                 keepTvFavourites = old && favourites.toList() == draft.config.favourites)
         }
     }

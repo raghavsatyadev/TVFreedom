@@ -13,6 +13,10 @@ data class LauncherConfig(
     val calendars: String = "",
     /** The home screen's background as #RRGGBB; "" is black. */
     val brandColor: String = "",
+    /** A pure black background, for OLED TVs. */
+    val trueBlack: Boolean = false,
+    /** A "Continue watching" row from the TV's Watch Next list. */
+    val continueWatching: Boolean = false,
     /** Size in bytes of the logo on the TV (0: none). Only reported; the logo goes through [HomeOps.setLogo]. */
     val logoBytes: Long = 0,
 )
@@ -49,6 +53,8 @@ class HomeOps(private val tv: Tv) {
                 append(" --es weather_longitude ").append(quote(Parse.coordinate(c.longitude)))
                 append(" --es dream_calendars ").append(quote(c.calendars))
                 append(" --es brand_color ").append(quote(Parse.hexColor(c.brandColor)))
+                append(" --es true_black ").append(quote(if (c.trueBlack) "1" else ""))
+                append(" --es continue_watching ").append(quote(if (c.continueWatching) "1" else ""))
             }
         }
         return Parse.launcherConfig(tv.sh(cmd))
@@ -116,8 +122,12 @@ class HomeOps(private val tv: Tv) {
         const val MEDIA_LISTENER = "$LAUNCHER/$LAUNCHER.MediaListener"
         const val LISTENERS = "enabled_notification_listeners"
         const val LOGO_URI = "content://$LAUNCHER.logo/logo"
-        /** Wi-Fi name on the home screen (Android 10 needs location for it), and holidays on the screensaver. */
-        val PERMISSIONS = listOf("android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CALENDAR")
+        /**
+         * Wi-Fi name on the home screen (Android 10 needs location for it), holidays on the screensaver, and the
+         * Watch Next list for Continue watching (only read while that is on).
+         */
+        val PERMISSIONS = listOf("android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CALENDAR",
+            "android.permission.READ_TV_LISTINGS")
 
         /** One shell word: single quotes, with any ' inside closed, escaped and reopened. */
         fun quote(s: String) = "'" + s.replace("'", "'\\''") + "'"
@@ -150,6 +160,8 @@ fun Parse.launcherConfig(out: String): LauncherConfig? {
         longitude = v["weather_longitude"].orEmpty(),
         calendars = v["dream_calendars"].orEmpty(),
         brandColor = v["brand_color"].orEmpty(),
+        trueBlack = v["true_black"] == "1",
+        continueWatching = v["continue_watching"] == "1",
         logoBytes = v["logo"]?.toLongOrNull() ?: 0,
     )
 }
