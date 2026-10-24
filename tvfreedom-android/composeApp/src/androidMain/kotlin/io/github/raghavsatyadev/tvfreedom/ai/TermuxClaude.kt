@@ -19,6 +19,7 @@ import io.github.raghavsatyadev.tvfreedom.core.TvInfo
 import io.github.raghavsatyadev.tvfreedom.core.Verdict
 import io.github.raghavsatyadev.tvfreedom.ui.TermuxStep as Step
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import java.util.UUID
@@ -66,10 +67,21 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
     suspend fun check(): String {
         val step = probe()
         if (step != Step.READY && step != Step.LOGIN) return "Claude in Termux is not set up yet (${step.name.lowercase()}). Open Settings."
-        val r = runCatching { exec("$PREFIX/bin/claude", claudeArgs(), "Reply with the single word OK.", 120_000) }
-            .getOrElse { return "Termux did not answer: ${it.message ?: it.javaClass.simpleName}" }
-        return if (r.exit == 0 && r.out.isNotBlank()) READY
-        else "Claude in Termux failed (exit ${r.exit}): ${r.err.ifBlank { r.out }.take(200)}. Log in to Claude in Termux."
+        // A first answer on a phone can take minutes: wait for Claude's own reply or error rather than guess.
+        val r = runCatching { exec("$PREFIX/bin/claude", claudeArgs(), "Reply with the single word OK.", CHECK_MS) }
+            .getOrElse {
+                return if (it is TimeoutCancellationException) "Claude in Termux gave no answer in ${CHECK_MS / 60_000} minutes. Try again."
+                else "Termux did not answer: ${it.message ?: it.javaClass.simpleName}"
+            }
+        return if (r.exit == 0 && r.out.isNotBlank()) READY else failure(r)
+    }
+
+    /** What Claude itself said went wrong; the login step only when its error is about the login. */
+    private fun failure(r: Result): String {
+        val said = r.err.ifBlank { r.out }.replace(Regex("\u001B\\[[0-9;?]*[A-Za-z]"), "").trim()
+        val why = said.ifEmpty { "it stopped without saying why (exit ${r.exit})" }.take(300)
+        val login = Regex("log ?in|logged out|auth|credential|401|token", RegexOption.IGNORE_CASE).containsMatchIn(said)
+        return "Claude in Termux failed: $why" + if (login) ". Log in to Claude in Termux again." else ""
     }
 
     override suspend fun classify(info: TvInfo, items: List<AskItem>, examples: Map<String, Example>,
@@ -167,6 +179,7 @@ class TermuxClaude(private val ctx: Context, private val model: String = "opus",
 
     companion object {
         const val READY = "ready"
+        private const val CHECK_MS = 300_000L
         const val PERMISSION = "com.termux.permission.RUN_COMMAND"
         const val GET_TERMUX = "https://f-droid.org/packages/com.termux/"
         private const val TERMUX = "com.termux"
