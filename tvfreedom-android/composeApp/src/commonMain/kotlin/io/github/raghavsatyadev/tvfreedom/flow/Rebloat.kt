@@ -16,12 +16,14 @@ import io.github.raghavsatyadev.tvfreedom.tv.Undo
  */
 data class RebloatPlan(
     val undo: List<String>,
+    /** TVFreedom's settings still set with no run on this phone to undo them (an older install made them). */
+    val reset: List<String> = emptyList(),
     val screensaver: String?,
     val enable: List<String>,
     val reinstall: List<String>,
     val launcher: Boolean,
 ) {
-    val isEmpty get() = undo.isEmpty() && screensaver == null && enable.isEmpty() && reinstall.isEmpty() && !launcher
+    val isEmpty get() = undo.isEmpty() && reset.isEmpty() && screensaver == null && enable.isEmpty() && reinstall.isEmpty() && !launcher
 
     fun describe(): String = if (isEmpty) "" else listOfNotNull(
         undo.takeIf { it.isNotEmpty() }?.let { "Undo TVFreedom's other changes:\n" + it.joinToString("\n") { l -> Undo.describe(l) } },
@@ -46,8 +48,14 @@ class Rebloat(private val storage: Storage, private val runner: Runner, private 
         val now = home.screensaver()
         val target = (saved ?: now).let { if (it == "null" || HomeOps.LAUNCHER in it) "" else it }
         val screensaver = target.takeIf { it != now.let { n -> if (n == "null") "" else n } }
+        val undo = runs.flatMap { storage.undoLines(it).asReversed() }
+        val undone = undo.mapNotNull { l -> l.split(' ').takeIf { it.firstOrNull() == "setting" }?.getOrNull(2) }.toSet()
+        val extras = ExtraOps(tv)
+        val reset = ExtraOps.SETTINGS.filter { (ns, key, value) -> key !in undone && extras.setting(ns, key) == value }
+            .map { (ns, key, _) -> Undo.setting(ns, key, "null") }
         return RebloatPlan(
-            undo = runs.flatMap { storage.undoLines(it).asReversed() },
+            undo = undo,
+            reset = reset,
             screensaver = screensaver,
             enable = (ops.userDisabled() - HomeOps.LAUNCHER).sorted(),
             reinstall = (ops.uninstalledForUser() intersect knownOnTv(info)).sorted(),
@@ -74,6 +82,7 @@ class Rebloat(private val storage: Storage, private val runner: Runner, private 
             storage.markVerified(run, false) // nothing on the TV is learned from any more
             if (run.name.startsWith("extra-")) storage.clearRun(run)
         }
+        Undo.run(tv, p.reset).forEach(log)
         runner.begin(tv, "Turning ${p.reinstall.size + p.enable.size} apps back on")
         // Stock home screens first, so the TV has its own one before the TVFreedom home goes.
         p.reinstall.forEach { log("reinstall $it: ${ops.reinstall(it)}") }

@@ -182,6 +182,7 @@ class Runner(
     private suspend fun waitBoot(tv: Tv, serial: String): Tv? {
         delay(20_000)
         var current = tv
+        var misses = 0
         val deadline = TimeSource.Monotonic.markNow() + 240.seconds
         while (deadline.hasNotPassedNow()) {
             if (current.connect(15) == ConnectResult.Ok) {
@@ -190,8 +191,9 @@ class Runner(
                     delay(10_000) // the TV's adbd may restart once more right after boot; let it settle
                     return current
                 }
-            } else if (current.port != 5555) { // wireless debugging: the port may have changed
-                relocate(serial)?.let { current = it; log("TV is now at ${it.address}") }
+            } else if (current.port != 5555 || ++misses % 3 == 0) {
+                // Wireless debugging may move the port; a router may give the TV a new address after a restart.
+                relocate(serial, wide = current.port == 5555)?.let { current = it; log("TV is now at ${it.address}") }
             }
             delay(10_000)
         }
@@ -199,9 +201,12 @@ class Runner(
         return null
     }
 
-    /** After a reboot a wireless-debugging port can change: find the TV with this serial again over mDNS. */
-    private suspend fun relocate(serial: String): Tv? {
-        for (c in link.mdns().filter { !it.pairing }) {
+    /**
+     * Find the TV with this serial again after a reboot: over mDNS when its wireless-debugging port moved, or also
+     * with a port 5555 scan ([wide]) when the router gave it a new address.
+     */
+    private suspend fun relocate(serial: String, wide: Boolean = false): Tv? {
+        for (c in (if (wide) link.find() else link.mdns()).filter { !it.pairing }) {
             val (host, port) = TvLink.parseAddress(c.address) ?: continue
             val t = link.tv(host, port)
             if (t.connect(10) == ConnectResult.Ok && runCatching { TvOps(t, c.address).getprop("ro.serialno") }.getOrNull() == serial)

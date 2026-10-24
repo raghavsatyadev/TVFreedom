@@ -227,7 +227,7 @@ class Storage(
             val model = if ('/' in path) path.substringBefore('/') else ListFiles.ROOT_MODEL
             if (model == slug) {
                 val phase = ListFiles.phaseOf(path)
-                out += RestoreOption("Repo list ${path.substringAfterLast('/')}: phase $phase (${PHASES[phase] ?: "other"})",
+                out += RestoreOption("Built-in list: ${LIST_NAMES[phase] ?: PHASES[phase] ?: path.substringAfterLast('/')}",
                     RestoreOption.Kind.LIST, text)
             }
         }
@@ -261,3 +261,8 @@ class Storage(
         private const val EXTRAS = "extras.txt"
     }
 }
+
+/** Plain names for the built-in lists on the Restore screen. */
+private val LIST_NAMES = mapOf(
+    1 to "tracking and ads", 2 to "apps you don't use", 3 to "maker's extras", 4 to "TV's own home screen", 5 to "screensaver",
+)
