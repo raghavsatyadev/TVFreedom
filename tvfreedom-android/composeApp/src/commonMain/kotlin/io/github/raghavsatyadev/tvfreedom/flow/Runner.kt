@@ -146,7 +146,7 @@ class Runner(
     /** Android saves package state lazily; a reboot within seconds loses it. */
     suspend fun saveWait(tv: Tv) {
         begin(tv, "Letting the TV save the changes")
-        log("waiting 30 s so the TV saves the package state before any reboot")
+        log("waiting 30 s so the TV saves its changes")
         delay(30_000)
     }
 

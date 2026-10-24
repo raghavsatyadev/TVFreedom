@@ -145,7 +145,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
     private suspend fun search() {
         update { copy(candidates = emptyList(), log = emptyList()) }
         if (link.localIp() == null) return tell("This phone is not on Wi-Fi. Join the TV's Wi-Fi, or type the TV's address.")
-        log("looking for TVs (mDNS and port 5555)")
+        log("looking for TVs on this Wi-Fi")
         val found = link.find()
         update { copy(candidates = found, searched = true) }
         log("found ${found.size}")
@@ -168,7 +168,10 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
                 update { copy(showPair = true) }
                 return tell("This TV needs pairing first: on the TV open Wireless debugging > Pair device with pairing code.")
             }
-            is ConnectResult.Failed -> return tell("Could not connect to ${t.address}: ${r.why}")
+            is ConnectResult.Failed -> {
+                log("connect ${t.address}: ${r.why}")
+                return tell("Could not reach ${t.address}. Check the TV is on, on the same Wi-Fi, with debugging on.")
+            }
         }
         val ops = TvOps(t, t.address)
         if (!ops.isTv()) {

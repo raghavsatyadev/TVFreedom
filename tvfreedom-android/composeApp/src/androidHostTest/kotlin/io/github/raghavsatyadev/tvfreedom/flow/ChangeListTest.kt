@@ -21,7 +21,7 @@ class ChangeListTest {
     private val groups = ChangeList.build(listOf(older, home, extra, newer))
 
     @Test fun groupsNewestFirstWithPlainTitles() {
-        assertEquals(listOf("Extras, 23 Oct 08:05", "Removed apps, 22 Oct 10:11", "Removed apps, 21 Oct 09:00", "New home screen, 20 Oct 07:00"),
+        assertEquals(listOf("Extras, 23 Oct 08:05", "Removed apps, 22 Oct 10:11", "Removed apps, 21 Oct 09:00", "Home screen and screensaver, 20 Oct 07:00"),
             groups.map { it.title })
     }
 

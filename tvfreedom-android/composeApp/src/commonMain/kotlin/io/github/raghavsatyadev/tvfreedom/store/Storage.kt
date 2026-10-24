@@ -9,6 +9,7 @@ import io.github.raghavsatyadev.tvfreedom.core.Plan
 import io.github.raghavsatyadev.tvfreedom.core.Removal
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
 import io.github.raghavsatyadev.tvfreedom.core.sortedByKey
+import io.github.raghavsatyadev.tvfreedom.flow.ChangeList
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -216,20 +217,27 @@ class Storage(
                 // A run with nothing left to undo (all of it put back) is not offered.
                 (run / "applied.txt").takeIf { fs.exists(it) }?.let { fs.readText(it) }
                     ?.takeIf { ListFiles.readEntries(it).isNotEmpty() || undoLines(run).isNotEmpty() || savedSettings(run).isNotEmpty() }?.let {
-                    val label = if (run.name.startsWith("home-")) "Home screen setup ${run.name.removePrefix("home-")}: the old home screen back"
-                    else if (run.name.startsWith("extra-")) "Extras ${run.name.removePrefix("extra-")}: background, settings, DNS and YouTube as they were"
-                    else "Run ${run.name.removePrefix("ai-")}: everything it applied"
+                    val title = ChangeList.groupTitle(run.name)
+                    val label = when {
+                        // Phase 5 saves the old screensaver; phase 4 doesn't.
+                        run.name.startsWith("home-") -> if ("screensaver_components" in savedSettings(run)) {
+                            "Screensaver, ${title.substringAfter(", ")}: the old one back"
+                        } else "Home screen, ${title.substringAfter(", ")}: the old one back"
+                        run.name.startsWith("extra-") -> "$title: background, settings, DNS and YouTube as they were"
+                        else -> "$title: everything it applied"
+                    }
                     out += RestoreOption(label, RestoreOption.Kind.LIST, it, run)
                 }
             }
         val slug = safe(info.model)
-        assetLists().filterKeys { ListFiles.isPhaseFile(it) }.forEach { (path, text) ->
-            val model = if ('/' in path) path.substringBefore('/') else ListFiles.ROOT_MODEL
-            if (model == slug) {
-                val phase = ListFiles.phaseOf(path)
-                out += RestoreOption("Built-in list: ${LIST_NAMES[phase] ?: PHASES[phase] ?: path.substringAfterLast('/')}",
-                    RestoreOption.Kind.LIST, text)
-            }
+        // Lists with the same name (two files for one phase) are offered once, together.
+        assetLists().filterKeys { ListFiles.isPhaseFile(it) }.filterKeys { path ->
+            (if ('/' in path) path.substringBefore('/') else ListFiles.ROOT_MODEL) == slug
+        }.entries.groupBy { (path, _) ->
+            val phase = ListFiles.phaseOf(path)
+            "Built-in list: ${LIST_NAMES[phase] ?: PHASES[phase] ?: path.substringAfterLast('/')}"
+        }.forEach { (label, files) ->
+            out += RestoreOption(label, RestoreOption.Kind.LIST, files.joinToString("\n") { it.value })
         }
         out += RestoreOption("Everything back to how the TV came", RestoreOption.Kind.FACTORY)
         backupsFor(info).forEach { out += RestoreOption("Everything back to backup ${it.name.take(17)}", RestoreOption.Kind.BACKUP, dir = it) }

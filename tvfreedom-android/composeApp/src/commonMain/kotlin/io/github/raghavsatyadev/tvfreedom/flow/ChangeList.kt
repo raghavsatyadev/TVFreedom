@@ -92,7 +92,7 @@ object ChangeList {
     /** "Removed apps, 22 Oct 10:11" from a run folder name such as ai-2026-10-22-101112. */
     fun groupTitle(run: String): String {
         val what = when (run.substringBefore('-')) {
-            "home" -> "New home screen"
+            "home" -> "Home screen and screensaver"
             "extra" -> "Extras"
             else -> "Removed apps"
         }
