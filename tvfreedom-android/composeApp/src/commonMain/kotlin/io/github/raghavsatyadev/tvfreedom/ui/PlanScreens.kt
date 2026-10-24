@@ -113,7 +113,7 @@ private fun LazyListScope.moreRows(vm: TvFreedomViewModel) {
             val on = p in s.phases
             SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(p) }, shapes = seg(i, rows.size), colors = segColors(),
                 enabled = !s.busy,
-                leadingContent = { Icon(when (p) { 4 -> Icons.Home; 5 -> Icons.Place; else -> Icons.Settings }, null) },
+                leadingContent = { Icon(when (p) { 4 -> Icons.Home; 5 -> Icons.Clock; else -> Icons.Settings }, null) },
                 trailingContent = { Switch(on, null) }) { Text(groupTitle(p)) }
         }
     }

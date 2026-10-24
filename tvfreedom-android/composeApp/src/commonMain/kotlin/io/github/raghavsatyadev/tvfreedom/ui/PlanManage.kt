@@ -64,7 +64,7 @@ private fun LazyListScope.phase(vm: TvFreedomViewModel, plan: Plan, phase: Int) 
     item(key = "phase:$phase") {
         SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(phase) }, shapes = seg(0, n), colors = segColors(),
             enabled = !vm.state.busy,
-            supportingContent = { Text("${rows.size} apps · ${PHASES[phase] ?: "other"}") },
+            supportingContent = { Text(if (rows.size == 1) "1 app" else "${rows.size} apps") },
             trailingContent = { Switch(on, null) }) { Text(if (on) "Included" else "Skipped") }
     }
     rows.forEachIndexed { i, r ->
