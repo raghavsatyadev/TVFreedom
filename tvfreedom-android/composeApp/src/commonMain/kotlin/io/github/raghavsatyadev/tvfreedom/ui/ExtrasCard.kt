@@ -83,8 +83,9 @@ fun LazyListScope.extrasPhase(vm: TvFreedomViewModel, d: ExtrasDraft) {
     val tubeRows = if (c.smartTube && !tubeDone && d.youtubeOn) 2 else 1
     toggle("tube", "SmartTube instead of YouTube",
         if (tubeDone) "Already done on this TV."
-        else "SmartTube plays YouTube without ads. It replaces the YouTube app: YouTube is turned off (not removed) and " +
-            "SmartTube takes its place on the home screen. You sign in again inside SmartTube. " +
+        else "SmartTube plays YouTube without ads. " + (if (c.keepYoutube) "It's added next to YouTube. "
+            else "It replaces the YouTube app: YouTube is turned off (not removed) and SmartTube takes its place on the " +
+                "home screen. ") + "You sign in again inside SmartTube. " +
             "Free and open source, ${ExtraOps.SMARTTUBE_MB} MB.",
         c.smartTube, !s.busy, tubeRows) { edit { it.copy(smartTube = !it.smartTube) } }
     if (tubeRows == 2) item(key = "extra:tube:keep") {

@@ -93,7 +93,7 @@ class Extras(private val storage: Storage, private val net: Net, private val run
             lockdown(tv, ops, dir, d, c)
             if (c.settingsDue(d)) settings(tv, ops, dir, d)
             val dns = c.dnsDue(d) && privateDns(tv, ops, dir, c.dnsHost)
-            if (tube) smartTube(tv, ops, dir, rows, apk)
+            if (tube) smartTube(tv, ops, dir, rows, apk, c.keepYoutube)
             dns
         } catch (e: Exception) {
             rollBack(tv, dir, rows)
@@ -150,7 +150,7 @@ class Extras(private val storage: Storage, private val net: Net, private val run
         return false
     }
 
-    private suspend fun smartTube(tv: Tv, ops: ExtraOps, dir: Path, rows: List<Removal>, apk: ByteArray?) {
+    private suspend fun smartTube(tv: Tv, ops: ExtraOps, dir: Path, rows: List<Removal>, apk: ByteArray?, keepYoutube: Boolean) {
         if (!ops.present(ExtraOps.SMARTTUBE)) {
             requireNotNull(apk) { "SmartTube was not downloaded" }
             runner.begin(tv, "Installing SmartTube")
@@ -168,7 +168,7 @@ class Extras(private val storage: Storage, private val net: Net, private val run
         log("SmartTube opens")
         val t = TvOps(tv, tv.address)
         rows.forEach { r -> log("disable ${r.pkg}: ${t.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
-        if (rows.isEmpty()) return // YouTube stays, so its home-screen place does too
+        if (keepYoutube) return // YouTube stays, so its home-screen place does too
         val home = HomeOps(tv)
         val now = home.config() ?: return
         if (ExtraOps.YOUTUBE !in now.favourites) return

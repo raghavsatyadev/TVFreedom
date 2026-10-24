@@ -280,8 +280,10 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
             update { copy(runPhase = now, runDone = done) }
         }
         o.last.tv?.let { tv = it }
-        val undone = o.done.filter { it >= 4 }
-        val restore = if (o.done.any { it < 4 }) " Open Restore and undo this run (the newest one) for the apps." else ""
+        val undone = listOfNotNull("home screen".takeIf { 4 in o.done }, "screensaver".takeIf { 5 in o.done },
+            "extras".takeIf { 6 in o.done })
+        val back = if (undone.isEmpty()) "" else "The old " + undone.joinToString(" and ") + " were put back. "
+        val restore = if (o.done.any { it < 4 }) "To bring back the apps, open Restore and undo this run (the newest one)." else ""
         update {
             copy(outcome = when {
                 o.failed == null -> outcome(o.last, true, "All done",
@@ -289,7 +291,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
                 o.last.tv == null -> outcome(o.last, false, "The TV didn't come back",
                     "It didn't reconnect after the restart. Check the TV, then undo from Restore.")
                 else -> outcome(o.last, false, "The TV didn't check out after the restart",
-                    (if (undone.isEmpty()) "" else "The home screen, screensaver and extras were put back.") + restore)
+                    (back + restore).trim())
             })
         }
     }

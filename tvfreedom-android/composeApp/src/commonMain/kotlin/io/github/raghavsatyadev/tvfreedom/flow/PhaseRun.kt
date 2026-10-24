@@ -55,6 +55,8 @@ class PhaseRun(private val runner: Runner, private val home: HomeSetup, private 
             log("stopped before the restart: ${e.message}")
             pending.map { it.dir }.distinct().forEach { runner.verified(it, false) }
             undo(tv, pending)
+            // A failed phase 4 to 6 undid itself: let the TV save that too.
+            if (pending.none { it.undo != null } && phases.getOrNull(done.size)?.let { it >= 4 } == true) runCatching { runner.saveWait(tv) }
             runner.stepPrefix = ""
             throw e
         }
