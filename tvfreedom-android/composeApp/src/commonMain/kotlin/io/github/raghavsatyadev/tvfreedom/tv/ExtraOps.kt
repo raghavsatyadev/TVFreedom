@@ -80,12 +80,23 @@ object Undo {
     fun installed(pkg: String) = "installed $pkg"
     fun favourites(csv: String) = "favourites ${csv.ifEmpty { "-" }}"
 
+    /** Plain names for the settings TVFreedom changes, for the Restore and Full rebloat screens. */
+    private val SETTING_NAMES = mapOf(
+        "window_animation_scale" to "Window animations",
+        "transition_animation_scale" to "Screen change animations",
+        "send_action_app_error" to "Crash reports to Google",
+        "wifi_scan_always_enabled" to "Wi-Fi scanning",
+        "private_dns_mode" to "Private DNS",
+        "private_dns_specifier" to "Private DNS server",
+    )
+
     /** What undoing [line] does, for the Restore screen. */
     fun describe(line: String): String {
         val p = line.trim().split(' ')
         return when (p.firstOrNull()) {
             "appop" -> "Let ${p.getOrElse(1) { "?" }} run in the background again"
-            "setting" -> "${p.getOrElse(2) { "?" }} back to ${p.getOrElse(3) { "?" }.let { if (it == "null") "the TV's default" else it }}"
+            "setting" -> (SETTING_NAMES[p.getOrElse(2) { "" }] ?: "A TV setting") +
+                if (p.getOrElse(3) { "null" } == "null") " back to the TV's default" else " back as it was"
             "installed" -> "Uninstall ${p.getOrElse(1) { "?" }}"
             "favourites" -> "Home screen favourites back as they were"
             else -> line

@@ -49,4 +49,11 @@ class ExtraOpsTest {
         assertFalse(c.copy(dns = true).dnsDue(draft.copy(sdk = 27)))    // Private DNS needs Android 9
         assertFalse(c.copy(dns = true).dnsDue(draft.copy(dnsMode = "hostname", dnsHost = c.dnsHost)))
     }
+
+    @Test
+    fun undoLinesReadPlainly() {
+        assertEquals("Window animations back to the TV's default", Undo.describe(Undo.setting("global", "window_animation_scale", "null")))
+        assertEquals("Crash reports to Google back as it was", Undo.describe(Undo.setting("global", "send_action_app_error", "1")))
+        assertEquals("A TV setting back as it was", Undo.describe(Undo.setting("global", "some_key", "1")))
+    }
 }

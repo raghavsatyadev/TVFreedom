@@ -95,8 +95,8 @@ private fun NothingFound() {
 
 @Composable
 private fun AddressField(vm: TvFreedomViewModel) {
-    var address by remember { mutableStateOf(vm.settings.lastAddress) }
-    OutlinedTextField(address, { address = it }, Modifier.fillMaxWidth(), singleLine = true,
+    val address = vm.typedAddress
+    OutlinedTextField(address, { vm.typedAddress = it }, Modifier.fillMaxWidth(), singleLine = true,
         label = { Text("ip:port") }, placeholder = { Text("192.168.1.20:5555") },
         shape = MaterialTheme.shapes.extraLarge,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

@@ -42,6 +42,9 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
     var state by mutableStateOf(UiState(screen = if (settings.onboarded) Screen.CONNECT else Screen.SETUP))
         private set
 
+    /** The Connect screen's address box. Kept here, so a failed connect or a list redraw keeps what was typed. */
+    var typedAddress by mutableStateOf(settings.lastAddress)
+
     internal fun update(f: UiState.() -> UiState) {
         state = state.f()
     }
@@ -155,7 +158,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
 
     fun hidePair() = update { copy(showPair = false) }
 
-    fun connect(address: String) = job("Connecting") { open(address) }
+    fun connect(address: String) = job("Connecting") { typedAddress = address.trim(); open(address) }
 
     private suspend fun open(address: String) {
         val (host, port) = TvLink.parseAddress(address) ?: return tell("\"$address\" is not an address. Use ip:port, e.g. 192.168.1.20:5555.")
@@ -182,6 +185,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
         val info = ops.identify()
         tv = t
         settings.lastAddress = t.address
+        typedAddress = t.address
         log("TV: ${info.brand} ${info.model} (${info.device}), Android ${info.android}")
         update { copy(info = info, plan = null, showPair = false, screen = Screen.TV) }
     }
