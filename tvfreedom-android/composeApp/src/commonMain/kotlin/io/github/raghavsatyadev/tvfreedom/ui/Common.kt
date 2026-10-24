@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -61,6 +62,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+/** Where each page (by title) was scrolled to when it was left, for as long as the app runs. */
+private val scrollSpots = mutableMapOf<String, Pair<Int, Int>>()
+
+/** A new plan starts at the top. */
+fun forgetScroll() = scrollSpots.clear()
 
 /**
  * A screen: a large flexible top bar that collapses on scroll, then [content] as a lazy list.
@@ -77,7 +84,10 @@ fun Page(
     fab: Fab? = null,
     content: LazyListScope.() -> Unit,
 ) {
-    val list = rememberLazyListState()
+    // Each page keeps its place: leaving for a settings page and coming back lands where it was.
+    val saved = scrollSpots[title]
+    val list = rememberLazyListState(saved?.first ?: 0, saved?.second ?: 0)
+    DisposableEffect(title) { onDispose { scrollSpots[title] = list.firstVisibleItemIndex to list.firstVisibleItemScrollOffset } }
     // Full label at the top and bottom of the list; just the icon while scrolling through it, so it covers less.
     val fabExpanded by remember { derivedStateOf { !list.canScrollBackward || !list.canScrollForward } }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()

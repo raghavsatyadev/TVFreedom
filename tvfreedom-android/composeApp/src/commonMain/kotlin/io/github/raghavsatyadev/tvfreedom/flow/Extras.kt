@@ -45,19 +45,21 @@ data class ExtrasChoice(
     val dns: Boolean = false,
     val dnsHost: String = ExtraOps.DNS_HOST,
     val smartTube: Boolean = false,
+    /** Keep YouTube on next to SmartTube instead of turning it off. */
+    val keepYoutube: Boolean = false,
 ) {
     fun lockTargets(d: ExtrasDraft) = if (!lockdown) emptyList() else d.lockApps.filter { it.key !in lockSkip && it.value != "ignore" }.keys.sorted()
     fun settingsDue(d: ExtrasDraft) = settings && ExtraOps.SETTINGS.any { (_, k, v) -> d.settings[k] != v }
     fun dnsDue(d: ExtrasDraft) = dns && d.privateDns && runCatching { Parse.hostname(dnsHost) }.isSuccess &&
         !(d.dnsMode == "hostname" && d.dnsHost == dnsHost)
-    fun tubeDue(d: ExtrasDraft) = smartTube && (!d.smartTube || d.youtubeOn)
+    fun tubeDue(d: ExtrasDraft) = smartTube && (!d.smartTube || (d.youtubeOn && !keepYoutube))
     fun due(d: ExtrasDraft) = lockTargets(d).isNotEmpty() || settingsDue(d) || dnsDue(d) || tubeDue(d)
 }
 
 /**
  * Phase 6, after dumbtv: stop kept apps running in the background, a few settings, Private DNS, SmartTube for
- * YouTube. Every change is written to the run's extras.txt (applied.txt for YouTube) before it is made, the TV
- * restarts and is checked, and a failed check puts everything back.
+ * YouTube. Every change is written to the run's extras.txt (applied.txt for YouTube) before it is made, and a failed
+ * check after the run's restart puts everything back.
  */
 class Extras(private val storage: Storage, private val net: Net, private val runner: Runner, private val log: (String) -> Unit) {
 
@@ -79,11 +81,11 @@ class Extras(private val storage: Storage, private val net: Net, private val run
         return d
     }
 
-    suspend fun phase(tv: Tv, info: TvInfo, d: ExtrasDraft, c: ExtrasChoice): RunResult {
+    suspend fun phase(tv: Tv, info: TvInfo, d: ExtrasDraft, c: ExtrasChoice): Pending {
         val tube = c.tubeDue(d)
         // Fetch SmartTube before anything changes: a failed download then leaves the TV as it was.
         val apk = if (tube && !d.smartTube) download(tv) else null
-        val rows = if (tube && d.youtubeOn) listOf(Removal(ExtraOps.YOUTUBE, DISABLE, 6, "SmartTube takes its place", "extras")) else emptyList()
+        val rows = if (tube && d.youtubeOn && !c.keepYoutube) listOf(Removal(ExtraOps.YOUTUBE, DISABLE, 6, "SmartTube takes its place", "extras")) else emptyList()
         val dir = storage.writeExtraRun(info, rows)
         log("phase 6 saved: ${dir.name}")
         val ops = ExtraOps(tv)
@@ -97,22 +99,15 @@ class Extras(private val storage: Storage, private val net: Net, private val run
             rollBack(tv, dir, rows)
             throw e
         }
-        runner.saveWait(tv)
-        val result = runner.rebootAndCheck(tv, info, dir)
-        val back = result.tv
-        var ok = result.ok
-        if (back != null) {
+        val check: suspend (Tv) -> Boolean = { back ->
             val after = ExtraOps(back)
             if (c.settingsDue(d)) log("after the restart: " + ExtraOps.SETTINGS.map { (ns, k, _) -> "$k=${after.setting(ns, k)}" }.joinToString())
             c.lockTargets(d).firstOrNull()?.let { log("$it in the background after the restart: ${after.appop(it, after.backgroundOp(d.sdk))}") }
-            if (dnsSet && !after.resolves()) {
-                log("the TV can't look names up through ${c.dnsHost} after the restart")
-                ok = false
-            }
+            val names = !dnsSet || after.resolves()
+            if (!names) log("the TV can't look names up through ${c.dnsHost} after the restart")
+            names
         }
-        storage.markVerified(dir, ok)
-        back?.takeIf { !ok }?.let { rollBack(it, dir, rows) }
-        return result.copy(ok = ok)
+        return Pending(dir, check) { rollBack(it, dir, rows) }
     }
 
     private suspend fun lockdown(tv: Tv, ops: ExtraOps, dir: Path, d: ExtrasDraft, c: ExtrasChoice) {
@@ -173,6 +168,7 @@ class Extras(private val storage: Storage, private val net: Net, private val run
         log("SmartTube opens")
         val t = TvOps(tv, tv.address)
         rows.forEach { r -> log("disable ${r.pkg}: ${t.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
+        if (rows.isEmpty()) return // YouTube stays, so its home-screen place does too
         val home = HomeOps(tv)
         val now = home.config() ?: return
         if (ExtraOps.YOUTUBE !in now.favourites) return

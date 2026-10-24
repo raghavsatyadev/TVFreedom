@@ -79,22 +79,21 @@ class Runner(
     }
 
     /**
-     * Apply [rows] (disable-user / uninstall --user 0 only), wait 30 s, reboot and check the home screen.
+     * Apply [rows] (disable-user / uninstall --user 0 only); the run restarts and checks the TV once at the end.
      * [applied] is everything this run has applied so far, rows included: applied.txt always lists all of it,
-     * so a run applied one phase at a time is undone as one.
+     * so a run applied one phase at a time is undone as one. Undone from Restore, not at once.
      */
     suspend fun apply(tv: Tv, info: TvInfo, runDir: Path, phases: List<Int>, rows: List<Removal>,
-                      applied: List<Removal> = rows): RunResult {
+                      applied: List<Removal> = rows): Pending {
         storage.writeApplied(runDir, info, phases, applied)
-        val before = freeRam(tv)
         begin(tv, "Changing ${rows.size} apps")
         val ops = TvOps(tv, tv.address)
         rows.forEach { r -> log("${r.action} ${r.pkg}: ${ops.apply(ListEntry(r.action, r.pkg, r.reason)).ifEmpty { "ok" }}") }
-        saveWait(tv)
-        val result = rebootAndCheck(tv, info, runDir).copy(ramBefore = before)
-        storage.markVerified(runDir, result.ok)
-        return result
+        return Pending(runDir)
     }
+
+    /** Mark a run as checked (learned from) or not, after the restart at the end. */
+    fun verified(dir: Path, ok: Boolean) = storage.markVerified(dir, ok)
 
     /**
      * Undo a list (newest line first, like tv.py restore), then put back any setting the run changed.

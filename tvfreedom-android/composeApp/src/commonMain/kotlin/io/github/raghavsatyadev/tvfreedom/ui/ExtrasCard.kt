@@ -51,7 +51,7 @@ fun LazyListScope.extrasPhase(vm: TvFreedomViewModel, d: ExtrasDraft) {
             SegmentedListItem(checked = mine, onCheckedChange = {
                 edit { it.copy(lockSkip = if (mine) it.lockSkip + pkg else it.lockSkip - pkg) }
             }, shapes = seg(i + 1, apps.size + 1), colors = segColors(), enabled = c.lockdown && !s.busy && !already,
-                supportingContent = { Text(if (already) "Already stopped · $pkg" else pkg) },
+                supportingContent = if (already) ({ Text("Already stopped") }) else null,
                 trailingContent = { Switch(mine || already, null) }) { Text(appName(pkg), style = MaterialTheme.typography.bodyMedium) }
         }
     }
@@ -79,13 +79,20 @@ fun LazyListScope.extrasPhase(vm: TvFreedomViewModel, d: ExtrasDraft) {
             supportingText = { Text(if (bad) "Not a hostname" else "Now: ${if (d.dnsMode == "hostname") d.dnsHost else "the TV's default"}. TVFreedom checks the TV can still look names up, or turns it off again.") })
     }
 
-    toggle("tube", "Replace YouTube with SmartTube",
-        if (d.smartTube && !d.youtubeOn) "Already done on this TV."
-        else "Downloads SmartTube ${ExtraOps.SMARTTUBE_URL.substringAfter("download/").substringBefore('/')} " +
-            "(${ExtraOps.SMARTTUBE_MB} MB, open source, no ad code) from its GitHub releases, checks it against a pinned " +
-            "checksum, checks it opens, then turns YouTube off (not removed) and puts SmartTube in its place on the home " +
-            "screen. You sign in again inside SmartTube.",
-        c.smartTube, !s.busy, 1) { edit { it.copy(smartTube = !it.smartTube) } }
+    val tubeDone = d.smartTube && !d.youtubeOn
+    val tubeRows = if (c.smartTube && !tubeDone && d.youtubeOn) 2 else 1
+    toggle("tube", "SmartTube instead of YouTube",
+        if (tubeDone) "Already done on this TV."
+        else "SmartTube plays YouTube without ads. It replaces the YouTube app: YouTube is turned off (not removed) and " +
+            "SmartTube takes its place on the home screen. You sign in again inside SmartTube. " +
+            "Free and open source, ${ExtraOps.SMARTTUBE_MB} MB.",
+        c.smartTube, !s.busy, tubeRows) { edit { it.copy(smartTube = !it.smartTube) } }
+    if (tubeRows == 2) item(key = "extra:tube:keep") {
+        SegmentedListItem(checked = c.keepYoutube, onCheckedChange = { edit { it.copy(keepYoutube = !it.keepYoutube) } },
+            shapes = seg(1, 2), colors = segColors(), enabled = !s.busy,
+            supportingContent = { Text("Both apps stay on the TV.") },
+            trailingContent = { Switch(c.keepYoutube, null) }) { Text("Keep YouTube too", style = MaterialTheme.typography.bodyMedium) }
+    }
 }
 
 /** One extra's switch, the first row of a group of [n]. */

@@ -48,7 +48,7 @@ data class HomeDraft(
 /**
  * tv.py phases 4 and 5 from the phone, as the last two phases of a debloat: 4 installs the launcher and turns off the
  * stock home screen, 5 makes ClockDream the screensaver and turns off the stock one. Each phase is saved first (so
- * Restore can undo it), restarts the TV, and is undone at once if its check fails.
+ * Restore can undo it) and is undone at once if it fails or the run's check after the restart does.
  */
 class HomeSetup(private val storage: Storage, private val runner: Runner, private val log: (String) -> Unit) {
 
@@ -96,58 +96,64 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
     class Choice(val config: LauncherConfig, val keepTvFavourites: Boolean, val apk: ByteArray, val logo: ByteArray? = null)
 
     /**
-     * Phase 4, after the typed GO: install or update the launcher, set it up, turn off the stock home screen,
-     * restart and check the new one opens. If it doesn't, the stock one is turned back on at once.
+     * Phase 4, after the typed GO: install or update the launcher, set it up and turn off the stock home screen.
+     * The run's restart at the end checks the new one opens; if it doesn't, the stock one is turned back on.
      */
-    suspend fun launcherPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice): RunResult {
+    suspend fun launcherPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice): Pending {
         val rows = draft.homeOff.map { Removal(it.pkg, DISABLE, 4, it.comment, "home setup") }
         val runDir = storage.writeHomeRun(info, 4, rows, emptyMap())
         log("phase 4 saved: ${runDir.name}")
-        ensureLauncher(tv, draft, choice)
-        val ops = TvOps(tv, tv.address)
-        runner.begin(tv, "Turning off the old home screen")
-        rows.forEach { r -> log("disable ${r.pkg}: ${ops.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
-        if (rows.isEmpty()) log("the old home screen is already off")
-        runner.saveWait(tv)
-        val result = runner.rebootAndCheck(tv, info, runDir, expectHome = HomeOps.LAUNCHER)
-        storage.markVerified(runDir, result.ok)
-        result.tv?.takeIf { !result.ok }?.let { rollBack(it, rows, null) }
-        return result
+        val undo: suspend (Tv) -> Unit = { rollBack(it, rows, null) }
+        try {
+            ensureLauncher(tv, draft, choice)
+            val ops = TvOps(tv, tv.address)
+            runner.begin(tv, "Turning off the old home screen")
+            rows.forEach { r -> log("disable ${r.pkg}: ${ops.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
+            if (rows.isEmpty()) log("the old home screen is already off")
+        } catch (e: Exception) {
+            runner.verified(runDir, false)
+            runCatching { undo(tv) }
+            throw e
+        }
+        return Pending(runDir, undo = undo)
     }
 
     /**
      * Phase 5, after the typed GO: make ClockDream the screensaver (installing the launcher first if phase 4 didn't),
-     * check it starts, turn off the stock screensaver, restart and check. On failure the old one comes back.
+     * check it starts and turn off the stock screensaver. After the run's restart the clock must still be the
+     * screensaver; if not, the old one comes back.
      */
-    suspend fun screensaverPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice, newHome: Boolean): RunResult {
+    suspend fun screensaverPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice): Pending {
         val rows = draft.dreamOff.map { Removal(it.pkg, DISABLE, 5, it.comment, "home setup") }
         val runDir = storage.writeHomeRun(info, 5, rows, mapOf(HomeOps.SCREENSAVER to draft.oldScreensaver))
         log("phase 5 saved: ${runDir.name}")
-        ensureLauncher(tv, draft, choice)
-        val home = HomeOps(tv)
-        val ops = TvOps(tv, tv.address)
-        runner.begin(tv, "Setting the screensaver")
-        log("screensaver: ${home.setScreensaver(HomeOps.CLOCK_DREAM).ifEmpty { "ok" }}")
-        home.startDream(home.sdk())
-        delay(5_000)
-        val runs = "ClockDream" in home.dreaming()
-        log(if (runs) "the clock screensaver runs" else "could not see the clock screensaver start")
-        ops.key("KEYCODE_WAKEUP")
-        if (!runs) {
-            log("screensaver back to ${draft.oldScreensaver}: ${home.setScreensaver(draft.oldScreensaver).ifEmpty { "ok" }}")
-            error("the clock screensaver did not start, so the old one was put back. Nothing was turned off")
+        val undo: suspend (Tv) -> Unit = { rollBack(it, rows, draft.oldScreensaver) }
+        try {
+            ensureLauncher(tv, draft, choice)
+            val home = HomeOps(tv)
+            val ops = TvOps(tv, tv.address)
+            runner.begin(tv, "Setting the screensaver")
+            log("screensaver: ${home.setScreensaver(HomeOps.CLOCK_DREAM).ifEmpty { "ok" }}")
+            home.startDream(home.sdk())
+            delay(5_000)
+            val runs = "ClockDream" in home.dreaming()
+            log(if (runs) "the clock screensaver runs" else "could not see the clock screensaver start")
+            ops.key("KEYCODE_WAKEUP")
+            if (!runs) error("the clock screensaver did not start, so the old one was put back")
+            runner.begin(tv, "Turning off the old screensaver")
+            rows.forEach { r -> log("disable ${r.pkg}: ${ops.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
+            if (rows.isEmpty()) log("the old screensaver is already off")
+        } catch (e: Exception) {
+            runner.verified(runDir, false)
+            runCatching { undo(tv) }
+            throw e
         }
-        runner.begin(tv, "Turning off the old screensaver")
-        rows.forEach { r -> log("disable ${r.pkg}: ${ops.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
-        if (rows.isEmpty()) log("the old screensaver is already off")
-        runner.saveWait(tv)
-        val result = runner.rebootAndCheck(tv, info, runDir, expectHome = HomeOps.LAUNCHER.takeIf { newHome })
-        val kept = result.tv?.let { HomeOps(it).screensaver() } == HomeOps.CLOCK_DREAM
-        if (result.tv != null) log(if (kept) "the screensaver is still the clock after the restart" else "the screensaver setting did not stay")
-        val ok = result.ok && kept
-        storage.markVerified(runDir, ok)
-        result.tv?.takeIf { !ok }?.let { rollBack(it, rows, draft.oldScreensaver) }
-        return result.copy(ok = ok)
+        val check: suspend (Tv) -> Boolean = { back ->
+            val kept = HomeOps(back).screensaver() == HomeOps.CLOCK_DREAM
+            log(if (kept) "the screensaver is still the clock after the restart" else "the screensaver setting did not stay")
+            kept
+        }
+        return Pending(runDir, check, undo)
     }
 
     /** Set once the launcher is installed, set up and seen to open in this run. */
@@ -218,12 +224,11 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
 
     /** A phase didn't check out: turn back on what it turned off (and the old screensaver) rather than leave it half done. */
     private suspend fun rollBack(tv: Tv, rows: List<Removal>, oldScreensaver: String?) {
-        runner.begin(tv, "Undoing this phase")
+        runner.begin(tv, "Undoing a change")
         val ops = TvOps(tv, tv.address)
         rows.asReversed().forEach { log("enable ${it.pkg}: ${ops.enable(it.pkg).ifEmpty { "ok" }}") }
         oldScreensaver?.let { log("screensaver back to $it: ${HomeOps(tv).setScreensaver(it).ifEmpty { "ok" }}") }
         ops.key("KEYCODE_HOME")
-        runner.saveWait(tv)
     }
 
     companion object {

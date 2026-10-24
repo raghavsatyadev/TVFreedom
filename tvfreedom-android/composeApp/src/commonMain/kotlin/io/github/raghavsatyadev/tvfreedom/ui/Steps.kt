@@ -17,6 +17,7 @@ import io.github.raghavsatyadev.tvfreedom.core.UNINSTALL
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasChoice
 import io.github.raghavsatyadev.tvfreedom.flow.ExtrasDraft
 import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
+import io.github.raghavsatyadev.tvfreedom.flow.PhaseRun
 
 /** One phase of a debloat in everyday words: what it does to the TV, and what happens after. */
 data class PlainStep(val phase: Int, val title: String, val detail: String)
@@ -27,22 +28,23 @@ fun plainSteps(plan: Plan, draft: HomeDraft?, phases: List<Int>, hasLogo: Boolea
     val rows = plan.remove.filter { it.phase == p }
     val gone = rows.count { it.action == UNINSTALL }
     val apps = "${rows.size} app${if (rows.size == 1) "" else "s"}" + if (gone > 0) " ($gone of them uninstalled)" else ""
-    val check = "Then the TV restarts and TVFreedom checks that its home screen opens."
     when (p) {
-        1 -> PlainStep(p, "Stop tracking and ads", "Turns off $apps that report what you watch or show ads. $check")
-        2 -> PlainStep(p, "Remove apps you don't use", "Turns off $apps nobody picked: demos, games, streaming apps. $check")
-        3 -> PlainStep(p, "Clear out the maker's extras", "Turns off $apps the TV maker added: galleries, tips, cleaners. $check")
+        1 -> PlainStep(p, "Stop tracking and ads", "Turns off $apps that report what you watch or show ads.")
+        2 -> PlainStep(p, "Remove apps you don't use", "Turns off $apps nobody picked: demos, games, streaming apps.")
+        3 -> PlainStep(p, "Clear out the maker's extras", "Turns off $apps the TV maker added: galleries, tips, cleaners.")
         4 -> PlainStep(p, "A simpler home screen",
             (if (draft?.installed == null) "Puts a simple home screen on the TV" else "Updates the TV's simple home screen") +
                 " with your favourite apps first" + (if (hasLogo) ", your logo and colour" else "") +
-                ", and turns off the old one. $check If it doesn't, the old home screen comes back at once.")
+                ", and turns off the old one.")
         5 -> PlainStep(p, "A clock screensaver", "Makes a clock with the weather and holidays" + (if (hasLogo) " and your logo" else "") + " the screensaver, and turns " +
-            "off the old one. $check If it doesn't, the old screensaver comes back at once.")
+            "off the old one.")
         6 -> PlainStep(p, "Extras", extrasParts(extras).joinToString("; ").replaceFirstChar { it.uppercase() } +
-            ". $check If it doesn't, all of this is put back at once.")
-        else -> PlainStep(p, "Phase $p", "Turns off $apps. $check")
+            ".")
+        else -> PlainStep(p, "Phase $p", "Turns off $apps.")
     }
-}
+} + PlainStep(PhaseRun.RESTART, "Restart and check",
+    "The TV restarts once and TVFreedom checks its home screen opens. If it doesn't, the home screen, screensaver " +
+        "and extras are put back at once; apps come back from Restore.")
 
 /** What phase 6 will do, one short part per switched-on extra that has something to do. */
 fun extrasParts(extras: Pair<ExtrasDraft, ExtrasChoice>?): List<String> {
@@ -51,7 +53,7 @@ fun extrasParts(extras: Pair<ExtrasDraft, ExtrasChoice>?): List<String> {
         c.lockTargets(d).size.takeIf { it > 0 }?.let { "stops $it kept app${if (it == 1) "" else "s"} running in the background" },
         "speeds up animations and stops crash reports and background scans".takeIf { c.settingsDue(d) },
         "sends the TV's lookups to ${c.dnsHost} (Private DNS)".takeIf { c.dnsDue(d) },
-        "puts SmartTube in place of YouTube (YouTube is turned off, not removed)".takeIf { c.tubeDue(d) },
+        (if (c.keepYoutube) "adds SmartTube next to YouTube" else "puts SmartTube in place of YouTube (YouTube is turned off, not removed)").takeIf { c.tubeDue(d) },
     ).ifEmpty { listOf("nothing") }
 }
 
@@ -64,7 +66,7 @@ fun LazyListScope.stepList(steps: List<PlainStep>, now: Int? = null, done: List<
         item(key = "step:${step.phase}") {
             val state = when (step.phase) {
                 failed -> "Stopped here"
-                in done -> "Done and checked"
+                in done -> "Done"
                 now -> "Doing this now"
                 else -> null
             }

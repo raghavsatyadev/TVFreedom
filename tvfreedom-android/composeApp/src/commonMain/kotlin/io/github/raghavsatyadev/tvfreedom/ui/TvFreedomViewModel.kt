@@ -210,6 +210,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
     fun makePlan() = job("Making a plan") {
         val t = tv ?: return@job
         val info = state.info ?: return@job
+        forgetScroll()
         update { copy(log = emptyList(), screen = Screen.PLAN, plan = null) }
         runner.backup(t, info)
         val ai = classifier()
@@ -260,7 +261,7 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
         }.sorted()
     }
 
-    /** Only called after the user typed GO: the chosen phases, one at a time, each checked before the next. */
+    /** Only called after the user typed GO: the chosen phases, then one restart and check at the end. */
     fun apply() = job("Changing the TV") {
         val t = tv ?: return@job
         val plan = state.plan ?: return@job
@@ -279,18 +280,16 @@ class TvFreedomViewModel(internal val platform: AppPlatform) : ViewModel() {
             update { copy(runPhase = now, runDone = done) }
         }
         o.last.tv?.let { tv = it }
-        val doneText = if (o.done.isEmpty()) "No phase finished." else "Phase ${o.done.joinToString(", ")} done and checked."
+        val undone = o.done.filter { it >= 4 }
+        val restore = if (o.done.any { it < 4 }) " Open Restore and undo this run (the newest one) for the apps." else ""
         update {
             copy(outcome = when {
                 o.failed == null -> outcome(o.last, true, "All done",
-                    "Phase ${o.done.joinToString(", ")} applied one at a time; the TV restarted and passed its check after each. " +
-                        "Undo any time from Restore.")
+                    "The TV restarted once and its home screen opened. Undo any time from Restore.")
                 o.last.tv == null -> outcome(o.last, false, "The TV didn't come back",
-                    "$doneText It stopped during phase ${o.failed}. Check the TV, then undo from Restore.")
-                o.failed >= 4 -> outcome(o.last, false, "Phase ${o.failed} didn't check out",
-                    "$doneText Phase ${o.failed} was undone, so the TV is as it was before it.")
-                else -> outcome(o.last, false, "Home screen didn't come back after phase ${o.failed}",
-                    "$doneText Open Restore and undo this run (the newest one).")
+                    "It didn't reconnect after the restart. Check the TV, then undo from Restore.")
+                else -> outcome(o.last, false, "The TV didn't check out after the restart",
+                    (if (undone.isEmpty()) "" else "The home screen, screensaver and extras were put back.") + restore)
             })
         }
     }

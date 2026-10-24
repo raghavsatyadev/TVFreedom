@@ -55,11 +55,11 @@ fun PlanScreen(vm: TvFreedomViewModel) {
             return@Page
         }
         item { Summary(plan, count) }
-        val steps = plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras })
+        val steps = if (chosen.isEmpty()) emptyList() else plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras })
         item(key = "steps:label") { GroupLabel(if (steps.isEmpty()) "Nothing to do yet" else "What happens, step by step") }
         if (steps.isNotEmpty()) item(key = "steps:intro") {
-            Text("One tap does it all, in this order. Each step is checked before the next starts, and the first one " +
-                "that goes wrong stops the rest. Restore undoes any of it.",
+            Text("One tap does it all, in this order, with one restart at the end. If a step goes wrong, the rest don't " +
+                "start. Restore undoes any of it.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         stepList(steps)
@@ -88,9 +88,9 @@ fun PlanScreen(vm: TvFreedomViewModel) {
     }
     if (confirm && plan != null) TypedConfirm(
         title = "Start the debloat?",
-        body = "On ${plan.info.model}, ${chosen.size} step${if (chosen.size == 1) "" else "s"}, one after another: " +
+        body = "On ${plan.info.model}, one after another: " +
             plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras }).joinToString("; ") { it.title.lowercase() } +
-            ". The TV restarts after each, and TVFreedom checks it before going on. Keep this app open until it finishes. " +
+            ". Keep this app open until it finishes. " +
             "You can undo it any time from Restore.",
         word = "GO",
         onConfirm = { confirm = false; vm.apply() },
