@@ -1,12 +1,7 @@
 package io.github.raghavsatyadev.tvfreedom.ui
 
-import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
-
-/** The wallpaper colour scheme where the platform has one (Android 12+), else null. */
-@Composable
-expect fun dynamicScheme(dark: Boolean): ColorScheme?
 
 /** An image decoded at no more than [maxWidth] px wide (a 4K screenshot would be 33 MB), or null. */
 expect fun decodeImage(bytes: ByteArray, maxWidth: Int = 1280): ImageBitmap?

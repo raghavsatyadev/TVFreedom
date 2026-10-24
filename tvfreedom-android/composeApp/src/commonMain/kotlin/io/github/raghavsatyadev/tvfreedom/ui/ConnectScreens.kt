@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,30 +30,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import io.github.raghavsatyadev.tvfreedom.store.Settings
 
 /** Finds TVs by itself on open; the user taps one. Typing an address and pairing stay out of the way until needed. */
 @Composable
 fun ConnectScreen(vm: TvFreedomViewModel) {
     val s = vm.state
     LaunchedEffect(Unit) { if (!s.searched && !s.busy) vm.discover() }
-    Page("Pick your TV", s, actions = {
+    Page("Find your TV", s, actions = {
         IconButton(onClick = { vm.go(Screen.SETTINGS) }) { Icon(Icons.Settings, "Settings") }
     }) {
-        // Which AI plans comes before the TV, so a TV's first debloat uses the model the user wants.
-        item { GroupLabel("AI that plans the debloat") }
-        item {
-            val st = vm.settings
-            SegmentedListItem(onClick = { vm.go(Screen.SETTINGS) }, shapes = seg(0, 1), colors = segColors(), enabled = !s.busy,
-                leadingContent = { Icon(Icons.Clean, null) }, trailingContent = { Icon(Icons.Edit, "Change") },
-                supportingContent = {
-                    Text(when (st.ai) {
-                        Settings.Ai.TERMUX -> "${st.termuxModel.label} · ${st.termuxModel.hint}"
-                        Settings.Ai.CLAUDE -> st.claudeModel
-                        else -> st.ai.hint
-                    })
-                }) { Text(st.ai.label) }
-        }
         if (s.candidates.isNotEmpty()) {
             item { GroupLabel("On this Wi-Fi") }
             s.candidates.forEachIndexed { i, c ->
@@ -65,7 +51,7 @@ fun ConnectScreen(vm: TvFreedomViewModel) {
                         trailingContent = { Icon(Icons.Next, null) },
                         supportingContent = {
                             Text(when {
-                                c.pairing -> "Tap to pair with the code the TV shows"
+                                c.pairing -> "Pair with a code"
                                 c.why.startsWith("mDNS") -> "Wireless debugging"
                                 else -> "Network debugging"
                             })
@@ -99,11 +85,9 @@ private fun NothingFound() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ShapeBadge(Icons.Tv, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer,
-                cookie = false, size = 72)
+            Icon(Icons.Tv, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("No TVs found", style = MaterialTheme.typography.titleLarge)
-            Text("Turn on network or wireless debugging on the TV and keep both on the same Wi-Fi. " +
-                "Settings > Show the TV setup steps explains how.",
+            Text("Turn on network debugging on the TV. Keep both on the same Wi-Fi.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -158,12 +142,12 @@ fun TvScreen(vm: TvFreedomViewModel) {
     }) {
         item {
             Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                ShapeBadge(Icons.Tv, MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, size = 120)
+                Icon(Icons.Tv, null, Modifier.size(96.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        item { MainAction("Plan a debloat", Icons.Clean, enabled = !s.busy, onClick = vm::makePlan) }
+        item { MainAction("Check this TV", Icons.Clean, enabled = !s.busy, onClick = vm::makePlan) }
         item {
-            Text("Backs up first. Nothing on the TV changes until you confirm.",
+            Text("Nothing changes until you say so.",
                 Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -171,17 +155,17 @@ fun TvScreen(vm: TvFreedomViewModel) {
         item {
             SegmentedListItem(onClick = vm::openDesigns, shapes = seg(0, 3), colors = segColors(), enabled = !s.busy,
                 leadingContent = { Icon(Icons.Home, null) },
-                supportingContent = { Text("Pick a look for the TV, or ask the AI for one") }) { Text("Designs") }
+                supportingContent = { Text("Pick a look") }) { Text("Designs") }
         }
         item {
             SegmentedListItem(onClick = vm::openRestore, shapes = seg(1, 3), colors = segColors(), enabled = !s.busy,
                 leadingContent = { Icon(Icons.History, null) },
-                supportingContent = { Text("Undo a run, or go back to a backup") }) { Text("Restore") }
+                supportingContent = { Text("Undo changes") }) { Text("Restore") }
         }
         item {
             SegmentedListItem(onClick = vm::rebootAndCheck, shapes = seg(2, 3), colors = segColors(), enabled = !s.busy,
                 leadingContent = { Icon(Icons.Power, null) },
-                supportingContent = { Text("Restart the TV and check its home screen") }) { Text("Restart and check") }
+                supportingContent = { Text("Restart the TV") }) { Text("Restart and check") }
         }
     }
 }
