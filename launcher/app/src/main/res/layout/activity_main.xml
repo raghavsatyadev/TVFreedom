@@ -207,7 +207,7 @@
                 android:letterSpacing="0.22"
                 android:textAllCaps="true" />
 
-            <androidx.recyclerview.widget.RecyclerView
+            <io.github.raghavsatyadev.tvfreedom.home.FadeGrid
                 android:id="@+id/watchList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -229,7 +229,7 @@
             android:layout_weight="1"
             android:layout_marginTop="10dp">
 
-            <androidx.recyclerview.widget.RecyclerView
+            <io.github.raghavsatyadev.tvfreedom.home.FadeGrid
                 android:id="@+id/grid"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
