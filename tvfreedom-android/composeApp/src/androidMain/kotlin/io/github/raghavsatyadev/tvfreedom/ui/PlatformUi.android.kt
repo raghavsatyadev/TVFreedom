@@ -8,9 +8,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,14 +17,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-
-/** Wallpaper colours on Android 12+. */
-@Composable
-actual fun dynamicScheme(dark: Boolean): ColorScheme? {
-    if (Build.VERSION.SDK_INT < 31) return null
-    val ctx = LocalContext.current
-    return if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-}
 
 actual fun decodeImage(bytes: ByteArray, maxWidth: Int): ImageBitmap? {
     val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }

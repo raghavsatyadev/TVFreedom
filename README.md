@@ -69,3 +69,9 @@ bash scripts/gradle-agent.sh :androidCMP:assembleRelease
 ```
 
 The PC tool `tvfreedom.py` does the same job over `adb` from a computer.
+
+## Thanks
+
+Lists for 131 TV models from 44 brands come from [Clean Your TV](https://github.com/Gathin23/cleanyourtv)
+and the [Clean Your TV app](https://github.com/udhaykumarbala/cleanyourtv-app), both MIT. See
+[THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES).

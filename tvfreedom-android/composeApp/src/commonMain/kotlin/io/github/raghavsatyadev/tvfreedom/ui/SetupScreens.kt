@@ -33,27 +33,19 @@ import androidx.compose.ui.unit.dp
 import io.github.raghavsatyadev.tvfreedom.store.Settings
 
 private val TV_STEPS = listOf(
-    "Turn on Developer options" to
-        "Google TV and most Android TVs: Settings > System > About > select \"Android TV OS build\" 7 times. " +
-        "Older Android TV, Sony, Nvidia Shield, Philips: Settings > Device Preferences > About > \"Build\" 7 times. " +
-        "Fire TV: Settings > My Fire TV > About > select the device name 7 times.",
-    "Turn on debugging over the network" to
-        "In Developer options. Android 11 and newer: \"Wireless debugging\" ON. " +
-        "Android 9/10, Nvidia Shield, many Xiaomi and TCL TVs: \"USB debugging\" and \"Network debugging\" ON. " +
-        "Fire TV: \"ADB debugging\" ON.",
+    "Turn on Developer options" to "Settings > About: select the build number 7 times.",
+    "Turn on network debugging" to "In Developer options: Wireless, Network or ADB debugging ON.",
     "Same Wi-Fi" to "Keep this phone and the TV on the same Wi-Fi.",
-    "Allow debugging" to "When the TV asks \"Allow debugging?\", tick \"Always allow\" and press OK.",
+    "Allow debugging" to "When the TV asks, tick \"Always allow\" and press OK.",
 )
 
-/** First run: the TV settings, the phone permission if it is still missing, and which AI plans. */
+/** First run: the TV settings and the phone permission if it is still missing. The AI is optional and lives in Settings. */
 @Composable
 fun SetupScreen(vm: TvFreedomViewModel) {
     val firstRun = !vm.settings.onboarded
     Page("Set up your TV", vm.state, onBack = if (firstRun) null else ({ vm.go(Screen.SETTINGS) }),
         fab = if (firstRun) Fab("Find my TV", Icons.Search, vm::finishSetup) else Fab("Done", Icons.Done, vm::finishSetup)) {
         item { LocalNetworkPermission() }
-        // The AI comes first, so the TV's first plan is made by the model the user wants.
-        if (firstRun) aiSettings(vm)
         item { GroupLabel("On the TV") }
         TV_STEPS.forEachIndexed { i, (title, body) ->
             item(key = "step:$i") {
@@ -91,9 +83,9 @@ private fun LocalNetworkPermission() {
 
 /** Which AI plans the packages the guard and the lists leave open, and how user apps are removed. */
 fun LazyListScope.aiSettings(vm: TvFreedomViewModel) {
-    item(key = "ai:label") { GroupLabel("AI that suggests what to remove") }
+    item(key = "ai:label") { GroupLabel("AI (optional)") }
     item(key = "ai:about") {
-        Text("The safety guard and your lists always come first. The AI only decides the rest, and you confirm every change.",
+        Text("Not needed: the lists cover 130+ TV models. An AI can plan apps the lists don't know. You confirm every change.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp))
     }

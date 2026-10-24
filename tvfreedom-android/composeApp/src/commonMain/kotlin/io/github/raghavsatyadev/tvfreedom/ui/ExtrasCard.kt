@@ -31,7 +31,7 @@ fun LazyListScope.extrasPhase(vm: TvFreedomViewModel, d: ExtrasDraft) {
     val c = s.extras
     val on = 6 in s.phases
     val edit = { f: (ExtrasChoice) -> ExtrasChoice -> vm.setExtras(f(c)) }
-    item(key = "label:6") { GroupLabel("Phase 6 · extras") }
+    item(key = "label:6") { GroupLabel(groupTitle(6)) }
     item(key = "phase:6") {
         SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(6) }, shapes = seg(0, 2), colors = segColors(),
             enabled = !s.busy,

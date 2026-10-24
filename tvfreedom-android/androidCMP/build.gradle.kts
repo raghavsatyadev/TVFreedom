@@ -15,7 +15,7 @@ val repoRoot = rootProject.projectDir.parentFile
 
 // lists/ in the repo is the single source of truth: copied into the APK's assets at build time.
 val bundleLists by tasks.registering(Sync::class) {
-    from(File(repoRoot, "lists")) { include("**/*.txt") }
+    from(File(repoRoot, "lists")) { include("**/*.txt", "community.lst") }
     into(layout.buildDirectory.dir("generated/tvfreedomAssets/lists"))
 }
 

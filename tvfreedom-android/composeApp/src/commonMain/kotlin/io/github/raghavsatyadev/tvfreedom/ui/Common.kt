@@ -171,8 +171,7 @@ fun OutcomeView(ok: Boolean, headline: String, body: String) {
     val c = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ShapeBadge(if (ok) Icons.Done else Icons.Error, if (ok) c.primaryContainer else c.errorContainer,
-            if (ok) c.onPrimaryContainer else c.onErrorContainer, cookie = ok)
+        Icon(if (ok) Icons.Done else Icons.Error, null, Modifier.size(64.dp), tint = if (ok) c.primary else c.error)
         Text(headline, style = MaterialTheme.typography.headlineSmall)
         Text(body, style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
     }

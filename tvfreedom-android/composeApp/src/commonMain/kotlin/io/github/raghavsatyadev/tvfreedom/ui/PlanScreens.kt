@@ -4,12 +4,9 @@ package io.github.raghavsatyadev.tvfreedom.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,72 +23,42 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.raghavsatyadev.tvfreedom.core.PHASES
-import io.github.raghavsatyadev.tvfreedom.flow.HomeDraft
 import io.github.raghavsatyadev.tvfreedom.core.Plan
 import io.github.raghavsatyadev.tvfreedom.core.UNINSTALL
-import io.github.raghavsatyadev.tvfreedom.core.sortedByKey
-import io.github.raghavsatyadev.tvfreedom.store.Settings
 
-/** The plan, phase by phase, then a typed GO before anything touches the TV. */
+/** The plan in short: how many things go, in a few groups, and one button. Manage holds the rest. */
 @Composable
 fun PlanScreen(vm: TvFreedomViewModel) {
     val s = vm.state
     val plan = s.plan
     var confirm by remember { mutableStateOf(false) }
+    var manage by rememberSaveable { mutableStateOf(false) }
     var showKept by rememberSaveable { mutableStateOf(false) }
     var showLog by rememberSaveable { mutableStateOf(false) }
-    val count = plan?.remove?.count { it.phase in s.phases } ?: 0
-    val draft = s.homeDraft
     val chosen = vm.chosenPhases()
-    Page("Plan", s, onBack = { vm.go(Screen.TV) }, bottomBar = plan?.takeIf { it.remove.isNotEmpty() || draft != null || s.extrasDraft != null }?.let {
-        {
-            MainAction(if (chosen.isEmpty()) "Pick a phase" else "Start the debloat", Icons.Clean,
-                enabled = !s.busy && chosen.isNotEmpty()) { confirm = true }
-        }
-    }) {
+    val count = plan?.remove?.count { it.phase in s.phases } ?: 0
+    Page(if (manage) "Manage" else "Plan", s, onBack = { if (manage) manage = false else vm.go(Screen.TV) },
+        bottomBar = plan?.takeIf { it.remove.isNotEmpty() || s.homeDraft != null || s.extrasDraft != null }?.let {
+            { MainAction("Clean", Icons.Clean, enabled = !s.busy && chosen.isNotEmpty()) { confirm = true } }
+        }) {
         if (plan == null) {
             if (!s.busy) details(s.log, showLog) { showLog = !showLog }
             return@Page
         }
-        item { Summary(plan, count) }
-        val steps = if (chosen.isEmpty()) emptyList() else plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras })
-        item(key = "steps:label") { GroupLabel(if (steps.isEmpty()) "Nothing to do yet" else "What happens, step by step") }
-        if (steps.isNotEmpty()) item(key = "steps:intro") {
-            Text("One tap does it all, in this order, with one restart at the end. If a step goes wrong, the rest don't " +
-                "start. Restore undoes any of it.",
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (manage) {
+            planDetails(vm, plan, showKept, { showKept = !showKept }, showLog, { showLog = !showLog })
+            return@Page
         }
-        stepList(steps)
-        userApps(plan)
-        item(key = "details") { GroupLabel("The details, phase by phase") }
-        plan.phases.forEach { phase -> phase(vm, plan, phase) }
-        if (draft != null) listOf(4, 5).forEach { homePhase(vm, draft, it) }
-        s.extrasDraft?.let { extrasPhase(vm, it) }
-        if (plan.unanswered.isNotEmpty()) item {
-            Text(if (vm.settings.ai == Settings.Ai.NONE) "${plan.unanswered.size} apps no list knows were kept (no AI chosen)."
-                else "The AI had no answer for ${plan.unanswered.size} apps, so they were kept.",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        item {
-            TextButton(onClick = { showKept = !showKept }) { Text(if (showKept) "Hide kept apps" else "Show kept apps (${plan.kept.size})") }
-        }
-        if (showKept) {
-            val kept = plan.kept.sortedByKey().toList()
-            kept.forEachIndexed { i, (p, why) ->
-                item(key = "kept:$p") {
-                    SegmentedListItem(onClick = {}, shapes = seg(i, kept.size), colors = segColors(),
-                        supportingContent = { Text(why) }) { Text(p, style = MaterialTheme.typography.bodyMedium) }
-                }
-            }
+        item(key = "count") { Headline(plan, count) }
+        plan.phases.forEach { group(vm, plan, it) }
+        moreRows(vm)
+        item(key = "manage") {
+            TextButton(onClick = { manage = true }, Modifier.fillMaxWidth()) { Text("Manage") }
         }
     }
     if (confirm && plan != null) TypedConfirm(
-        title = "Start the debloat?",
-        body = "On ${plan.info.model}, one after another: " +
-            plainSteps(plan, draft, chosen, vm.brand.hasLogo, s.extrasDraft?.let { it to s.extras }).joinToString("; ") { it.title.lowercase() } +
-            ". Keep this app open until it finishes. " +
-            "You can undo it any time from Restore.",
+        title = "Clean ${plan.info.model}?",
+        body = "Keep this app open until it's done. Restore undoes it.",
         word = "GO",
         onConfirm = { confirm = false; vm.apply() },
         onDismiss = { confirm = false },
@@ -99,72 +66,55 @@ fun PlanScreen(vm: TvFreedomViewModel) {
 }
 
 @Composable
-private fun Summary(plan: Plan, count: Int) {
-    Card(shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-        Row(Modifier.fillMaxWidth().padding(24.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            Text("$count", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            Column {
-                Text(if (plan.remove.isEmpty()) "Nothing to remove" else "apps to turn off or remove",
-                    style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                Text("${plan.kept.size} kept safe by the guard and your lists",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+private fun Headline(plan: Plan, count: Int) {
+    // Apps someone installed are named here: a tap must never take one off unseen.
+    val theirs = plan.remove.count { it.pkg in plan.userApps }
+    Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("$count", style = MaterialTheme.typography.displayLarge)
+        Text(if (count == 1) "thing to switch off" else "things to switch off",
+            style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (theirs > 0) Text("$theirs of them installed by someone", style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error)
+    }
+}
+
+/** One group: its name, how many, a switch; tap to see its apps. */
+private fun LazyListScope.group(vm: TvFreedomViewModel, plan: Plan, phase: Int) {
+    val rows = plan.remove.filter { it.phase == phase }
+    item(key = "group:$phase") {
+        var open by rememberSaveable { mutableStateOf(false) }
+        val on = phase in vm.state.phases
+        Column {
+            SegmentedListItem(onClick = { open = !open }, shapes = seg(0, if (open) rows.size + 1 else 1), colors = segColors(),
+                enabled = !vm.state.busy,
+                supportingContent = { Text("${rows.size}") },
+                trailingContent = { Switch(on, { vm.togglePhase(phase) }, enabled = !vm.state.busy) }) { Text(groupTitle(phase)) }
+            if (open) rows.forEachIndexed { i, r ->
+                SegmentedListItem(onClick = {}, shapes = seg(i + 1, rows.size + 1), colors = segColors(), enabled = on,
+                    supportingContent = if (r.action == UNINSTALL || r.pkg in plan.userApps) ({
+                        Text(listOfNotNull("Removed".takeIf { r.action == UNINSTALL },
+                            "Someone installed it".takeIf { r.pkg in plan.userApps }).joinToString(" · "))
+                    }) else null,
+                ) { Text(appName(r.pkg), style = MaterialTheme.typography.bodyMedium) }
             }
         }
     }
 }
 
-/** One phase: a switch to include it, then its apps, as one connected group. */
-private fun LazyListScope.phase(vm: TvFreedomViewModel, plan: Plan, phase: Int) {
-    val rows = plan.remove.filter { it.phase == phase }
-    val on = phase in vm.state.phases
-    val n = rows.size + 1
-    item(key = "label:$phase") { GroupLabel("Phase $phase · ${PHASES[phase] ?: "other"}") }
-    item(key = "phase:$phase") {
-        SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(phase) }, shapes = seg(0, n), colors = segColors(),
-            enabled = !vm.state.busy,
-            supportingContent = { Text("${rows.size} apps") },
-            trailingContent = { Switch(on, null) }) { Text(if (on) "Included" else "Skipped") }
-    }
-    rows.forEachIndexed { i, r ->
-        item(key = "row:$phase:${r.pkg}") {
-            SegmentedListItem(onClick = {}, shapes = seg(i + 1, n), colors = segColors(), enabled = on,
-                supportingContent = { Text("${if (r.action == UNINSTALL) "Uninstall" else "Turn off"} · ${r.reason}") },
-            ) { Text(r.pkg, style = MaterialTheme.typography.bodyMedium) }
-        }
-    }
-}
-
-/** Phase 4 or 5: a switch, then what it does on this TV; phase 4 also opens the home screen settings. */
-private fun LazyListScope.homePhase(vm: TvFreedomViewModel, draft: HomeDraft, phase: Int) {
-    val on = phase in vm.state.phases
-    val due = if (phase == 4) draft.launcherDue else draft.screensaverDue
-    val n = 2
-    item(key = "label:$phase") { GroupLabel("Phase $phase · ${if (phase == 4) "new home screen" else "clock screensaver"}") }
-    item(key = "phase:$phase") {
-        SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(phase) }, shapes = seg(0, n), colors = segColors(),
-            enabled = !vm.state.busy,
-            supportingContent = { Text(if (due) "Not done on this TV yet" else "Already done; include it to send new settings") },
-            trailingContent = { Switch(on, null) }) { Text(if (on) "Included" else "Skipped") }
-    }
-    item(key = "home:$phase:preview") {
-        // What the TV will look like, before anything is sent.
-        val logo = rememberLogo(vm)
-        val c = vm.state.homeConfig ?: draft.config
-        Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(if (phase == 4) "The home screen will look like this" else "The screensaver will look like this",
-                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (phase == 4) HomePreview(logo, vm.brand.color, c.favourites, c.columns)
-            else DreamPreview(logo, c.place)
-        }
-    }
-    item(key = "home:$phase:settings") {
-        SegmentedListItem(onClick = { vm.go(Screen.HOME) }, shapes = seg(n - 1, n), colors = segColors(), enabled = !vm.state.busy,
-            leadingContent = { Icon(if (phase == 4) Icons.Home else Icons.Place, null) },
-            trailingContent = { Icon(Icons.Next, null) },
-            supportingContent = { Text(if (phase == 4) "Favourites and tiles per row" else "Weather and calendars") }) {
-            Text("Settings")
+/** The home screen, screensaver and extras: not apps to switch off, so each gets its own row. */
+private fun LazyListScope.moreRows(vm: TvFreedomViewModel) {
+    val s = vm.state
+    val rows = listOfNotNull(4.takeIf { s.homeDraft != null }, 5.takeIf { s.homeDraft != null }, 6.takeIf { s.extrasDraft != null })
+    if (rows.isEmpty()) return
+    item(key = "more:label") { GroupLabel("Also") }
+    rows.forEachIndexed { i, p ->
+        item(key = "more:$p") {
+            val on = p in s.phases
+            SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(p) }, shapes = seg(i, rows.size), colors = segColors(),
+                enabled = !s.busy,
+                leadingContent = { Icon(when (p) { 4 -> Icons.Home; 5 -> Icons.Clock; else -> Icons.Settings }, null) },
+                trailingContent = { Switch(on, null) }) { Text(groupTitle(p)) }
         }
     }
 }
@@ -177,8 +127,8 @@ fun RunScreen(vm: TvFreedomViewModel) {
     val outcome = s.outcome
     Page(if (s.busy) "Working" else outcome?.headline ?: "Done", s, onBack = { vm.go(Screen.TV) }.takeIf { !s.busy }) {
         if (s.busy) item {
-            Text("Keep this app open until it finishes. It can take a few minutes.",
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Keep this app open.", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (s.runSteps.isNotEmpty()) {
             val failed = s.runPhase.takeIf { !s.busy && outcome?.ok == false }
@@ -188,7 +138,7 @@ fun RunScreen(vm: TvFreedomViewModel) {
             item { OutcomeView(outcome.ok, outcome.headline, outcome.body) }
             outcome.ramAfter?.let { after -> item { RamCard(outcome.ramBefore, after) } }
             outcome.screen?.let { file -> item { TvScreenshot(remember(file) { vm.readBytes(file) }) } }
-            item { MainAction("Back to the TV", Icons.Tv) { vm.go(Screen.TV) } }
+            item { MainAction("Done", Icons.Done) { vm.go(Screen.TV) } }
             if (!outcome.ok) item { SecondAction("Restore", Icons.History, modifier = Modifier.fillMaxWidth(), onClick = vm::openRestore) }
         }
         details(s.log, showLog) { showLog = !showLog }

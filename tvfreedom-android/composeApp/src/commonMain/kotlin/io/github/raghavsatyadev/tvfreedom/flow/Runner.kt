@@ -64,13 +64,13 @@ class Runner(
         return dir
     }
 
-    /** Read the TV, then guard, lists and AI. Changes nothing on the TV. */
+    /** Read the TV, then guard, lists, community lists and AI. Changes nothing on the TV. */
     suspend fun plan(tv: Tv, info: TvInfo, classifier: Classifier?): Pair<Plan, Path> {
         begin(tv, "Reading the TV's apps")
         log("reading packages")
         val facts = TvOps(tv, tv.address).facts()
         log("${facts.paths.size} packages, ${facts.disabled.size} already off")
-        val planner = Planner(Known(storage.knownFiles()), storage.keep())
+        val planner = Planner(Known(storage.knownFiles()), storage.keep(), storage.community)
         val plan = planner.build(info, facts, classifier, storage.settings.uninstallUserApps, log,
             stopUpdates = storage.settings.stopUpdates)
         val dir = storage.savePlan(plan)

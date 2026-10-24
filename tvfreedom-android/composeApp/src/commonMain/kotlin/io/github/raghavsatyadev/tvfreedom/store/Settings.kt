@@ -6,11 +6,11 @@ class Settings(private val prefs: Prefs) {
         TERMUX("Claude in Termux", "Uses your Claude subscription"),
         NANO("Gemini Nano", "Runs on this phone"),
         CLAUDE("Claude API", "Uses an API key"),
-        NONE("No AI", "Only the safety guard and your lists"),
+        NONE("No AI", "Lists for 130+ TV models"),
     }
 
     var ai: Ai
-        get() = runCatching { Ai.valueOf(prefs.string("ai", Ai.TERMUX.name)) }.getOrDefault(Ai.TERMUX)
+        get() = runCatching { Ai.valueOf(prefs.string("ai", Ai.NONE.name)) }.getOrDefault(Ai.NONE)
         set(v) = prefs.putString("ai", v.name)
 
     /** Which Claude plans in Termux: a Claude Code model alias. Opus by default, the most capable for a first debloat. */
