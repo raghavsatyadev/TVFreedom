@@ -68,7 +68,7 @@ class CookieDrawable(color: Int, lobes: Int, depth: Float) : Drawable() {
         // Sized by the depth reached so far: the outline stays inside the bounds, and a finished morph to a circle
         // (depth 0) fills them.
         val depth = fromDepth + (toDepth - fromDepth) * t.coerceIn(0f, 1f)
-        val r = minOf(b.width(), b.height()) / 2f / (1f + depth)
+        val r = minOf(b.width(), b.height()) / 2f / (1f + abs(depth))
         for (i in 0..STEPS) {
             val a = 2 * PI * i / STEPS
             val r1 = r * (1f + fromDepth * wave(a, fromLobes, fromSharp))

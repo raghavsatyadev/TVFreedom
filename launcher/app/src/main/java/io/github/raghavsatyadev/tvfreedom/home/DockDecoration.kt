@@ -32,6 +32,7 @@ class DockDecoration(
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         val dockSize = adapter.dockSize()
+        val pad = PAD_DP * density
         var any = false
         for (i in 0 until parent.childCount) {
             val child = parent.getChildAt(i)
@@ -41,7 +42,10 @@ class DockDecoration(
             val l = (child.left + card.left).toFloat()
             val t = child.top + card.top + child.translationY
             val r = l + card.width
-            val b = t + card.height
+            // The names sit under the cards: the band holds them too, so its edge never runs through one.
+            val name = child.findViewById<View>(R.id.name)
+            val b = if (Look.names != Look.NAMES_OFF && name != null) child.top + name.bottom + child.translationY - pad + NAME_PAD_DP * density
+                else t + card.height
             if (!any) {
                 rect.set(l, t, r, b)
                 any = true
@@ -50,7 +54,6 @@ class DockDecoration(
             }
         }
         if (!any) return
-        val pad = PAD_DP * density
         rect.inset(-pad, -pad)
         val radius = 26 * density
         c.drawRoundRect(rect, radius, radius, band)
@@ -63,5 +66,8 @@ class DockDecoration(
 
         /** Extra space between favourite rows, so they are as far apart as the columns. */
         const val ROW_GAP_DP = 12
+
+        /** Space between the last name and the band's bottom edge. */
+        const val NAME_PAD_DP = 8
     }
 }

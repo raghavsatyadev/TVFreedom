@@ -179,7 +179,7 @@ class AppAdapter(
         h.name.text = e.label
         h.name.visibility = if (e.add) View.INVISIBLE else View.VISIBLE
         val focused = h.card.isFocused   // a rebind after reload() can hit the focused tile
-        h.name.alpha = if (focused) 1f else NAME_REST
+        h.name.alpha = Look.nameAlpha(focused, NAME_REST)
         h.tile.bind(e.pkg, e.add, focused)
         h.show(e)
         if (e.add) {
@@ -262,7 +262,7 @@ class AppAdapter(
             card.setOnFocusChangeListener { view, focused ->
                 tile.set(focused)
                 if (focused) Flex.settle(name)
-                name.animate().alpha(if (focused) 1f else NAME_REST)
+                name.animate().alpha(Look.nameAlpha(focused, NAME_REST))
                     .translationY(if (focused) density * 6f else 0f)
                     .setDuration(Motion.DEFAULT_EFFECTS_MS).start()
                 val pos = bindingAdapterPosition

@@ -12,7 +12,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import kotlin.math.abs
 
 /**
  * Material 3 Expressive backdrop (after material-tv-launcher): the screen takes a dark scheme seeded from the focused
@@ -58,7 +57,11 @@ class Tint(private val root: FrameLayout, density: Float) {
      * baseline. Call after [Branding.apply], which paints the root with the plain brand color.
      */
     fun attach(brandColor: Int, trueBlack: Boolean) {
-        idleSeed = if (brandColor and 0x00FFFFFF == 0) Palette.DEFAULT_SEED else brandColor
+        idleSeed = when {
+            Look.accent != 0 -> Look.accent
+            brandColor and 0x00FFFFFF == 0 -> Palette.DEFAULT_SEED
+            else -> brandColor
+        }
         black = trueBlack
         shape.visibility = if (black) View.GONE else View.VISIBLE
         backdrop.colors = if (black) intArrayOf(BLACK, BLACK) else intArrayOf(palette.surfaceBright, palette.surface)
@@ -80,6 +83,7 @@ class Tint(private val root: FrameLayout, density: Float) {
         if (pkg == null || pkg == focusedPkg) return
         focusedPkg = pkg
         morphTo(pkg)
+        if (Look.accent != 0) return     // one fixed colour: only the shape follows the app
         val seed = seeds[pkg]
         if (seed != null) {
             retint(paletteOf(seed))
@@ -115,8 +119,8 @@ class Tint(private val root: FrameLayout, density: Float) {
     private fun paletteOf(seed: Int): Palette = palettes.getOrPut(seed) { Palette.of(seed) }
 
     private fun morphTo(pkg: String) {
-        val k = abs(pkg.hashCode() % LOBES.size)
-        cookie.morphTo(LOBES[k], DEPTHS[k], SHARP[k])
+        val k = Look.shapeOf(pkg)
+        cookie.morphTo(LOBES[k], Look.depthOf(k), SHARP[k])
         morph?.cancel()
         morph = ValueAnimator.ofFloat(0f, 1f).setDuration(Motion.DEFAULT_SPATIAL_MS).apply {
             interpolator = Motion.DEFAULT_SPATIAL
@@ -152,9 +156,12 @@ class Tint(private val root: FrameLayout, density: Float) {
         private const val BLACK = 0xFF000000.toInt()
 
         // Material 3 Expressive shapes (MaterialShapes): Cookie 9, Cookie 12, Clover 4-leaf, Clover 8-leaf, Sunny,
-        // Soft burst, Cookie 6, Cookie 7, Cookie 4.
-        val LOBES = intArrayOf(9, 12, 4, 8, 14, 10, 6, 7, 4)
-        val DEPTHS = floatArrayOf(0.08f, 0.06f, 0.26f, 0.16f, 0.05f, 0.11f, 0.12f, 0.10f, 0.16f)
-        val SHARP = floatArrayOf(1f, 1f, 0.55f, 0.65f, 1f, 2.4f, 1f, 1f, 1f)
+        // Soft burst, Cookie 6, Cookie 7, Cookie 4; then a soft square (corners on the diagonals), only for designs.
+        val LOBES = intArrayOf(9, 12, 4, 8, 14, 10, 6, 7, 4, 4)
+        val DEPTHS = floatArrayOf(0.08f, 0.06f, 0.26f, 0.16f, 0.05f, 0.11f, 0.12f, 0.10f, 0.16f, -0.085f)
+        val SHARP = floatArrayOf(1f, 1f, 0.55f, 0.65f, 1f, 2.4f, 1f, 1f, 1f, 0.75f)
+
+        /** The soft square's index; apps get the shapes before it. */
+        const val SQUARE = 9
     }
 }

@@ -8,7 +8,6 @@ import android.graphics.drawable.InsetDrawable
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -49,11 +48,11 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
     /** Show an app (or the + tile) at rest or focused, with no animation. */
     fun bind(pkg: String, isAdd: Boolean, focused: Boolean) {
         add = isAdd
-        k = abs(pkg.hashCode() % Tint.LOBES.size)
+        k = Look.shapeOf(pkg)
         card.background = if (add) dashed else shape
         anim?.cancel()
         on = focused
-        shape.morphTo(Tint.LOBES[k], if (focused) 0f else Tint.DEPTHS[k], if (focused) 1f else Tint.SHARP[k])
+        shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
         shape.setProgress(1f)
         fill = if (focused) pal.primary else pal.primaryContainer
         ink = if (add) 0xCCFFFFFF.toInt() else if (focused) pal.onPrimary else pal.onPrimaryContainer
@@ -64,7 +63,7 @@ class ShapeTile(private val card: View, private val glyph: ImageView, private va
     fun set(focused: Boolean) {
         if (focused == on) return
         on = focused
-        if (!add) shape.morphTo(Tint.LOBES[k], if (focused) 0f else Tint.DEPTHS[k], if (focused) 1f else Tint.SHARP[k])
+        if (!add) shape.morphTo(Tint.LOBES[k], if (focused) 0f else Look.depthOf(k), if (focused) 1f else Tint.SHARP[k])
         val from = level
         val fill0 = fill
         val ink0 = ink

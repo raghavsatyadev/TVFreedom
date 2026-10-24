@@ -65,6 +65,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         setContentView(R.layout.activity_main)
         density = resources.displayMetrics.density
         COLUMNS = Config.columns(this)
+        Look.load(this)
         liveTvPkg = getString(R.string.live_tv_package).trim()
 
         root = findViewById(R.id.root)
@@ -99,7 +100,9 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             val rows = maxOf(1, adapter.dockSize() / COLUMNS)
             // label-less items plus DockDecoration offsets
             val dockRow = ((117 * rows + DockDecoration.ROW_GAP_DP * (rows - 1) + 6 + 12) * density).toInt()
-            val want = maxOf(0, h - dockRow - (30 * density).toInt())
+            // The band reaches 20dp lower when it holds the names (DockDecoration).
+            val below = if (Look.names == Look.NAMES_OFF) 30 else 50
+            val want = maxOf(0, h - dockRow - (below * density).toInt())
             if (grid.paddingTop != want) grid.setPadding(grid.paddingLeft, want, grid.paddingRight, grid.paddingBottom)
         }
 
