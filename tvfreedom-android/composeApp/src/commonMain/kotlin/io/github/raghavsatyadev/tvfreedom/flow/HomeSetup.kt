@@ -5,6 +5,7 @@ import io.github.raghavsatyadev.tvfreedom.core.Guard
 import io.github.raghavsatyadev.tvfreedom.core.ListEntry
 import io.github.raghavsatyadev.tvfreedom.core.Removal
 import io.github.raghavsatyadev.tvfreedom.core.TvInfo
+import io.github.raghavsatyadev.tvfreedom.core.UNINSTALL
 import io.github.raghavsatyadev.tvfreedom.store.Storage
 import io.github.raghavsatyadev.tvfreedom.tv.Tv
 import io.github.raghavsatyadev.tvfreedom.tv.HomeOps
@@ -64,7 +65,9 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
         val all = ops.packages()
         val off = ops.packages("-d")
         val oldScreensaver = home.screensaver()
-        val homeOff = (fromModel4 ?: guessHome(ops)).filter { it.pkg in all && it.pkg !in off }
+        // Another installed launcher (say Clean Your TV's TVGO) is an old home screen too, even when the list skips it.
+        val homeOff = (fromModel4?.plus(otherLaunchers(ops)) ?: guessHome(ops)).distinctBy { it.pkg }
+            .filter { it.pkg in all && it.pkg !in off }
         val dreamOff = (fromModel5 ?: guessDream(oldScreensaver)).filter { it.pkg in all && it.pkg !in off }
         val config = reported ?: LauncherConfig(
             favourites = DEFAULT_FAVOURITES.filter { it in apps },
@@ -81,6 +84,10 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
     private suspend fun guessHome(ops: TvOps): List<ListEntry> = ops.homePackages().sorted()
         .filter { it != HomeOps.LAUNCHER && Guard.keepReason(it).let { why -> why.isEmpty() || why == "launcher/setup" } }
         .map { ListEntry(DISABLE, it, "stock home screen") }
+
+    /** Home screens someone installed (not part of the TV), other than ours: these are uninstalled. */
+    private suspend fun otherLaunchers(ops: TvOps): List<ListEntry> = (ops.homePackages() intersect ops.packages("-3"))
+        .filter { it != HomeOps.LAUNCHER }.sorted().map { ListEntry(UNINSTALL, it, "another home screen") }
 
     /** The current screensaver's app, when this model has no tested list and the guard allows it. */
     private fun guessDream(current: String): List<ListEntry> {
@@ -100,16 +107,17 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
      * The run's restart at the end checks the new one opens; if it doesn't, the stock one is turned back on.
      */
     suspend fun launcherPhase(tv: Tv, info: TvInfo, draft: HomeDraft, choice: Choice): Pending {
-        val rows = draft.homeOff.map { Removal(it.pkg, DISABLE, 4, it.comment, "home setup") }
+        val rows = draft.homeOff.map { Removal(it.pkg, it.action, 4, it.comment, "home setup") }
         val runDir = storage.writeHomeRun(info, 4, rows, emptyMap())
         log("phase 4 saved: ${runDir.name}")
-        val undo: suspend (Tv) -> Unit = { rollBack(it, rows, null) }
+        val undo: suspend (Tv) -> Unit = { rollBack(it, rows, null, draft.currentHome) }
         try {
             ensureLauncher(tv, draft, choice)
             val ops = TvOps(tv, tv.address)
             runner.begin(tv, "Turning off the old home screen")
-            rows.forEach { r -> log("disable ${r.pkg}: ${ops.apply(ListEntry(DISABLE, r.pkg, r.reason)).ifEmpty { "ok" }}") }
+            rows.forEach { r -> log("${r.action} ${r.pkg}: ${ops.apply(ListEntry(r.action, r.pkg, r.reason)).ifEmpty { "ok" }}") }
             if (rows.isEmpty()) log("the old home screen is already off")
+            log("home screen set to TVFreedom: ${HomeOps(tv).setHome("${HomeOps.LAUNCHER}/.MainActivity").ifEmpty { "ok" }}")
         } catch (e: Exception) {
             runner.verified(runDir, false)
             runCatching { undo(tv) }
@@ -223,10 +231,13 @@ class HomeSetup(private val storage: Storage, private val runner: Runner, privat
     }
 
     /** A phase didn't check out: turn back on what it turned off (and the old screensaver) rather than leave it half done. */
-    private suspend fun rollBack(tv: Tv, rows: List<Removal>, oldScreensaver: String?) {
+    private suspend fun rollBack(tv: Tv, rows: List<Removal>, oldScreensaver: String?, oldHome: String? = null) {
         runner.begin(tv, "Undoing a change")
         val ops = TvOps(tv, tv.address)
-        rows.asReversed().forEach { log("enable ${it.pkg}: ${ops.enable(it.pkg).ifEmpty { "ok" }}") }
+        rows.asReversed().filter { it.action == DISABLE }.forEach { log("enable ${it.pkg}: ${ops.enable(it.pkg).ifEmpty { "ok" }}") }
+        // Two home screens on make the TV ask which to use: open the one it had before.
+        oldHome?.takeIf { '/' in it && !it.startsWith(HomeOps.LAUNCHER) && !it.startsWith("android/") }
+            ?.let { log("home screen back to $it: ${HomeOps(tv).setHome(it).ifEmpty { "ok" }}") }
         oldScreensaver?.let { log("screensaver back to $it: ${HomeOps(tv).setScreensaver(it).ifEmpty { "ok" }}") }
         ops.key("KEYCODE_HOME")
     }

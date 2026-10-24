@@ -124,6 +124,9 @@ class HomeOps(private val tv: Tv) {
 
     suspend fun screensaver(): String = tv.sh("settings get secure $SCREENSAVER").trim()
 
+    /** Make [component] what Home opens, so the TV never asks which home screen to use (Android 10 and up). */
+    suspend fun setHome(component: String): String = tv.sh("cmd package set-home-activity ${Parse.safeComponent(component)}").trim()
+
     /** Set the screensaver; "null" or "" puts back "no value" (what an untouched TV has). */
     suspend fun setScreensaver(component: String): String =
         if (component.isEmpty() || component == "null") tv.sh("settings delete secure $SCREENSAVER")
