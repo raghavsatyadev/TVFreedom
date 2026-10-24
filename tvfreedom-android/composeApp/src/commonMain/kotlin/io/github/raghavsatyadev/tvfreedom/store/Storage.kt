@@ -1,5 +1,6 @@
 package io.github.raghavsatyadev.tvfreedom.store
 
+import io.github.raghavsatyadev.tvfreedom.core.Community
 import io.github.raghavsatyadev.tvfreedom.core.Guard
 import io.github.raghavsatyadev.tvfreedom.core.ListEntry
 import io.github.raghavsatyadev.tvfreedom.core.ListFiles
@@ -59,6 +60,9 @@ class Storage(
         walk("lists")
         return out.sortedByKey()
     }
+
+    /** The Clean Your TV community lists, read once. */
+    val community: Community? by lazy { runCatching { Community(asset("lists/community.lst")) }.getOrNull() }
 
     fun keep(): Set<String> = runCatching { Guard.parseKeep(asset("lists/keep.txt")) }.getOrDefault(emptySet())
 

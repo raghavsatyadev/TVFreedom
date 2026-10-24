@@ -2,11 +2,12 @@ package io.github.raghavsatyadev.tvfreedom.core
 
 /**
  * Build the removal plan (port of tvfreedom_core/plan.py): facts from the TV, then the guard (always wins),
- * then this model's known lists, then the AI for the rest. Bad or missing AI answers mean keep.
+ * then this model's known lists, then the community lists (only for a model without its own), then the AI for the
+ * rest. Bad or missing AI answers mean keep.
  * Phases 4 and 5 of a model's lists (home screen and screensaver) are left to the home-screen setup, which swaps
  * them safely; they never appear here or as AI examples.
  */
-class Planner(private val known: Known, private val keep: Set<String>) {
+class Planner(private val known: Known, private val keep: Set<String>, private val community: Community? = null) {
 
     suspend fun build(
         info: TvInfo,
@@ -27,6 +28,9 @@ class Planner(private val known: Known, private val keep: Set<String>) {
         val conflicts = mutableListOf<Conflict>()
         val ask = mutableListOf<AskItem>()
         val alreadyOff = f.paths.keys.filter { it in f.disabled }.sorted()
+        val shared = if (ownAll.isEmpty()) community?.pick(info) else null
+        shared?.let { log("using the ${it.source}") }
+        val keepAll = keep + shared?.never.orEmpty()
 
         fun actionFor(pkg: String, suggested: String): String =
             if (pkg in f.user && uninstallUserApps && suggested == UNINSTALL) UNINSTALL
@@ -34,7 +38,7 @@ class Planner(private val known: Known, private val keep: Set<String>) {
 
         for ((pkg, apk) in f.paths.sortedByKey()) {
             if (pkg in f.disabled) continue
-            val why = Guard.keepReason(pkg, apk, f.home, info.ime, keep, f.uids[pkg])
+            val why = Guard.keepReason(pkg, apk, f.home, info.ime, keepAll, f.uids[pkg])
             if (why.isNotEmpty() && !(why == Guard.OTA && stopUpdates && pkg in own)) {
                 kept[pkg] = why
                 examples[pkg]?.let { conflicts += Conflict(pkg, why, "${it.action} on ${it.model}") }
@@ -48,6 +52,12 @@ class Planner(private val known: Known, private val keep: Set<String>) {
             if (mine != null) {
                 remove += Removal(pkg, actionFor(pkg, mine.action), mine.phase,
                     mine.comment.ifEmpty { "in this model's list" }, "known list")
+                continue
+            }
+            val row = shared?.rows?.get(pkg)
+            if (row != null) {
+                remove += Removal(pkg, DISABLE, Community.PHASE_OF.getValue(row.category),
+                    ListFiles.oneLine(row.note.ifEmpty { Community.title(row.category) }), shared.source)
                 continue
             }
             val hint = examples[pkg]?.let { "${it.action} phase ${it.phase} on ${it.model}: ${it.comment}" }
