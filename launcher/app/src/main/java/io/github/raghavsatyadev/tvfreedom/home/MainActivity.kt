@@ -80,7 +80,12 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         greeting = findViewById(R.id.greeting)
 
         grid = findViewById(R.id.grid)
-        grid.layoutManager = GridLayoutManager(this, COLUMNS)
+        // The home screen does all the scrolling itself (onTileFocused): the list's own scroll on focus fought it.
+        grid.layoutManager = object : GridLayoutManager(this, COLUMNS) {
+            override fun requestChildRectangleOnScreen(
+                parent: RecyclerView, child: View, rect: Rect, immediate: Boolean, focusedChildVisible: Boolean,
+            ) = false
+        }
         grid.setHasFixedSize(true)
         grid.itemAnimator = null
         grid.layoutAnimation = LayoutAnimationController(AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f)
@@ -122,6 +127,7 @@ class MainActivity : Activity(), AppAdapter.TileListener {
         )
         tint.onPalette(pills::setPalette)
         tint.onPalette(ShapeTile::setPalette)
+        tint.onPalette { GlassMenu.palette = it }
         watching = ContinueWatching(this, findViewById(R.id.watchRow), findViewById(R.id.watchList), ::open)
         watching.onShown = ::pointTopBarDown
 
@@ -269,9 +275,16 @@ class MainActivity : Activity(), AppAdapter.TileListener {
             showHero(position, (r.top - rowAbove - dy).toFloat())
         } else {
             hideHero()
-            // Scroll just enough so the whole glass (not only the tile) is visible.
-            val want = Rect(0, -pad.toInt() * 2, item.width, item.height + pad.toInt())
-            grid.requestChildRectangleOnScreen(item, want, false)
+            // Scroll just enough that the whole glass and the name under it are on screen.
+            val top = item.top - 2 * pad.toInt()
+            val bottom = item.bottom + pad.toInt()
+            val end = grid.height - grid.paddingBottom
+            val dy = when {
+                bottom > end -> bottom - end
+                top < 0 -> top
+                else -> 0
+            }
+            if (dy != 0) grid.smoothScrollBy(0, dy)
         }
     }
 

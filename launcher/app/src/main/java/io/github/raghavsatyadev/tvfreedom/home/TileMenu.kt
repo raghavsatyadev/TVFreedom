@@ -19,6 +19,7 @@ object TileMenu {
         val favs = adapter.favourites()
         val density = act.resources.displayMetrics.density
         val menu = GlassMenu(act, root, maxOf(anchor.width, (240 * density).toInt()))
+        menu.addTitle(e.label)
         if (favs.contains(e.pkg)) {
             val installed = adapter.installedFavourites()
             val at = installed.indexOf(e.pkg)
@@ -68,6 +69,6 @@ object TileMenu {
                 onChanged(e.pkg)
             }
         }
-        if (!menu.isEmpty()) menu.showAbove(anchor, root)
+        if (!menu.isEmpty()) menu.showAbove(anchor)
     }
 }
