@@ -99,7 +99,7 @@ class PlannerTest {
     fun noAiKeepsEverythingUnlisted() {
         val p = plan("Brand New TV", remove = false, ai = null)
         assertTrue(p.remove.isEmpty())
-        assertTrue(p.kept.values.any { it == "no AI: kept" })
+        assertTrue(p.kept.values.any { it == "kept: no AI picked" })
     }
 
     @Test

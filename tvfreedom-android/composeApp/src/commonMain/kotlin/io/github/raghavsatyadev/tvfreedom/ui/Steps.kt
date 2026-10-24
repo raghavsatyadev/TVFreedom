@@ -85,7 +85,8 @@ fun LazyListScope.stepList(steps: List<PlainStep>, now: Int? = null, done: List<
 
 /** The apps someone installed on the TV, always shown on the plan: which stay, and which a phase takes off. */
 fun LazyListScope.userApps(plan: Plan) {
-    val apps = plan.userApps.sortedBy { appName(it).lowercase() }
+    // TVFreedom's own apps always stay; listing them only raises questions.
+    val apps = plan.userApps.filterNot { it.startsWith(OWN) }.sortedBy { appName(it).lowercase() }
     item(key = "user:label") { GroupLabel("Apps someone installed (${apps.size})") }
     if (apps.isEmpty()) item(key = "user:none") {
         Text("None: every app on this TV came with it.", style = MaterialTheme.typography.bodyMedium,
@@ -99,12 +100,14 @@ fun LazyListScope.userApps(plan: Plan) {
                     tint = if (row == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) },
                 supportingContent = {
                     Text(when {
-                        row == null -> "Stays" + (plan.kept[pkg]?.let { ": $it" } ?: "")
-                        row.action == UNINSTALL -> "Uninstalled in phase ${row.phase} (skip that phase to keep it)"
-                        else -> "Turned off in phase ${row.phase} (skip that phase to keep it)"
-                    } + " · $pkg")
+                        row == null -> if (plan.kept[pkg] == "your keep list") "Stays: you picked it" else "Stays"
+                        row.action == UNINSTALL -> "Will be removed"
+                        else -> "Will be turned off"
+                    })
                 },
             ) { Text(appName(pkg)) }
         }
     }
 }
+
+private const val OWN = "io.github.raghavsatyadev.tvfreedom"

@@ -174,26 +174,6 @@ private fun HomeForm(vm: TvFreedomViewModel, draft: HomeDraft) {
     }
 }
 
-/** What phase 4 (home screen) or 5 (screensaver) would do on this TV, one line each, for the plan. */
-fun homeLines(draft: HomeDraft, phase: Int): List<String> = buildList {
-    val install = when {
-        draft.installed == null -> "Install TVFreedom's home screen"
-        draft.installed < draft.bundled -> "Update the home screen on the TV"
-        else -> null
-    }
-    if (phase == 4) {
-        add(install ?: "Keep the home screen already on the TV")
-        add("Send it your favourites and tiles per row, then check it opens")
-        draft.homeOff.forEach { add("Turn off ${it.pkg}: ${it.comment.substringBefore('(').trim()}") }
-    } else {
-        if (install != null) add("$install first (the clock lives in it)")
-        add("Screensaver: the clock, with weather and holidays (now ${draft.oldScreensaver.substringBefore('/').ifEmpty { "none" }})")
-        draft.dreamOff.forEach { add("Turn off ${it.pkg}: ${it.comment.substringBefore('(').trim()}") }
-    }
-    add("Then restart the TV and check; undone at once if the check fails")
-    if (!draft.fromLists) add("This TV has no tested list, so TVFreedom picked these from what the TV reports. Check them.")
-}
-
 /** A readable name for a TV app from its package (adb can't read app labels). */
 fun appName(pkg: String): String = KNOWN_APPS[pkg] ?: pkg.split('.')
     .lastOrNull { it.lowercase() !in GENERIC && it.length > 2 }?.replaceFirstChar { it.uppercase() } ?: pkg
@@ -213,5 +193,12 @@ private val KNOWN_APPS = mapOf(
     "com.spotify.tv.android" to "Spotify",
     "com.disney.disneyplus" to "Disney+",
     "com.google.android.apps.tv.launcherx" to "Google TV",
+    "org.smarttube.stable" to "SmartTube",
+    "org.smarttube.beta" to "SmartTube",
+    "com.liskovsoft.smarttubetv" to "SmartTube",
+    "com.liskovsoft.smarttubetv.beta" to "SmartTube",
+    "com.sonyliv" to "Sony LIV",
+    "com.jio.media.stb.ondemand" to "JioCinema",
+    "com.zee5.androidtv" to "ZEE5",
     HomeOps.LAUNCHER to "TVFreedom home",
 )

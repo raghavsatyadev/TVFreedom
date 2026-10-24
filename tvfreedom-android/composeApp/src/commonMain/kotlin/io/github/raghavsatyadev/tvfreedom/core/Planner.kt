@@ -59,7 +59,7 @@ class Planner(private val known: Known, private val keep: Set<String>) {
         for (item in ask) {
             val v = answers[item.pkg]
             when {
-                v == null -> kept[item.pkg] = if (classifier == null) "no AI: kept" else "agent: agent gave no answer"
+                v == null -> kept[item.pkg] = if (classifier == null) "kept: no AI picked" else "kept: the AI wasn't sure"
                 v.remove -> remove += Removal(item.pkg, actionFor(item.pkg, UNINSTALL), v.phase,
                     ListFiles.oneLine(v.reason), "agent")
                 else -> kept[item.pkg] = "agent: ${v.reason}"

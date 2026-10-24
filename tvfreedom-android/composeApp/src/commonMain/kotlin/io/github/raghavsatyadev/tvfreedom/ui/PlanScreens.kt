@@ -140,8 +140,7 @@ private fun LazyListScope.phase(vm: TvFreedomViewModel, plan: Plan, phase: Int) 
 private fun LazyListScope.homePhase(vm: TvFreedomViewModel, draft: HomeDraft, phase: Int) {
     val on = phase in vm.state.phases
     val due = if (phase == 4) draft.launcherDue else draft.screensaverDue
-    val lines = homeLines(draft, phase)
-    val n = lines.size + 2
+    val n = 2
     item(key = "label:$phase") { GroupLabel("Phase $phase · ${if (phase == 4) "new home screen" else "clock screensaver"}") }
     item(key = "phase:$phase") {
         SegmentedListItem(checked = on, onCheckedChange = { vm.togglePhase(phase) }, shapes = seg(0, n), colors = segColors(),
@@ -158,13 +157,6 @@ private fun LazyListScope.homePhase(vm: TvFreedomViewModel, draft: HomeDraft, ph
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (phase == 4) HomePreview(logo, vm.brand.color, c.favourites, c.columns)
             else DreamPreview(logo, c.place)
-        }
-    }
-    lines.forEachIndexed { i, line ->
-        item(key = "home:$phase:$i") {
-            SegmentedListItem(onClick = {}, shapes = seg(i + 1, n), colors = segColors(), enabled = on) {
-                Text(line, style = MaterialTheme.typography.bodyMedium)
-            }
         }
     }
     item(key = "home:$phase:settings") {
