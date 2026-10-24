@@ -18,6 +18,11 @@ graph=graphify-out/graph.json
 exclude="$(git rev-parse --git-common-dir 2>/dev/null)/info/exclude"
 if [ -f "$exclude" ] || [ -d "$(dirname "$exclude")" ]; then
   grep -qx 'graphify-out/' "$exclude" 2>/dev/null || echo 'graphify-out/' >>"$exclude"
+  # Submodules are third-party code: keep them out of the graph. Git ignores exclude for tracked paths,
+  # so this changes nothing in git; graphify reads the same file.
+  git config --file .gitmodules --get-regexp '\.path$' 2>/dev/null | while read -r _ sub; do
+    grep -qxF "/$sub/" "$exclude" 2>/dev/null || echo "/$sub/" >>"$exclude"
+  done
 fi
 
 build() { graphify update . --no-cluster 2>&1 | grep -E "Rebuilt|error" >&2; }
