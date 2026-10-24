@@ -157,10 +157,11 @@ class HomeOps(private val tv: Tv) {
         const val LISTENERS = "enabled_notification_listeners"
         const val LOGO_URI = "content://$LAUNCHER.logo/logo"
         /**
-         * Wi-Fi name on the home screen (Android 10 needs location for it), holidays on the screensaver, and the
+         * Wi-Fi name on the home screen (needs location; Android 12+ wants coarse with fine), holidays on the screensaver, and the
          * Watch Next list for Continue watching (only read while that is on).
          */
-        val PERMISSIONS = listOf("android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CALENDAR",
+        val PERMISSIONS = listOf("android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION",
+            "android.permission.READ_CALENDAR",
             "android.permission.READ_TV_LISTINGS")
 
         /** One shell word: single quotes, with any ' inside closed, escaped and reopened. */

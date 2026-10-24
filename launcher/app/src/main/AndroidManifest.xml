@@ -6,8 +6,11 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <!-- Needed on Android 10 to read the Wi-Fi network name; granted over adb at install time. -->
+    <!-- Needed to read the Wi-Fi network name; granted over adb at install time. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Android 11+ hides other apps unless asked: the home screen lists, opens and names every app. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- Screensaver (ClockDream): weather from Open-Meteo, and upcoming holidays from the synced Google Calendar
          (READ_CALENDAR is granted over adb at install time). -->
     <uses-permission android:name="android.permission.INTERNET" />

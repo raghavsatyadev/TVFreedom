@@ -88,7 +88,7 @@ class TopBar(private val act: Activity, root: ViewGroup, liveTvPkg: String, open
     }
 
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
-    @Suppress("DEPRECATION") // WifiManager.connectionInfo: the launcher targets API 29, where it still gives the SSID.
+    @Suppress("DEPRECATION") // WifiManager.connectionInfo: still gives the SSID when location is granted.
     private fun updateWifiLabel() {
         var text = act.getString(R.string.wifi)
         try {
