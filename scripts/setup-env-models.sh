@@ -280,23 +280,24 @@ if [[ -n "$DECISION" && "$DECISION" != jev ]]; then
   fi
 fi
 
-# Global skills (global_skills/, e.g. `local-model`) work in every project, so they live in each
-# user's global skill folders: Claude Code, Gemini/Antigravity, Codex. Installed only when asked.
+# Global skills (local-model, code-graph, headless-emulator) work in every project, so they live in the
+# agent-workflow repo (https://github.com/raghavsatyadev/agent-workflow), not here. Its install.sh links
+# them into Claude Code, Gemini/Antigravity and Codex skill folders. Installed only when asked.
 missing_skills=()
-for d in "$REPO_ROOT"/global_skills/*/; do
-  [[ -f "$d/SKILL.md" ]] || continue
-  s="$(basename "$d")"
-  for t in .claude .gemini .agents; do
-    [[ -f "$HOME/$t/skills/$s/SKILL.md" ]] || { missing_skills+=("$s"); break; }
-  done
+for s in local-model code-graph headless-emulator; do
+  [[ -f "$HOME/.claude/skills/$s/SKILL.md" ]] || missing_skills+=("$s")
 done
+aw_install="$(dirname "$REPO_ROOT")/agent-workflow/install.sh"
+aw_hint="git clone --recurse-submodules https://github.com/raghavsatyadev/agent-workflow.git, then bash agent-workflow/install.sh"
 if [[ ${#missing_skills[@]} -eq 0 ]]; then
-  pass "Global skills are installed. Re-run global_skills/install.sh after a pull that changes them."
-elif prompt_fix "Install the global skills (${missing_skills[*]}) for Claude Code, Gemini and Codex (every project)?"; then
-  bash "$REPO_ROOT/global_skills/install.sh"
+  pass "Global skills are installed. Re-run agent-workflow/install.sh after a pull."
+elif [[ ! -f "$aw_install" ]]; then
+  warn "Missing global skills: ${missing_skills[*]}. Install: $aw_hint"
+elif prompt_fix "Install the global skills (${missing_skills[*]}) from agent-workflow for every project?"; then
+  bash "$aw_install"
   pass "Restart your agent. Check: echo hi | ~/.local-model/lm-ask yesno \"Is this a greeting?\""
 else
-  warn "Skipped. Missing global skills: ${missing_skills[*]}. Later: bash global_skills/install.sh"
+  warn "Skipped. Missing global skills: ${missing_skills[*]}. Later: bash $aw_install"
 fi
 if [[ -n "$DECISION" ]]; then
   [[ -n "${OLLAMA_MODEL:-}" ]] && info "Free the GPU after use: ~/.local-model/lm-off $OLLAMA_MODEL (Claude Code does it on session end)."

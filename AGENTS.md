@@ -28,8 +28,8 @@ App module `:androidCMP` Â· applicationId `io.github.raghavsatyadev.tvfreedom` Â
 - When done and checked, commit and push (branch-pr-policy.md), then stop. Report in five lines
   or fewer, in ASD-STE100 Simplified Technical English.
 - Keep every source file at or under 500 lines; split by responsibility before it grows past that.
-- Decision model: global skill `local-model`. Global skills live in `global_skills/` (no agent reads
-  it directly); install them with `bash global_skills/install.sh`. Turn on the local decision model
+- Decision model: global skill `local-model`. Global skills live in the
+  [agent-workflow](https://github.com/raghavsatyadev/agent-workflow) repo; install them with its `install.sh`. Turn on the local decision model
   first (`bash ~/.local-model/lm-on`), then use `jgl`, `lm-ask`, `lm-rank` and `rg` as the skill
   says. Rule checks for `lm-diffcheck`: [.agents/diff-checks.txt](.agents/diff-checks.txt).
 - Plan state: `.claude/PLAN.md` (git-ignored, kept by plan-keeper).

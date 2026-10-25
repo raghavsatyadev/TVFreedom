@@ -305,12 +305,13 @@ if ($decision -and $decision -ne "jev") {
   }
 }
 
-# Global skills (global_skills/, e.g. `local-model`) work in every project, so they live in each
-# user's global skill folders: Claude Code, Gemini/Antigravity, Codex. Installed only when asked.
-$globalSkills = Get-ChildItem (Join-Path $repoRoot "global_skills") -Directory |
-  Where-Object { Test-Path (Join-Path $_.FullName "SKILL.md") } | ForEach-Object { $_.Name }
-$missingSkills = $globalSkills | Where-Object { $n = $_; @(".claude", ".gemini", ".agents") |
-  Where-Object { -not (Test-Path (Join-Path $env:USERPROFILE "$_\skills\$n\SKILL.md")) } }
+# Global skills (local-model, code-graph, headless-emulator) work in every project, so they live in the
+# agent-workflow repo (https://github.com/raghavsatyadev/agent-workflow), not here. Its install.sh links
+# them into Claude Code, Gemini/Antigravity and Codex skill folders. Installed only when asked.
+$missingSkills = @("local-model", "code-graph", "headless-emulator") |
+  Where-Object { -not (Test-Path (Join-Path $env:USERPROFILE ".claude\skills\$_\SKILL.md")) }
+$awInstall = Join-Path (Split-Path $repoRoot) "agent-workflow\install.sh"
+$awHint = "git clone --recurse-submodules https://github.com/raghavsatyadev/agent-workflow.git, then bash agent-workflow/install.sh (Git Bash)"
 # Git Bash, not the WSL bash.exe in System32 or WindowsApps, which comes first on some PATHs.
 $bash = Get-Command bash -All -ErrorAction SilentlyContinue |
   Where-Object { $_.Source -notmatch '\\(System32|WindowsApps)\\' } | Select-Object -First 1 -ExpandProperty Source
@@ -321,14 +322,16 @@ if (-not $bash) {
   $bash = $roots | ForEach-Object { Join-Path $_ "bin\bash.exe" } | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 if (-not $missingSkills) {
-  Write-Pass "Global skills are installed ($($globalSkills -join ', ')). Re-run global_skills/install.sh after a pull that changes them."
+  Write-Pass "Global skills are installed. Re-run agent-workflow/install.sh after a pull."
+} elseif (-not (Test-Path $awInstall)) {
+  Write-Warn "Missing global skills: $($missingSkills -join ', '). Install: $awHint"
 } elseif (-not $bash) {
-  Write-Warn "bash (Git Bash) not found; install Git for Windows, then run: bash global_skills/install.sh"
-} elseif (Prompt-Fix "Install the global skills ($($missingSkills -join ', ')) for Claude Code, Gemini and Codex (every project)?") {
-  & $bash (Join-Path $repoRoot "global_skills/install.sh")
+  Write-Warn "bash (Git Bash) not found; install Git for Windows, then run: bash $awInstall"
+} elseif (Prompt-Fix "Install the global skills ($($missingSkills -join ', ')) from agent-workflow for every project?") {
+  & $bash $awInstall
   Write-Pass "Restart your agent. Check: echo hi | bash ~/.local-model/lm-ask yesno `"Is this a greeting?`""
 } else {
-  Write-Warn "Skipped. Missing global skills: $($missingSkills -join ', '). Later: bash global_skills/install.sh"
+  Write-Warn "Skipped. Missing global skills: $($missingSkills -join ', '). Later: bash $awInstall"
 }
 if ($decision) {
   if ($ollamaModel) { Write-Info "Free the GPU after use: bash ~/.local-model/lm-off $ollamaModel (Claude Code does it on session end)." }
