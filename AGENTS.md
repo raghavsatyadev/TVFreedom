@@ -44,6 +44,7 @@ App module `:androidCMP` · applicationId `io.github.raghavsatyadev.tvfreedom` �
 | [format.md](.agents/rules/format.md) | touching any Kotlin — ktfmt is off; keep the file's style |
 | [artemis-mobile-testing.md](.agents/rules/artemis-mobile-testing.md) | *on demand* — using ARTEMIS MCP tools |
 | [parallel-agents.md](.agents/rules/parallel-agents.md) | the user asks for agents in parallel worktrees |
+| [compose-previews.md](.agents/rules/compose-previews.md) | *on demand* — rendering a `@Preview` to an image with `android studio render-compose-preview` |
 
 ## Skills — `.agents/skills/`
 

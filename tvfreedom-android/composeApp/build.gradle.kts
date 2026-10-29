@@ -25,6 +25,7 @@ kotlin {
             implementation(libs.compose.foundation.mp)
             implementation(libs.compose.material3.mp)
             implementation(libs.compose.components.resources.mp)
+            implementation(libs.compose.ui.tooling.preview.mp)
             implementation(libs.lifecycle.viewmodel.compose.mp)
             implementation(libs.lifecycle.runtime.compose.mp)
             implementation(libs.coroutines.core)
@@ -54,3 +55,6 @@ kotlin {
 
 // The tests read data/, lists/ and the goldens from the repo, the same inputs tools/make_golden.py uses.
 tasks.withType<Test>().configureEach { systemProperty("tvfreedom.repo", repoRoot.path) }
+
+// Lets Android Studio and the android CLI render the @Previews in commonMain.
+dependencies { androidRuntimeClasspath(libs.compose.ui.tooling) }
