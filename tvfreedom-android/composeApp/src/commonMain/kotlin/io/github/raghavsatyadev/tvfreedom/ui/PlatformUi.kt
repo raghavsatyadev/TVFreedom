@@ -2,6 +2,9 @@ package io.github.raghavsatyadev.tvfreedom.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 
 /** An image decoded at no more than [maxWidth] px wide (a 4K screenshot would be 33 MB), or null. */
 expect fun decodeImage(bytes: ByteArray, maxWidth: Int = 1280): ImageBitmap?
@@ -24,7 +27,11 @@ expect fun rememberPermission(p: Permission, onResult: (Boolean) -> Unit = {}): 
 
 /** The phone's back button runs [onBack] while [enabled]. */
 @Composable
-expect fun SystemBack(enabled: Boolean, onBack: () -> Unit)
+fun SystemBack(enabled: Boolean, onBack: () -> Unit) = NavigationBackHandler(
+    state = rememberNavigationEventState(NavigationEventInfo.None),
+    isBackEnabled = enabled,
+    onBackCompleted = onBack,
+)
 
 /** The steps that set up Claude in Termux (Android only). */
 @Composable

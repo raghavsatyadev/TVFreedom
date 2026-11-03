@@ -20,19 +20,17 @@ import io.github.raghavsatyadev.tvfreedom.store.PhoneLocation
 import io.github.raghavsatyadev.tvfreedom.store.Prefs
 import io.github.raghavsatyadev.tvfreedom.store.Settings
 import io.github.raghavsatyadev.tvfreedom.store.Storage
+import io.github.raghavsatyadev.tvfreedom.store.httpBytes
 import io.github.raghavsatyadev.tvfreedom.tv.AndroidTvLink
 import io.github.raghavsatyadev.tvfreedom.ui.AppPlatform
 import io.github.raghavsatyadev.tvfreedom.ui.Place
 import io.github.raghavsatyadev.tvfreedom.ui.Progress
 import io.github.raghavsatyadev.tvfreedom.ui.TermuxStep
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.net.URL
 
 /** The Android side of [AppPlatform]: files, prefs, adb, the foreground service, AI and location. */
 class AndroidPlatform(private val ctx: Context, override val open: StateFlow<Int>) : AppPlatform {
@@ -40,11 +38,7 @@ class AndroidPlatform(private val ctx: Context, override val open: StateFlow<Int
         AndroidAssets(ctx), SharedPrefs(ctx.getSharedPreferences("tvfreedom", Context.MODE_PRIVATE)))
     override val brand = Brand(FileSystem.SYSTEM, ctx.filesDir.toOkioPath(), AndroidImages, storage.settings)
     override val link by lazy { AndroidTvLink(ctx, storage.keysDir.toFile()) }
-    override val net = Net { url ->
-        withContext(Dispatchers.IO) {
-            URL(url).openConnection().apply { connectTimeout = 20_000; readTimeout = 30_000 }.getInputStream().use { it.readBytes() }
-        }
-    }
+    override val net = Net { url -> httpBytes(url) }
 
     override fun startJob(p: Progress) = RunService.start(ctx, p)
     override fun updateJob(p: Progress) = RunService.update(ctx, p)

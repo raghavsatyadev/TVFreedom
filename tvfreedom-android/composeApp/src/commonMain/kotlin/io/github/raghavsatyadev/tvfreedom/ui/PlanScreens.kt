@@ -37,6 +37,7 @@ fun PlanScreen(vm: TvFreedomViewModel) {
     var showLog by rememberSaveable { mutableStateOf(false) }
     val chosen = vm.chosenPhases()
     val count = plan?.remove?.count { it.phase in s.phases } ?: 0
+    SystemBack(enabled = manage && !s.busy) { manage = false }
     Page(if (manage) "Manage" else "Plan", s, onBack = { if (manage) manage = false else vm.go(Screen.TV) },
         bottomBar = plan?.takeIf { it.remove.isNotEmpty() || s.homeDraft != null || s.extrasDraft != null }?.let {
             { MainAction("Clean", Icons.Clean, enabled = !s.busy && chosen.isNotEmpty()) { confirm = true } }

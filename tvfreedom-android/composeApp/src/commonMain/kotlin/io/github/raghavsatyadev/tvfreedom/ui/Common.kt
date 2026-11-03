@@ -91,8 +91,9 @@ fun Page(
     // Full label at the top and bottom of the list; just the icon while scrolling through it, so it covers less.
     val fabExpanded by remember { derivedStateOf { !list.canScrollBackward || !list.canScrollForward } }
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    // The phone's back does what the arrow does; while a job runs it does nothing, so it can't close the app mid-job.
-    SystemBack(enabled = onBack != null || state.busy) { if (!state.busy) onBack?.invoke() }
+    // The phone's back is handled by TvFreedomNav (matching the arrow); while a job runs it does nothing,
+    // so it can't close the app mid-job.
+    SystemBack(enabled = state.busy) {}
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         contentWindowInsets = WindowInsets.safeDrawing,

@@ -7,8 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.jvm.javaio.toInputStream
 
 /**
  * The TVFreedom home screen for the TV, from the newest GitHub release. Kept on the phone, and fetched again when
@@ -34,16 +35,11 @@ class LauncherDownload(private val ctx: Context) {
         file.readBytes() to version(file)
     }
 
-    private fun fetch() {
+    private suspend fun fetch() {
         val part = File(file.parentFile, "launcher.part").apply { parentFile?.mkdirs() }
-        val c = URL(URL_APK).openConnection() as HttpURLConnection
-        try {
-            c.connectTimeout = 20_000
-            c.readTimeout = 60_000
-            if (c.responseCode != 200) throw IOException("GitHub answered ${c.responseCode}")
-            c.inputStream.use { input -> part.outputStream().use { input.copyTo(it) } }
-        } finally {
-            c.disconnect()
+        http.prepareGet(URL_APK).execute { r ->
+            if (r.status.value != 200) throw IOException("GitHub answered ${r.status.value}")
+            r.bodyAsChannel().toInputStream().use { input -> part.outputStream().use { input.copyTo(it) } }
         }
         val pkg = ctx.packageManager.getPackageArchiveInfo(part.path, 0)?.packageName
         if (pkg != PACKAGE) {

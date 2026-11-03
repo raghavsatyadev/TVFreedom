@@ -7,7 +7,6 @@ import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -40,26 +39,9 @@ class MainActivity : ComponentActivity() {
                 if (s.busy) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
-            BackHandler(enabled = !s.busy && s.screen != Screen.CONNECT && (s.screen != Screen.SETUP || vm.settings.onboarded)) {
-                vm.go(when {
-                    s.screen == Screen.SETUP -> Screen.SETTINGS
-                    s.info != null && s.screen != Screen.TV -> Screen.TV
-                    else -> Screen.CONNECT
-                })
-            }
             TvFreedomTheme {
                 Surface(Modifier.fillMaxSize()) {
-                    when (s.screen) {
-                        Screen.SETUP -> SetupScreen(vm)
-                        Screen.CONNECT -> ConnectScreen(vm)
-                        Screen.TV -> TvScreen(vm)
-                        Screen.PLAN -> PlanScreen(vm)
-                        Screen.RUN -> RunScreen(vm)
-                        Screen.RESTORE -> RestoreScreen(vm)
-                        Screen.SETTINGS -> SettingsScreen(vm)
-                        Screen.HOME -> HomeScreen(vm)
-                        Screen.DESIGNS -> DesignsScreen(vm)
-                    }
+                    TvFreedomNav(vm)
                 }
             }
         }

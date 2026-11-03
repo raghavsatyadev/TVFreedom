@@ -28,6 +28,9 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview.mp)
             implementation(libs.lifecycle.viewmodel.compose.mp)
             implementation(libs.lifecycle.runtime.compose.mp)
+            implementation(libs.lifecycle.viewmodel.navigation3.mp)
+            implementation(libs.navigation3.ui.mp)
+            implementation(libs.navigationevent.compose.mp)
             implementation(libs.coroutines.core)
             implementation(libs.serialization.json)
             implementation(libs.okio)
@@ -46,6 +49,8 @@ kotlin {
             implementation(libs.bcpkix)
             implementation(libs.mlkit.genai.prompt)
             implementation(libs.anthropic)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.okhttp)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.junit)

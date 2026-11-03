@@ -11,6 +11,14 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import io.github.raghavsatyadev.tvfreedom.store.http
+import io.github.raghavsatyadev.tvfreedom.store.httpBytes
+import io.ktor.client.request.header
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
+import io.ktor.utils.io.jvm.javaio.toInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -18,8 +26,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.security.MessageDigest
 import kotlin.coroutines.resume
 
@@ -60,26 +66,31 @@ class TermuxInstaller(private val ctx: Context) {
      * already downloaded stays in the cache for the next "Try again".
      */
     private suspend fun download(progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
-        val api = retrying { get(API).inputStream.use { it.readBytes().decodeToString() } }
+        val api = retrying { httpBytes(API).decodeToString() }
         val vc = Regex("\"suggestedVersionCode\"\\s*:\\s*(\\d+)").find(api)?.groupValues?.get(1)
             ?: error("F-Droid did not say which Termux to get")
         val file = File(ctx.cacheDir, "termux_$vc.apk")
         ctx.cacheDir.listFiles { f -> f.name.startsWith("termux") && f != file }?.forEach { it.delete() }
         retrying {
-            val conn = get("$REPO/com.termux_$vc.apk", from = file.length())
-            if (conn.responseCode == 416) return@retrying // the cached part is already the whole file
-            val resumed = conn.responseCode == 206
-            var done = if (resumed) file.length() else 0L
-            val total = conn.contentLengthLong.let { if (it > 0) done + it else 0L }
-            conn.inputStream.use { input ->
-                FileOutputStream(file, resumed).use { out ->
-                    val buf = ByteArray(64 * 1024)
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        out.write(buf, 0, n)
-                        done += n
-                        if (total > 0) progress(done.toFloat() / total)
+            val from = file.length()
+            // from > 0 asks for the rest of the file (206); a server that ignores it answers 200 with the whole file.
+            http.prepareGet("$REPO/com.termux_$vc.apk") { if (from > 0) header(HttpHeaders.Range, "bytes=$from-") }.execute { r ->
+                val code = r.status.value
+                if (code == 416) return@execute // the cached part is already the whole file
+                if (code != 200 && code != 206) throw IOException("F-Droid answered $code")
+                val resumed = code == 206
+                var done = if (resumed) from else 0L
+                val total = r.contentLength()?.takeIf { it > 0 }?.let { done + it } ?: 0L
+                r.bodyAsChannel().toInputStream().use { input ->
+                    FileOutputStream(file, resumed).use { out ->
+                        val buf = ByteArray(64 * 1024)
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            out.write(buf, 0, n)
+                            done += n
+                            if (total > 0) progress(done.toFloat() / total)
+                        }
                     }
                 }
             }
@@ -88,7 +99,7 @@ class TermuxInstaller(private val ctx: Context) {
     }
 
     /** Runs [block] up to [TRIES] times, waiting a little longer after each failed try. */
-    private suspend fun <T> retrying(block: () -> T): T {
+    private suspend fun <T> retrying(block: suspend () -> T): T {
         var last: Exception? = null
         repeat(TRIES) { n ->
             try {
@@ -99,14 +110,6 @@ class TermuxInstaller(private val ctx: Context) {
             }
         }
         throw last!!
-    }
-
-    /** [from] > 0 asks for the rest of a file (206); a server that ignores it answers 200 with the whole file. */
-    private fun get(url: String, from: Long = 0): HttpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {
-        connectTimeout = 20_000
-        readTimeout = 60_000
-        if (from > 0) setRequestProperty("Range", "bytes=$from-")
-        if (responseCode !in setOf(200, 206, 416)) error("$url answered $responseCode")
     }
 
     /** Null when [apk] is com.termux signed with the pinned key; otherwise why not. */
