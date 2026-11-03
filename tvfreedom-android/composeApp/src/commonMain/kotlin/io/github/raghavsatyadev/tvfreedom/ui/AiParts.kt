@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.raghavsatyadev.tvfreedom.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +38,7 @@ fun StepCard(step: TermuxStep, title: String, body: String, action: String,
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
             Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (progress != null) LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth())
+                if (progress != null) LinearWavyProgressIndicator(progress = { progress }, Modifier.fillMaxWidth())
                 else MainAction(action, icon, onClick = onClick)
                 note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer) }
                 second?.let { (text, go) -> SecondAction(text, null, onClick = go) }
