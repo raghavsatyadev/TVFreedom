@@ -42,7 +42,9 @@ android {
     buildTypes {
         release {
             if (secretProps.getProperty("storeFile") != null) signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false // libadb loads Conscrypt by reflection; keep v1 simple
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     buildFeatures { compose = true }
